@@ -1,0 +1,35 @@
+#!/usr/bin/env sh
+
+# Function to check if a source is muted
+# Usage: is_muted SOURCE_INFO
+is_muted() {
+    local source_info="$1"
+    # Check if Mute: yes is present in the source info
+    if echo "$source_info" | grep -q "Mute: yes"; then
+        echo "muted"
+    else
+        echo "unmuted"
+    fi
+}
+
+# Function to get the microphone status based on headphone connection
+get_microphone_status() {
+    local pactl_output="$1"
+
+    # Check if headphone is connected
+    if echo "$pactl_output" | grep -q "HiFi__Headphones__sink"; then
+        # Headphone is connected, check microphone status for Mic2
+        mic_status=$(is_muted "$(echo "$pactl_output" | awk '/HiFi__Mic2__source/,/^$/')")
+        echo "Headphone Mic (Mic2) is $mic_status"
+    else
+        # Headphone is not connected, check microphone status for Mic1
+        mic_status=$(is_muted "$(echo "$pactl_output" | awk '/HiFi__Mic1__source/,/^$/')")
+        echo "Laptop Mic (Mic1) is $mic_status"
+    fi
+}
+
+# Fetch pactl output and pass it to get_microphone_status function
+pactl_output=$(pactl list sources)
+
+# Call function to get microphone status
+get_microphone_status "$pactl_output"
