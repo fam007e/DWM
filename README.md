@@ -1,0 +1,2 @@
+# DWM
+DWM personal configs
