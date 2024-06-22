@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-WALLPAPER_DIR="/home/fam007e/Pictures/Wallpapers"
+WALLPAPER_DIR="$HOME/Pictures/Wallpapers"
 
 while true; do
     feh --randomize --bg-fill "$WALLPAPER_DIR"

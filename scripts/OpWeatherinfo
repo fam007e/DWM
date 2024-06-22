@@ -1,9 +1,9 @@
 #!/usr/bin/env sh
 
-# Fetch weather data from OpenWeather API
-API_KEY="3793e3ed35a378d045c19b25ef7abbbb"
-LAT="23.7918752"
-LON="90.4308033"
+# Fetch weather data from OpenWeather API-Add your API key & latitude and longitude
+API_KEY=""
+LAT=""
+LON=""
 URL="https://api.openweathermap.org/data/2.5/weather?lat=${LAT}&lon=${LON}&appid=${API_KEY}"
 
 WEATHER_DATA=$(curl -s $URL)
