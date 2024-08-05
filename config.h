@@ -45,8 +45,8 @@ static const char *const autostart[] = {
     "flameshot", NULL,
     "dunst", NULL,
     "picom", "--animations", "-b", NULL,
-    "/home/fam007e/dwm/scripts/wallpapersSS", NULL,
-    "/home/fam007e/dwm/scripts/status", NULL,
+    "~/dwm/scripts/wallpapersSS", NULL,
+    "~/dwm/scripts/status", NULL,
     "slstatus", NULL,
     "kitty", NULL,
     NULL /* terminate */
@@ -94,7 +94,7 @@ static const char *launchercmd[]      = { "rofi", "-show", "drun", NULL };
 static const char *launcheremojicmd[] = { "rofi", "-show", "emoji", NULL };
 static const char *launchercalccmd[]  = { "rofi", "-show", "calc", "-no-show-match", "-no-sort", NULL };
 static const char *termcmd[]          = { "kitty", NULL };
-static const char *togglemutecmd[]    = { "/home/fam007e/dwm/scripts/sounds", NULL };
+static const char *togglemutecmd[]    = { "~/dwm/scripts/sounds", NULL };
 static const char *volumeupcmd[]      = { "amixer", "-D", "pulse", "sset", "Master", "5%+", NULL };
 static const char *volumedowncmd[]    = { "amixer", "-D", "pulse", "sset", "Master", "5%-", NULL };
 static const char *brightnessupcmd[]  = { "xbacklight", "-inc", "5", NULL };
@@ -104,8 +104,8 @@ static const char *airplanecmd[]      = { "nmcli", "radio", "all", "off", NULL }
 static const char *playpausecmd[]     = { "playerctl", "play-pause", NULL };
 static const char *nextcmd[]          = { "playerctl", "next", NULL };
 static const char *prevcmd[]          = { "playerctl", "previous", NULL };
-static const char *wifimenu[]         = { "/home/fam007e/dwm/scripts/wifimenu", NULL };
-static const char *powermenu[]         = { "/home/fam007e/dwm/scripts/powermenu", NULL };
+static const char *wifimenu[]         = { "~/dwm/scripts/wifimenu", NULL };
+static const char *powermenu[]         = { "~/dwm/scripts/powermenu", NULL };
 
 static Key keys[] = {
     /* modifier                     key            function                argument */
@@ -116,8 +116,8 @@ static Key keys[] = {
     { ControlMask|Mod1Mask,         XK_t,          spawn,                  {.v = termcmd } },
     { MODKEY,                       XK_b,          spawn,                  SHCMD ("brave-browser-nightly")},
     { MODKEY,                       XK_p,          spawn,                  {.v = powermenu } },
-    { MODKEY|ShiftMask,             XK_p,          spawn,                  SHCMD ("flameshot gui -p /home/fam007e/Pictures/Screenshots/")},
-    { MODKEY|ControlMask,           XK_p,          spawn,                  SHCMD ("flameshot full -p /home/fam007e/Pictures/Screenshots/")},
+    { MODKEY|ShiftMask,             XK_p,          spawn,                  SHCMD ("flameshot gui -p ~/Pictures/Screenshots/")},
+    { MODKEY|ControlMask,           XK_p,          spawn,                  SHCMD ("flameshot full -p ~/Pictures/Screenshots/")},
     { MODKEY,                       XK_v,          spawn,                  SHCMD ("vlc")}, 
     { MODKEY,                       XK_l,          spawn,                  SHCMD ("slock")},
     { MODKEY,                       XK_e,          spawn,                  SHCMD ("thunar")},
