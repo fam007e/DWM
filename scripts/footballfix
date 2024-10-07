@@ -1,0 +1,83 @@
+#!/usr/bin/env sh
+
+# Directory containing the Python script and the JSON file
+script_dir="$HOME/DWM/scripts/FootballFixtures"
+
+# Path to the Python script
+python_script="$script_dir/footyfixture.py"
+
+MATCHES_FILE_PATTERN="matches_Date_*.json"
+
+# Check and remove existing JSON files in the directory
+if [ -d "$script_dir" ]; then
+  find "$script_dir" -name "$MATCHES_FILE_PATTERN" -exec rm {} \;
+else
+  mkdir -p "$script_dir"
+fi
+
+
+# Function to create hyperlinks (works in some terminal emulators)
+hyperlink() {
+    text=$1
+    url=$2
+    printf "\033]8;;%s\033\\%s\033]8;;\033\\" "$url" "$text"
+}
+
+# Function to clear the current line
+clear_line() {
+    printf "\r\033[K"
+}
+
+# Function to calculate time difference in seconds
+calculate_time_difference() {
+    match_time=$1
+    current_time=$(date +%s)
+    match_time_seconds=$(date -d "$match_time" +%s)
+    if [ $match_time_seconds -lt $current_time ]; then
+        match_time_seconds=$((match_time_seconds + 86400))  # Add 24 hours for matches in AM
+    fi
+    echo $((match_time_seconds - current_time))
+}
+
+# Duration for each cycle
+cycle_duration=$((6 * 60 * 60))  # 6 hours in seconds
+
+# Main loop to update JSON and display matches indefinitely
+while true; do
+    # Run the Python script to generate/update the JSON file
+    python3 "$python_script"
+
+    # Find the JSON file in the directory
+    json_file=$(find "$script_dir" -name "*.json" | head -n 1)
+
+    # Check if a JSON file was found
+    if [ -z "$json_file" ]; then
+        echo "No JSON file found in $script_dir"
+        exit 1
+    fi
+
+    # Parse matches and calculate time difference
+    cycle_end_time=$((SECONDS + cycle_duration))
+    while [ $SECONDS -lt $cycle_end_time ]; do
+        matches=$(jq -c '.[]' "$json_file")
+        sorted_matches=$(echo "$matches" | while read -r match; do
+            home_team=$(echo "$match" | jq -r '.home_team')
+            away_team=$(echo "$match" | jq -r '.away_team')
+            match_time=$(echo "$match" | jq -r '.match_time')
+            stream_link=$(echo "$match" | jq -r '.stream_link')
+            time_diff=$(calculate_time_difference "$match_time")
+            echo "$time_diff $home_team vs $away_team $match_time $stream_link"
+        done | sort -n)
+
+        echo "$sorted_matches" | while read -r line; do
+            time_diff=$(echo "$line" | awk '{print $1}')
+            match_text=$(echo "$line" | awk '{$1=""; print $0}' | sed 's/  / /g')
+            stream_link=$(echo "$match_text" | awk '{print $NF}')
+            match_text=$(echo "$match_text" | awk '{$NF=""; print $0}' | sed 's/  / /g')
+
+            clear_line  # Clear the line first
+            hyperlink "$match_text" "$stream_link"
+            sleep 3  # Wait for 3 seconds before displaying the next match
+        done
+    done
+done

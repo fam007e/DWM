@@ -1,0 +1,9 @@
+# Ignore the GitHub workflows directory
+.github/workflows/
+
+# Ignore object files
+*.o
+
+# Ignore specific files
+Makefile
+config.mk

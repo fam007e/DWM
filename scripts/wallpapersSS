@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+WALLPAPER_DIR="$HOME/Pictures/Wallpapers"
+
+while true; do
+    feh --randomize --bg-fill "$WALLPAPER_DIR"
+    sleep 900  # Sleep for 15 minutes (900 seconds)
+done

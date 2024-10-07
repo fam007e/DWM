@@ -1,0 +1,194 @@
+#!/usr/bin/env sh
+
+# Log file path
+LOGFILE="$HOME/.cache/dwm_status.log"
+
+# Initialize
+printf "$$" > ~/.cache/pidofbar
+sec=0
+
+# Function to fetch CPU load average
+update_cpu() {
+  cpu=$(awk '{print $1}' /proc/loadavg)
+}
+
+# Function to fetch used memory
+update_memory() {
+  memory=$(free -h | awk 'NR==2 {print $3}')
+}
+
+# Function to fetch current time in Asia/Dhaka timezone
+update_time() {
+  time=$(TZ='Asia/Dhaka' date +"%I:%M %p %a %b %d, %Y")
+}
+
+update_weather() {
+  # Fetch the weather data
+  weather=$($HOME/dwm/scripts/OpWeatherinfo)
+
+  # Remove any newline characters if they exist
+  weather=$(echo "$weather" | tr -d '\n')
+}
+
+
+# Function to fetch battery status and capacity
+update_bat() {
+  if [ -e /sys/class/power_supply/BAT0/status ]; then
+    bat_status=$(< /sys/class/power_supply/BAT0/status)
+    bat_capacity=$(< /sys/class/power_supply/BAT0/capacity)
+    case $bat_capacity in
+      100|9[0-9]|8[0-9]) bat_icon="" ;;
+      7[0-9]|6[0-9]) bat_icon="" ;;
+      5[0-9]|4[0-9]) bat_icon="" ;;
+      3[0-9]|2[0-9]) bat_icon="" ;;
+      1[0-9]|[0-9]) bat_icon="" ;;
+    esac
+    if [ "$bat_status" = "Charging" ]; then
+      bat="🔌$bat_icon $bat_capacity%"
+    else
+      bat="🔋$bat_icon $bat_capacity%"
+    fi
+  else
+    bat="Battery status unavailable"
+  fi
+}
+
+# Function to fetch volume information and mute status
+update_vol() {
+  vol_info=$(pactl list sinks | awk '
+    /^Sink / { sink = $2 }
+    /State: RUNNING/ { running_sink = sink }
+    $1 == "Volume:" {
+      volumes[sink] = $5
+      if (sink == running_sink) {
+        running_volume = $5
+      }
+    }
+    $1 == "Mute:" {
+      mutes[sink] = $2
+      if (sink == running_sink) {
+        running_mute = $2
+      }
+    }
+    END {
+      if (running_sink) {
+        if (running_mute == "yes" || running_volume == "0%") {
+          print "🔇"  # Muted icon
+        } else {
+          print running_volume
+        }
+      } else {
+        for (sink in volumes) {
+          if (volumes[sink] != "100%") {
+            if (mutes[sink] == "yes" || volumes[sink] == "0%") {
+              print "🔇"  # Muted icon
+            } else {
+              print volumes[sink]
+            }
+            exit
+          }
+        }
+      }
+    }
+  ')
+
+  if [ "$vol_info" = "🔇" ]; then
+    vol="🔇"
+  else
+    volume_percentage="${vol_info%\%}"
+    if [ "$volume_percentage" -ge 75 ]; then
+      vol="📢 $vol_info"  # High volume icon
+    elif [ "$volume_percentage" -ge 50 ]; then
+      vol="🔊 $vol_info"  # Medium volume icon
+    elif [ "$volume_percentage" -ge 25 ]; then
+      vol="🔉 $vol_info"  # Low volume icon
+    else
+      vol="🔈 $vol_info"  # Very low volume icon
+    fi
+  fi
+}
+
+# Function to fetch microphone mute status using stmictst script's logic
+update_mic() {
+  mic_info=$($HOME/dwm/scripts/stmictst)
+  if echo "$mic_info" | grep -q "unmuted"; then
+    mic=""
+  else
+    mic="󰍭"
+  fi
+  echo "Mic status: $mic_info" >> $LOGFILE
+}
+
+
+# Function to fetch current backlight status
+update_backlight() {
+  if [ -e /sys/class/backlight/intel_backlight/actual_brightness ]; then
+    actual_brightness=$(cat /sys/class/backlight/intel_backlight/actual_brightness)
+    max_brightness=$(cat /sys/class/backlight/intel_backlight/max_brightness)
+    backlight="☀$((actual_brightness * 100 / max_brightness))%"
+    echo "Actual brightness: $actual_brightness, Max brightness: $max_brightness, Calculated backlight: $backlight" >> $LOGFILE
+  else
+    backlight="Backlight not available"
+    echo "Backlight not available" >> $LOGFILE
+  fi
+}
+
+# Function to display status on dwm
+display() {
+  status=""
+  [ -n "$cpu" ] && status+="CPU: $cpu "
+  [ -n "$memory" ] && status+="Mem: $memory "
+  [ -n "$weather" ] && status+="$weather "
+  [ -n "$bat" ] && status+="$bat "
+  [ -n "$backlight" ] && status+="$backlight "
+  [ -n "$vol" ] && status+="$vol "
+  [ -n "$mic" ] && status+="$mic "
+  [ -n "$time" ] && status+="$time"
+  echo "Setting status: $status" >> $LOGFILE  # Debug output
+  xsetroot -name "$status"
+}
+
+# Signal handlers for updating specific parts of status
+trap "update_vol; display" "RTMIN"
+trap "update_backlight; display" "RTMIN+1"
+trap "update_bat; display" "RTMIN+2"
+trap "update_mic; display" "RTMIN+3"
+
+# Initial updates
+update_cpu
+update_memory
+update_time
+update_weather
+update_bat
+update_backlight
+update_vol
+update_mic
+
+# Initial display
+display
+
+# Main loop to continuously update and display status
+while true; do
+  sleep 1
+  sec=$((sec + 1))
+  case $((sec % 60)) in
+    0)
+      update_bat
+      ;;
+    5|10|15|20|25|30|35|40|45|50|55)
+      update_cpu
+      update_memory
+      ;;
+  esac
+
+  # Update weather every 8 hours
+  if [ $((sec % 28800)) -eq 0 ]; then
+    update_weather
+  fi
+
+  update_backlight
+  update_vol
+  update_time
+  update_mic  # Add this line to update mic status every second
+  display
+done
