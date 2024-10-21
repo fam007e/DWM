@@ -18,17 +18,17 @@ static const int topbar                   = 1;
 
 /* fonts */
 static const char *fonts[] = {
-    "MesloLGS Nerd Font Mono:size=12",
-    "NotoColorEmoji:pixelsize=12:antialias=true:autohint=true"
+    "MesloLGS Nerd Font Mono:size=14",
+    "NotoColorEmoji:pixelsize=14:antialias=true:autohint=true"
 };
 
 /* colors */
 static const char normbordercolor[]           = "#3B4252";
 static const char normbgcolor[]               = "#2E3440";
-static const char normfgcolor[]               = "#D8DEE9";
+static const char normfgcolor[]               = "#88C0D0";
 static const char selbordercolor[]            = "#434C5E";
 static const char selbgcolor[]                = "#434C5E";
-static const char selfgcolor[]                = "#ECEFF4";
+static const char selfgcolor[]                = "#88C0D0";
 
 static const char *colors[][3] = {
     /*               fg           bg           border   */
@@ -50,11 +50,12 @@ static const char *const autostart[] = {
     "~/DWM/scripts/status", NULL,
     "slstatus", NULL,
     "kitty", NULL,
+    "protonvpn-app", NULL,
     NULL /* terminate */
 };
 
 /* tagging */
-static const char *tags[] = { "", "", "", "", "" };
+static const char *tags[] = { "", "", "", "", "󰕼", "", "", "", "" };
 static const char ptagf[] = "[%s %s]";
 static const char etagf[] = "[%s]";
 static const int lcaselbl = 0;
@@ -169,6 +170,10 @@ static Key keys[] = {
     TAGKEYS(                        XK_3,                                  2),
     TAGKEYS(                        XK_4,                                  3),
     TAGKEYS(                        XK_5,                                  4),
+   	TAGKEYS(                        XK_6,                                  5),
+	TAGKEYS(                        XK_7,                                  6),
+	TAGKEYS(                        XK_8,                                  7),
+	TAGKEYS(                        XK_9,                                  8),
     { MODKEY|ShiftMask,             XK_e,          quit,                   {0} },
 };
 
