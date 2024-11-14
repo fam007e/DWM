@@ -34,7 +34,7 @@ Requirements
 In order to build dwm you need the Xlib header files.
 
 ```sh
-sudo pacman -S --needed base-devel extra/git extra/libx11 extra/libxcb extra/libxinerama extra/libxft extra/imlib2
+sudo pacman -S --needed bc jq base-devel extra/git extra/libx11 extra/libxcb extra/libxinerama extra/libxft extra/imlib2
 ```
 
 If you find yourself missing a library then this can usually be found by searching for the file name using pacman:
