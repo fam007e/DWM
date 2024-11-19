@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh
 
 # Fetch weather data from OpenWeather API
 API_KEY=""
@@ -6,64 +6,55 @@ LAT=""
 LON=""
 WEATHER_URL="https://api.openweathermap.org/data/2.5/weather?lat=${LAT}&lon=${LON}&appid=${API_KEY}"
 
-WEATHER_DATA=$(curl -s $WEATHER_URL)
-
-# Fetch location name from Nominatim API
-LOCATION_URL="https://nominatim.openstreetmap.org/reverse?format=json&lat=${LAT}&lon=${LON}&zoom=10&addressdetails=1"
-LOCATION_DATA=$(curl -s $LOCATION_URL)
-LOCATION_NAME=$(echo $LOCATION_DATA | jq '.address.city // .address.town // .address.village // .address.county // .address.state // "Unknown"' -r)
+WEATHER_DATA=$(curl -s "$WEATHER_URL")
 
 # Extract weather information using jq
-TEMP=$(echo $WEATHER_DATA | jq '.main.temp' -r)
-FEELS_LIKE=$(echo $WEATHER_DATA | jq '.main.feels_like' -r)
-WEATHER_MAIN=$(echo $WEATHER_DATA | jq '.weather[0].main' -r)
-WEATHER_DESCRIPTION=$(echo $WEATHER_DATA | jq '.weather[0].description' -r)
-HUMIDITY=$(echo $WEATHER_DATA | jq '.main.humidity' -r)
-WIND_SPEED=$(echo $WEATHER_DATA | jq '.wind.speed' -r)
+TEMP=$(printf '%s' "$WEATHER_DATA" | jq '.main.temp' -r)
+FEELS_LIKE=$(printf '%s' "$WEATHER_DATA" | jq '.main.feels_like' -r)
+WEATHER_MAIN=$(printf '%s' "$WEATHER_DATA" | jq '.weather[0].main' -r)
+HUMIDITY=$(printf '%s' "$WEATHER_DATA" | jq '.main.humidity' -r)
 
 # Convert temperature from Kelvin to Celsius
-TEMP_C=$(awk "BEGIN {print $TEMP - 273.15}")
-FEELS_LIKE_C=$(awk "BEGIN {print $FEELS_LIKE - 273.15}")
+TEMP_C=$(printf '%.2f' "$(echo "$TEMP - 273.15" | bc)")
+FEELS_LIKE_C=$(printf '%.2f' "$(echo "$FEELS_LIKE - 273.15" | bc)")
 
 # Define icons for weather conditions
 case $WEATHER_MAIN in
-  Clear)
-    ICON="☀️"
-    ;;
-  Clouds)
-    ICON="☁️"
-    ;;
-  Rain)
-    ICON="🌧️"
-    ;;
-  Drizzle)
-    ICON="🌦️"
-    ;;
-  Thunderstorm)
-    ICON="⛈️"
-    ;;
-  Snow)
-    ICON="❄️"
-    ;;
-  Mist|Smoke|Haze|Dust|Fog|Sand|Ash|Squall|Tornado)
-    ICON="🌫️"
-    ;;
-  *)
-    ICON="🌈"
-    ;;
+  Clear) ICON="☀️" ;;
+  "Few Clouds") ICON="🌤️" ;;
+  "Scattered Clouds") ICON="⛅" ;;
+  "Broken Clouds") ICON="🌥️" ;;
+  Clouds) ICON="☁️" ;;
+  "Light Rain") ICON="🌦️" ;;
+  Rain) ICON="🌧️" ;;
+  "Heavy Rain") ICON="🌊" ;;
+  Drizzle) ICON="🌦️" ;;
+  Thunderstorm) ICON="⛈️" ;;
+  "Light Snow") ICON="🌨️" ;;
+  Snow) ICON="❄️" ;;
+  "Heavy Snow") ICON="⛄" ;;
+  Mist|Haze) ICON="🌫️" ;;
+  Smoke) ICON="💨" ;;
+  Dust) ICON="🌪️" ;;
+  Fog) ICON="🌁" ;;
+  Sand) ICON="🏜️" ;;
+  Ash) ICON="🌋" ;;
+  Squall) ICON="💨" ;;
+  Tornado) ICON="🌪️" ;;
+  *) ICON="🌈" ;;
 esac
 
 # Define temperature icons based on Celsius value
-if (( $(echo "$TEMP_C > 27" | bc -l) )); then
+if [ "$(printf '%.0f\n' "$(printf '%s > 27\n' "$TEMP_C" | bc)")" -eq 1 ]; then
     TEMP_ICON=""  # Above 27°C
-elif (( $(echo "$TEMP_C >= 20 && $TEMP_C <= 27" | bc -l) )); then
+elif [ "$(printf '%.0f\n' "$(printf '%s >= 20 && %s <= 27\n' "$TEMP_C" "$TEMP_C" | bc)")" -eq 1 ]; then
     TEMP_ICON=""  # Between 20°C and 27°C
-elif (( $(echo "$TEMP_C >= 5 && $TEMP_C < 18" | bc -l) )); then
+elif [ "$(printf '%.0f\n' "$(printf '%s >= 5 && %s < 18\n' "$TEMP_C" "$TEMP_C" | bc)")" -eq 1 ]; then
     TEMP_ICON=""  # Between 5°C and 18°C
 else
     TEMP_ICON=""  # Below 5°C
 fi
 
 # Print weather information in a single line with temperature icon
-echo " ${TEMP_ICON} ${TEMP_C}°C (${FEELS_LIKE_C}°C) ${ICON} 💧 ${HUMIDITY}%"
+printf '%s %s%.0f°C(%.0f°C)💧%s%%\n' "$ICON" "$TEMP_ICON" "$TEMP_C" "$FEELS_LIKE_C" "$HUMIDITY"
 exit 0
