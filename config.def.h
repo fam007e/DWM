@@ -45,7 +45,7 @@ static const char *const autostart[] = {
     "/usr/lib/mate-polkit/polkit-mate-authentication-agent-1", NULL,
     "flameshot", NULL,
     "dunst", NULL,
-    "picom", "--animations", "-b", NULL,
+    "picom", "--vsync", "--animations", "-b", NULL,
     "~/DWM/scripts/wallpapersSS", NULL,
     "~/DWM/scripts/status", NULL,
     "slstatus", NULL,
@@ -100,9 +100,19 @@ static const char *termcmd[]          = { "kitty", NULL };
 static const char *togglemutecmd[]    = { "~/DWM/scripts/sounds", NULL };
 static const char *volumeupcmd[]      = { "amixer", "-D", "pulse", "sset", "Master", "5%+", NULL };
 static const char *volumedowncmd[]    = { "amixer", "-D", "pulse", "sset", "Master", "5%-", NULL };
-static const char *brightnessupcmd[]  = { "xbacklight", "-inc", "5", NULL };
-static const char *brightnessdowncmd[]= { "xbacklight", "-dec", "5", NULL };
 static const char *micmutecmd[]       = { "amixer", "-D", "pulse", "sset", "Capture", "toggle", NULL };
+static const char *brightnessupcmd[]  = {
+    "sh", "-c",
+    "xrandr --output $(xrandr --current | grep \" connected\" | cut -f1 -d \" \") --brightness $(echo \"$(xrandr --verbose | grep -m 1 -i brightness | cut -f2 -d ' ') + 0.1\" | bc)",
+    NULL
+};
+
+static const char *brightnessdowncmd[]= {
+    "sh", "-c",
+    "xrandr --output $(xrandr --current | grep \" connected\" | cut -f1 -d \" \") --brightness $(echo \"$(xrandr --verbose | grep -m 1 -i brightness | cut -f2 -d ' ') - 0.1\" | bc)",
+    NULL
+};
+
 static const char *airplanecmd[]      = { "nmcli", "radio", "all", "off", NULL };
 static const char *playpausecmd[]     = { "playerctl", "play-pause", NULL };
 static const char *nextcmd[]          = { "playerctl", "next", NULL };

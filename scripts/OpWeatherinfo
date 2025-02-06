@@ -20,28 +20,28 @@ FEELS_LIKE_C=$(printf '%.2f' "$(echo "$FEELS_LIKE - 273.15" | bc)")
 
 # Define icons for weather conditions
 case $WEATHER_MAIN in
-  Clear) ICON="☀️" ;;
-  "Few Clouds") ICON="🌤️" ;;
-  "Scattered Clouds") ICON="⛅" ;;
-  "Broken Clouds") ICON="🌥️" ;;
-  Clouds) ICON="☁️" ;;
-  "Light Rain") ICON="🌦️" ;;
-  Rain) ICON="🌧️" ;;
-  "Heavy Rain") ICON="🌊" ;;
-  Drizzle) ICON="🌦️" ;;
-  Thunderstorm) ICON="⛈️" ;;
-  "Light Snow") ICON="🌨️" ;;
-  Snow) ICON="❄️" ;;
-  "Heavy Snow") ICON="⛄" ;;
-  Mist|Haze) ICON="🌫️" ;;
-  Smoke) ICON="💨" ;;
-  Dust) ICON="🌪️" ;;
-  Fog) ICON="🌁" ;;
-  Sand) ICON="🏜️" ;;
-  Ash) ICON="🌋" ;;
-  Squall) ICON="💨" ;;
-  Tornado) ICON="🌪️" ;;
-  *) ICON="🌈" ;;
+  Clear) ICON="󰖙" ;;  # weather-sunny
+  "Few Clouds") ICON="󰖕" ;;  # weather-partly-cloudy
+  "Scattered Clouds") ICON="󰖐" ;;  # weather-cloudy
+  "Broken Clouds") ICON="󰖐" ;;  # weather-cloudy
+  Clouds) ICON="󰖐" ;;  # weather-cloudy
+  "Light Rain") ICON="󰖗" ;;  # weather-rainy
+  Rain) ICON="󰖖" ;;  # weather-pouring
+  "Heavy Rain") ICON="󰖖" ;;  # weather-pouring
+  Drizzle) ICON="󰖗" ;;  # weather-rainy
+  Thunderstorm) ICON="󰖓" ;;  # weather-lightning
+  "Light Snow") ICON="󰖘" ;;  # weather-snowy
+  Snow) ICON="󰖘" ;;  # weather-snowy
+  "Heavy Snow") ICON="󰼶" ;;  # weather-snowy-heavy
+  Mist|Haze) ICON="󰖑" ;;  # weather-fog
+  Smoke) ICON="󰖑" ;;  # weather-fog
+  Dust) ICON="󰖝" ;;  # weather-windy
+  Fog) ICON="󰖑" ;;  # weather-fog
+  Sand) ICON="󰖝" ;;  # weather-windy
+  Ash) ICON="󰖓" ;;  # weather-lightning
+  Squall) ICON="󰖝" ;;  # weather-windy
+  Tornado) ICON="󰼸" ;;  # weather-tornado
+  *) ICON="󰖙" ;;  # weather-sunny (default)
 esac
 
 # Define temperature icons based on Celsius value

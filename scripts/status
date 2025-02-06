@@ -19,37 +19,35 @@ update_memory() {
 
 # Function to fetch current time in Asia/Dhaka timezone
 update_time() {
-  time=$(TZ='Asia/Dhaka' date +"%I:%M %p %a %b %d, %Y")
+  time=$(TZ='Continent/City' date +"%I:%M %p %a %b %d, %Y")
 }
 
+# Function to fetch weather data only if internet is available
 update_weather() {
-  # Fetch the weather data
-  weather=$($HOME/dwm/scripts/OpWeatherinfo)
-
-  # Remove any newline characters if they exist
-  weather=$(echo "$weather" | tr -d '\n')
+  if ping -c 1 -W 1 8.8.8.8 >/dev/null 2>&1; then
+    weather=$($HOME/DWM/scripts/OpWeatherinfo | tr -d '\n')  # Fetch and remove newlines
+  else
+    weather=""
+  fi
 }
-
 
 # Function to fetch battery status and capacity
 update_bat() {
-  if [ -e /sys/class/power_supply/BAT0/status ]; then
-    bat_status=$(< /sys/class/power_supply/BAT0/status)
+  if [ -e /sys/class/power_supply/BAT0/capacity ]; then
     bat_capacity=$(< /sys/class/power_supply/BAT0/capacity)
+    bat_status=$(< /sys/class/power_supply/BAT0/status)
+
     case $bat_capacity in
-      100|9[0-9]|8[0-9]) bat_icon="" ;;
-      7[0-9]|6[0-9]) bat_icon="" ;;
-      5[0-9]|4[0-9]) bat_icon="" ;;
-      3[0-9]|2[0-9]) bat_icon="" ;;
-      1[0-9]|[0-9]) bat_icon="" ;;
+      100|9[0-9]) bat_icon="" ;;
+      8[0-9]|7[0-9]) bat_icon="" ;;
+      6[0-9]|5[0-9]) bat_icon="" ;;
+      4[0-9]|3[0-9]) bat_icon="" ;;
+      2[0-9]|1[0-9]|[0-9]) bat_icon="" ;;
     esac
-    if [ "$bat_status" = "Charging" ]; then
-      bat="🔌$bat_icon $bat_capacity%"
-    else
-      bat="🔋$bat_icon $bat_capacity%"
-    fi
+
+    [ "$bat_status" = "Charging" ] && bat="🔌$bat_icon $bat_capacity%" || bat="🔋$bat_icon $bat_capacity%"
   else
-    bat="Battery status unavailable"
+    bat="Battery N/A"
   fi
 }
 
@@ -108,34 +106,22 @@ update_vol() {
   fi
 }
 
-# Function to fetch microphone mute status using stmictst script's logic
+# Function to fetch microphone mute status
 update_mic() {
-  mic_info=$($HOME/dwm/scripts/stmictst)
-  if echo "$mic_info" | grep -q "unmuted"; then
-    mic=""
-  else
-    mic="󰍭"
-  fi
-  echo "Mic status: $mic_info" >> $LOGFILE
+  mic_info=$($HOME/DWM/scripts/stmictst)
+  mic=$(echo "$mic_info" | grep -q "unmuted" && echo "" || echo "󰍭")
 }
 
-
-# Function to fetch current backlight status
+# Function to fetch backlight status using xrandr
 update_backlight() {
-  if [ -e /sys/class/backlight/intel_backlight/actual_brightness ]; then
-    actual_brightness=$(cat /sys/class/backlight/intel_backlight/actual_brightness)
-    max_brightness=$(cat /sys/class/backlight/intel_backlight/max_brightness)
-    backlight="☀$((actual_brightness * 100 / max_brightness))%"
-    echo "Actual brightness: $actual_brightness, Max brightness: $max_brightness, Calculated backlight: $backlight" >> $LOGFILE
-  else
-    backlight="Backlight not available"
-    echo "Backlight not available" >> $LOGFILE
-  fi
+  output=$(xrandr --verbose | grep -m 1 -i brightness | awk '{print $2}')
+  [ -n "$output" ] && backlight="☀$(awk "BEGIN {print int($output * 100)}")%" || backlight="Backlight N/A"
 }
 
 # Function to display status on dwm
 display() {
   status=""
+
   [ -n "$cpu" ] && status+="CPU: $cpu "
   [ -n "$memory" ] && status+="Mem: $memory "
   [ -n "$weather" ] && status+="$weather "
@@ -144,7 +130,7 @@ display() {
   [ -n "$vol" ] && status+="$vol "
   [ -n "$mic" ] && status+="$mic "
   [ -n "$time" ] && status+="$time"
-  echo "Setting status: $status" >> $LOGFILE  # Debug output
+
   xsetroot -name "$status"
 }
 
@@ -171,24 +157,19 @@ display
 while true; do
   sleep 1
   sec=$((sec + 1))
+
   case $((sec % 60)) in
-    0)
-      update_bat
-      ;;
-    5|10|15|20|25|30|35|40|45|50|55)
-      update_cpu
-      update_memory
-      ;;
+    0) update_bat ;;
+    5|10|15|20|25|30|35|40|45|50|55) update_cpu; update_memory ;;
   esac
 
-  # Update weather every 8 hours
-  if [ $((sec % 28800)) -eq 0 ]; then
-    update_weather
-  fi
+  # Update weather every **30 minutes** (1800 seconds)
+  [ $((sec % 1800)) -eq 0 ] && update_weather
 
   update_backlight
   update_vol
   update_time
-  update_mic  # Add this line to update mic status every second
+  update_mic
   display
 done
+
