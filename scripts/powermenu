@@ -1,8 +1,5 @@
 #!/usr/bin/env zsh
 
-## Author : Aditya Shakya (adi1090x)
-## Github : @adi1090x
-
 # CMDs
 uptime="`uptime -p | sed -e 's/up //g'`"
 
@@ -73,6 +70,8 @@ case "${chosen}" in
 			betterlockscreen -l
 		elif [[ -x '/usr/bin/i3lock' ]]; then
 			i3lock
+		elif [[ -x '/usr/local/bin/slock' ]]; then
+		    slock
 		fi
         ;;
     "${suspend}")

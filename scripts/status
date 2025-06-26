@@ -17,9 +17,9 @@ update_memory() {
   memory=$(free -h | awk 'NR==2 {print $3}')
 }
 
-# Function to fetch current time in Asia/Dhaka timezone
+# Function to fetch current time in your timezone Europe/Stockholm
 update_time() {
-  time=$(TZ='Continent/City' date +"%I:%M %p %a %b %d, %Y")
+  time=$(TZ='Europe/Stockholm' date +"%I:%M %p %a %b %d, %Y")
 }
 
 # Function to fetch weather data only if internet is available
@@ -122,8 +122,8 @@ update_backlight() {
 display() {
   status=""
 
-  [ -n "$cpu" ] && status+="CPU: $cpu "
-  [ -n "$memory" ] && status+="Mem: $memory "
+  [ -n "$cpu" ] && status+=" 󰻠 $cpu "
+  [ -n "$memory" ] && status+="󰾆 $memory "
   [ -n "$weather" ] && status+="$weather "
   [ -n "$bat" ] && status+="$bat "
   [ -n "$backlight" ] && status+="$backlight "
@@ -163,8 +163,8 @@ while true; do
     5|10|15|20|25|30|35|40|45|50|55) update_cpu; update_memory ;;
   esac
 
-  # Update weather every **30 minutes** (1800 seconds)
-  [ $((sec % 1800)) -eq 0 ] && update_weather
+  # Update weather every **20 minutes** (1200 seconds)
+  [ $((sec % 1200)) -eq 0 ] && update_weather
 
   update_backlight
   update_vol

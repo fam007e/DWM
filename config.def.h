@@ -49,8 +49,8 @@ static const char *const autostart[] = {
     "~/DWM/scripts/wallpapersSS", NULL,
     "~/DWM/scripts/status", NULL,
     "slstatus", NULL,
-    "kitty", NULL,
-    "protonvpn-app", NULL,
+    "alacritty", NULL,
+/*    "protonvpn-app", NULL, */
     NULL /* terminate */
 };
 
@@ -63,7 +63,7 @@ static const int lcaselbl = 0;
 static const Rule rules[] = {
     /* class     instance  title           tags mask  isfloating  isterminal  noswallow  monitor */
     { "St",      NULL,     NULL,           0,         0,          1,          0,        -1 },
-    { "kitty",   NULL,     NULL,           0,         0,          1,          0,        -1 },
+    { "alacritty",   NULL,     NULL,           0,         0,          1,          0,        -1 },
     { NULL,      NULL,     "Event Tester", 0,         0,          0,          1,        -1 }, /* xev */
 };
 
@@ -95,8 +95,9 @@ static const Layout layouts[] = {
 /* commands */
 static const char *launchercmd[]      = { "rofi", "-show", "drun", NULL };
 static const char *launcheremojicmd[] = { "rofi", "-show", "emoji", NULL };
-static const char *launchercalccmd[]  = { "rofi", "-show", "calc", "-no-show-match", "-no-sort", NULL };
-static const char *termcmd[]          = { "kitty", NULL };
+static const char *launchercalccmd[]  = { "rofi", "-show", "calc", "-modi", "calc", "-no-show-match", "-no-sort", NULL };
+static const char *launchersearchcmd[] = { "sh", "-c", "echo \"\" | rofi -dmenu -p \"Search\" | xargs -I {} xdg-open \"https://duckduckgo.com/?q={}&source=desktop\"", NULL };
+static const char *termcmd[]          = { "alacritty", NULL };
 static const char *togglemutecmd[]    = { "~/DWM/scripts/sounds", NULL };
 static const char *volumeupcmd[]      = { "amixer", "-D", "pulse", "sset", "Master", "5%+", NULL };
 static const char *volumedowncmd[]    = { "amixer", "-D", "pulse", "sset", "Master", "5%-", NULL };
@@ -129,6 +130,7 @@ static Key keys[] = {
     { ControlMask|Mod1Mask,         XK_t,          spawn,                  {.v = termcmd } },
     { MODKEY,                       XK_b,          spawn,                  SHCMD ("brave-browser-nightly")},
     { MODKEY|ShiftMask,             XK_b,          spawn,                  SHCMD ("tor-browser")},
+    { MODKEY,                       XK_s,          spawn,                  {.v = launchersearchcmd } },
     { MODKEY,                       XK_p,          spawn,                  {.v = powermenu } },
     { MODKEY|ShiftMask,             XK_p,          spawn,                  SHCMD ("flameshot gui -p ~/Pictures/Screenshots/")},
     { MODKEY|ControlMask,           XK_p,          spawn,                  SHCMD ("flameshot full -p ~/Pictures/Screenshots/")},
