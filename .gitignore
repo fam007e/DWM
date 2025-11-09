@@ -1,5 +1,3 @@
-# Ignore the GitHub workflows directory
-.github/workflows/
 
 # Ignore object files
 *.o
