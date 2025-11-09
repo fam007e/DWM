@@ -1,0 +1,277 @@
+#!/bin/bash
+
+# A script to display DWM keybindings defined in config.h
+# using rofi for an interactive search menu.
+
+# Path to the dwm config.h file
+DWM_CONFIG_PATH="~/DWM/config.h"
+
+if [ ! -f "$DWM_CONFIG_PATH" ]; then
+    DWM_CONFIG_PATH="~/DWM/config.def.h"
+fi
+
+if [ ! -f "$DWM_CONFIG_PATH" ]; then
+    echo "Error: DWM config file not found at $DWM_CONFIG_PATH or fallback."
+    exit 1
+fi
+
+
+# Fetch keybindings from dwm config.h
+#
+# Parse the static Key keys[] and static Button buttons[] sections
+dynamic_bindings() {
+  awk '
+  BEGIN {
+    in_keys = 0
+    in_buttons = 0
+    modkey_found = 0
+  }
+
+  # Find MODKEY definition
+  /^#define MODKEY/ {
+    if ($3 == "Mod4Mask") modkey = "SUPER"
+    else if ($3 == "Mod1Mask") modkey = "ALT"
+    else modkey = "MOD"
+    modkey_found = 1
+  }
+
+  # Start processing when we find the keys array
+  /^static Key keys\[\] = {/ {
+    in_keys = 1
+    next
+  }
+
+  # Start processing when we find the buttons array
+  /^static Button buttons\[\] = {/ {
+    in_buttons = 1
+    next
+  }
+
+  # Stop when we reach the end of either array
+  /^};/ {
+    if (in_keys || in_buttons) {
+        in_keys = 0
+        in_buttons = 0
+    }
+  }
+
+  # Process key definitions
+  in_keys && /{ / {
+    # Skip comments, empty lines, and TAGKEYS macro calls
+    if ($0 ~ /^[ \t]*\/\*/) next # Skip comments
+    if ($0 ~ /^[ \t]*$/) next    # Skip empty lines
+    if ($0 ~ /TAGKEYS/) next     # Skip TAGKEYS macro calls
+
+    # Remove leading whitespace and braces
+    gsub(/^[ \t]*{[ \t]*/, "")
+    gsub(/[ \t]*},?[ \t]*$/, "")
+
+    # Split the line by commas
+    split($0, parts, ",")
+
+    if (length(parts) >= 3) {
+      modifier = parts[1]
+      key_or_click = parts[2]
+      funcname = parts[3]
+
+      # Clean up the fields
+      gsub(/[ \t]*/, "", modifier)
+      gsub(/[ \t]*/, "", key_or_click)
+      gsub(/[ \t]*/, "", funcname)
+
+      # Convert modifier masks to readable format for keys
+      mod_text = ""
+      if (modifier == "0") {
+        mod_text = ""
+      } else if (modifier == "MODKEY") {
+        mod_text = modkey
+      } else if (modifier ~ /MODKEY\|ControlMask\|ShiftMask/) {
+        mod_text = modkey " CTRL SHIFT"
+      } else if (modifier ~ /MODKEY\|ControlMask/) {
+        mod_text = modkey " CTRL"
+      } else if (modifier ~ /MODKEY\|ShiftMask/) {
+        mod_text = modkey " SHIFT"
+      } else if (modifier == "ControlMask") {
+        mod_text = "CTRL"
+      } else if (modifier == "ControlMask|Mod1Mask") {
+        mod_text = "CTRL ALT"
+      } else {
+        mod_text = modifier
+      }
+
+      # Convert key names
+      gsub(/XK_/, "", key_or_click)
+      gsub(/XF86XK_/, "", key_or_click)
+
+      # Convert common key names
+      if (key_or_click == "Return") key_or_click = "Enter"
+      else if (key_or_click == "space") key_or_click = "Space"
+      else if (key_or_click == "comma") key_or_click = ","
+      else if (key_or_click == "period") key_or_click = "."
+
+      # Format key combination
+      if (mod_text != "") {
+        key_combo = mod_text " + " key_or_click
+      } else {
+        key_combo = key_or_click
+      }
+
+      # Create description based on function
+      desc = ""
+      if (funcname == "spawn") {
+        if ($0 ~ /launchercmd/) desc = "Launch application launcher"
+        else if ($0 ~ /launcheremojicmd/) desc = "Launch emoji selector"
+        else if ($0 ~ /launchercalccmd/) desc = "Launch calculator"
+        else if ($0 ~ /launchersearchcmd/) desc = "Search web"
+        else if ($0 ~ /termcmd/) desc = "Open terminal"
+        else if ($0 ~ /protonrestart/) desc = "Restart Proton"
+        else if ($0 ~ /flameshot gui/) desc = "Screenshot (selection)"
+        else if ($0 ~ /flameshot full/) desc = "Screenshot (full)"
+        else if ($0 ~ /brave-browser-nightly/) desc = "Open Brave browser"
+        else if ($0 ~ /tor-browser/) desc = "Open Tor browser"
+        else if ($0 ~ /vlc/) desc = "Open VLC"
+        else if ($0 ~ /slock/) desc = "Lock screen"
+        else if ($0 ~ /thunar/) desc = "Open file manager"
+        else if ($0 ~ /zed"/) desc = "Open Zed editor"
+        else if ($0 ~ /wifimenu/) desc = "Show Wi-Fi menu"
+        else if ($0 ~ /feh.*randomize/) desc = "Change wallpaper"
+        else if ($0 ~ /looking-glass-client/) desc = "Launch Looking Glass"
+        else if ($0 ~ /brightnessupcmd/ || /xrandr.*brightness.*+/) desc = "Increase brightness"
+        else if ($0 ~ /brightnessdowncmd/ || /xrandr.*brightness.*-/) desc = "Decrease brightness"
+        else if ($0 ~ /volumeupcmd/ || /amixer.*5%\+/) desc = "Increase volume"
+        else if ($0 ~ /volumedowncmd/ || /amixer.*5%-/) desc = "Decrease volume"
+        else if ($0 ~ /togglemutecmd/ || /amixer.*toggle/) desc = "Toggle mute"
+        else if ($0 ~ /powermenu/) desc = "Power menu"
+        else if ($0 ~ /airplanecmd/) desc = "Toggle airplane mode"
+        else if ($0 ~ /playpausecmd/) desc = "Toggle media play/pause"
+        else if ($0 ~ /nextcmd/) desc = "Next media track"
+        else if ($0 ~ /prevcmd/) desc = "Previous media track"
+        else if ($0 ~ /pactl.*set-source-mute/) desc = "Toggle microphone mute"
+        else desc = "Run command"
+      } else if (funcname == "togglebar") desc = "Toggle status bar"
+      else if (funcname == "focusstack") desc = "Focus next/previous window"
+      else if (funcname == "movestack") desc = "Move window in stack"
+      else if (funcname == "incnmaster") desc = "Increase/decrease master windows"
+      else if (funcname == "setmfact") desc = "Resize master area"
+      else if (funcname == "setcfact") desc = "Resize client"
+      else if (funcname == "zoom") desc = "Swap with master"
+      else if (funcname == "view") desc = "View tag/all tags"
+      else if (funcname == "killclient") desc = "Close window"
+      else if (funcname == "setlayout") desc = "Set layout"
+      else if (funcname == "fullscreen") desc = "Toggle fullscreen"
+      else if (funcname == "togglefloating") desc = "Toggle floating"
+      else if (funcname == "togglefakefullscreen") desc = "Toggle fake fullscreen"
+      else if (funcname == "focusmon") desc = "Focus monitor"
+      else if (funcname == "tagmon") desc = "Move to monitor"
+      else if (funcname == "quit") desc = "Quit dwm"
+      else if (funcname == "tag") desc = "Move to tag"
+      else if (funcname == "toggleview") desc = "Toggle tag view"
+      else if (funcname == "toggletag") desc = "Toggle tag on window"
+      else if (funcname == "moveorplace") desc = "Move/place window"
+      else if (funcname == "resizemouse") desc = "Resize window with mouse"
+      else if (funcname == "togglewarm") desc = "Toggle blue light filter (warmth)"
+      else desc = funcname
+
+      # Output in format: key_combo,description
+      printf "%s,%s\n", key_combo, desc
+    }
+    next
+  }
+
+  # Process button definitions
+  in_buttons && /{/ {
+    # Skip comments, empty lines
+    if ($0 ~ /^[ \t]*\/\*/) next # Skip comments
+    if ($0 ~ /^[ \t]*$/) next    # Skip empty lines
+
+    gsub(/^[ \t]*{[ \t]*/, "")
+    gsub(/[ \t]*},?[ \t]*$/, "")
+
+    split($0, parts, ",")
+
+    if (length(parts) >= 4) {
+        click_area = parts[1]
+        modifier = parts[2]
+        button = parts[3]
+        funcname = parts[4]
+
+        gsub(/[ \t]*/, "", click_area)
+        gsub(/[ \t]*/, "", modifier)
+        gsub(/[ \t]*/, "", button)
+        gsub(/[ \t]*/, "", funcname)
+
+        if (button == "Button1") button_text = "Left Click"
+        else if (button == "Button2") button_text = "Middle Click"
+        else if (button == "Button3") button_text = "Right Click"
+        else button_text = button
+
+        if (click_area == "ClkTagBar") area_text = "Tag Bar"
+        else if (click_area == "ClkClientWin") area_text = "Window"
+        else if (click_area == "ClkRootWin") area_text = "Desktop"
+        else if (click_area == "ClkStatusText") area_text = "Status Bar"
+        else if (click_area == "ClkWinTitle") area_text = "Window Title"
+        else if (click_area == "ClkLtSymbol") area_text = "Layout Symbol"
+        else area_text = click_area
+
+        mod_text = ""
+        if (modifier == "MODKEY") mod_text = modkey
+        else if (modifier != "0") mod_text = modifier
+
+        key_combo = area_text
+        if (mod_text != "") key_combo = key_combo " + " mod_text
+        key_combo = key_combo " + " button_text
+
+        # desc logic for buttons
+        if (funcname == "spawn") {
+            if ($0 ~ /termcmd/) desc = "Open terminal"
+            else desc = "Run command"
+        }
+        else if (funcname == "zoom") desc = "Swap with master"
+        else if (funcname == "setlayout") desc = "Set layout"
+        else if (funcname == "togglefloating") desc = "Toggle floating"
+        else if (funcname == "resizemouse") desc = "Resize window with mouse"
+        else if (funcname == "view") desc = "View tag"
+        else if (funcname == "toggleview") desc = "Toggle tag view"
+        else if (funcname == "tag") desc = "Move to tag"
+        else if (funcname == "toggletag") desc = "Toggle tag on window"
+        else if (funcname == "movemouse") desc = "Move window with mouse"
+        else desc = funcname
+
+        printf "%s,%s\n", key_combo, desc
+    }
+    next
+  }
+  ' "$DWM_CONFIG_PATH"
+}
+
+# Parse and format keybindings for rofi with markup
+parse_bindings() {
+  awk -F, -v q="'" '
+{
+    # First field is the key combination, second is the description
+    key_combo = $1;
+    action = $2;
+
+    # Clean up: strip leading/trailing spaces
+    gsub(/^[ \t]+|[ \t]+$/, "", key_combo);
+    gsub(/^[ \t]+|[ \t]+$/, "", action);
+
+    # Escape XML entities for rofi markup
+    gsub(/&/, "\\&amp;", key_combo);
+    gsub(/</, "\\&lt;", key_combo);
+    gsub(/>/, "\\&gt;", key_combo);
+    gsub(/&/, "\\&amp;", action);
+    gsub(/</, "\\&lt;", action);
+    gsub(/>/, "\\&gt;", action);
+
+    if (action != "" && key_combo != "") {
+        printf "<b>%s</b>  <i>%s</i>\n", key_combo, action;
+    }
+}'
+}
+
+# Extract keybindings and store in array
+mapfile -t BINDINGS < <(dynamic_bindings | sort -u | parse_bindings)
+
+# Display with rofi
+CHOICE=$(printf '%s\n' "${BINDINGS[@]}" | rofi -dmenu -i -markup-rows -p "DWM Keybindings:")

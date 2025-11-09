@@ -1,12 +1,21 @@
 #!/bin/sh
 
 # Fetch weather data from OpenWeather API
-API_KEY=""
-LAT=""
-LON=""
+# Get your API key from https://openweathermap.org/api
+API_KEY="<YOUR_API_KEY>"
+# Get your latitude and longitude from https://www.latlong.net/
+LAT="<YOUR_LATITUDE>"
+LON="<YOUR_LONGITUDE>"
 WEATHER_URL="https://api.openweathermap.org/data/2.5/weather?lat=${LAT}&lon=${LON}&appid=${API_KEY}"
 
-WEATHER_DATA=$(curl -s "$WEATHER_URL")
+# Fetch weather data with timeout
+WEATHER_DATA=$(curl -s --connect-timeout 5 "$WEATHER_URL")
+
+# Check if curl succeeded and API returned valid data
+if [ -z "$WEATHER_DATA" ] || echo "$WEATHER_DATA" | jq -e .cod >/dev/null 2>&1 && [ "$(echo "$WEATHER_DATA" | jq -r '.cod')" != "200" ]; then
+    echo "󰖑 N/A"
+    exit 1
+fi
 
 # Extract weather information using jq
 TEMP=$(printf '%s' "$WEATHER_DATA" | jq '.main.temp' -r)

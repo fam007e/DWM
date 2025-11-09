@@ -50,6 +50,8 @@
 #include <sys/sysctl.h>
 #include <kvm.h>
 #endif /* __OpenBSD */
+#include <math.h>
+#include <X11/extensions/Xrandr.h>
 
 #include "drw.h"
 #include "util.h"
@@ -309,13 +311,19 @@ static int xerrordummy(Display *dpy, XErrorEvent *ee);
 static int xerrorstart(Display *dpy, XErrorEvent *ee);
 static void zoom(const Arg *arg);
 static void autostart_exec(void);
+static void setcolortemp(int temp);
+static void togglewarm(const Arg *arg);
+static void sync_brightness(const Arg *arg);
+static double get_neutral_brightness(void);
+
+
 
 /* variables */
 static const char autostartblocksh[] = "autostart_blocking.sh";
 static const char autostartsh[] = "autostart.sh";
 static Systray *systray = NULL;
 static const char broken[] = "broken";
-static const char dwmdir[] = "github/dwm-titus/scripts";
+static const char dwmdir[] = "DWM/scripts";
 static const char localshare[] = "";
 static char stext[256];
 static int statusw;
@@ -352,6 +360,9 @@ static Display *dpy;
 static Drw *drw;
 static Monitor *mons, *selmon;
 static Window root, wmcheckwin;
+static int current_temp = 6500; /* Default neutral temperature */
+static double saved_brightness = 1.0; /* Saved brightness level */
+static double get_current_brightness_compensated(void);
 
 static xcb_connection_t *xcon;
 
@@ -416,6 +427,175 @@ autostart_exec()
 }
 
 /* function implementations */
+
+static double
+get_neutral_brightness(void)
+{
+    XRRScreenResources *res = XRRGetScreenResources(dpy, root);
+    if (!res || res->ncrtc == 0) {
+        if (res) XRRFreeScreenResources(res);
+        return 1.0;
+    }
+
+    RRCrtc crtc = res->crtcs[0];
+    XRRCrtcGamma *current_gamma = XRRGetCrtcGamma(dpy, crtc);
+    double brightness = 1.0;
+
+    if (current_gamma && current_gamma->size > 0) {
+        /* Calculate brightness from the middle of the curve to avoid color temp effects */
+        int mid_point = current_gamma->size / 2;
+        double expected_mid = (double)mid_point / (current_gamma->size - 1) * 65535.0;
+
+        /* Use the green channel as it's least affected by color temperature */
+        brightness = current_gamma->green[mid_point] / expected_mid;
+
+        /* Clamp to reasonable values */
+        if (brightness < 0.1) brightness = 0.1;
+        if (brightness > 1.0) brightness = 1.0;
+
+        XRRFreeGamma(current_gamma);
+    }
+
+    XRRFreeScreenResources(res);
+    return brightness;
+}
+
+void
+setcolortemp(int temp)
+{
+    XRRScreenResources *res = XRRGetScreenResources(dpy, root);
+    if (!res) return;
+
+    /* Don't read brightness here - it should be read in togglewarm() */
+
+    double tmpKelvin = temp / 100.0;
+    double red, green, blue;
+
+    /* Calculate color temperature multipliers */
+    if (tmpKelvin <= 66) {
+        red = 255;
+    } else {
+        double tmp = tmpKelvin - 60;
+        red = 329.698727446 * pow(tmp, -0.1332047592);
+        red = fmax(0, fmin(255, red));
+    }
+
+    if (tmpKelvin <= 66) {
+        double tmp = tmpKelvin;
+        green = 99.4708025861 * log(tmp) - 161.1195681661;
+        green = fmax(0, fmin(255, green));
+    } else {
+        double tmp = tmpKelvin - 60;
+        green = 288.1221695283 * pow(tmp, -0.0755148492);
+        green = fmax(0, fmin(255, green));
+    }
+
+    if (tmpKelvin >= 66) {
+        blue = 255;
+    } else if (tmpKelvin <= 19) {
+        blue = 0;
+    } else {
+        double tmp = tmpKelvin - 10;
+        blue = 138.5177312231 * log(tmp) - 305.0447927307;
+        blue = fmax(0, fmin(255, blue));
+    }
+
+    /* Apply both color temperature and current brightness */
+    double current_brightness = saved_brightness;
+    double r_mult = (red / 255.0) * current_brightness;
+    double g_mult = (green / 255.0) * current_brightness;
+    double b_mult = (blue / 255.0) * current_brightness;
+
+    for (int c = 0; c < res->ncrtc; c++) {
+        RRCrtc crtc = res->crtcs[c];
+        int size = XRRGetCrtcGammaSize(dpy, crtc);
+        if (size == 0) continue;
+
+        XRRCrtcGamma *gamma = XRRAllocGamma(size);
+        if (!gamma) continue;
+
+        for (int i = 0; i < size; i++) {
+            double ratio = (double)i / (size - 1.0);
+            gamma->red[i] = (unsigned short)(65535.0 * r_mult * ratio + 0.5);
+            gamma->green[i] = (unsigned short)(65535.0 * g_mult * ratio + 0.5);
+            gamma->blue[i] = (unsigned short)(65535.0 * b_mult * ratio + 0.5);
+        }
+
+        XRRSetCrtcGamma(dpy, crtc, gamma);
+        XRRFreeGamma(gamma);
+    }
+    XRRFreeScreenResources(res);
+}
+
+void
+togglewarm(const Arg *arg)
+{
+    /* Always read current brightness on every toggle to capture manual changes */
+    if (current_temp == 6500) {
+        /* Currently at neutral - can read brightness directly */
+        saved_brightness = get_neutral_brightness();
+    } else {
+        /* Currently warm - need to compensate for color temperature */
+        saved_brightness = get_current_brightness_compensated();
+    }
+
+    current_temp = (current_temp == 6500) ? 3500 : 6500;
+    setcolortemp(current_temp);
+}
+
+/* Helper function to read brightness when color temperature is applied */
+static double
+get_current_brightness_compensated(void)
+{
+    XRRScreenResources *res = XRRGetScreenResources(dpy, root);
+    if (!res || res->ncrtc == 0) {
+        if (res) XRRFreeScreenResources(res);
+        return 1.0;
+    }
+
+    RRCrtc crtc = res->crtcs[0];
+    XRRCrtcGamma *current_gamma = XRRGetCrtcGamma(dpy, crtc);
+    double brightness = 1.0;
+
+    if (current_gamma && current_gamma->size > 0) {
+        int mid_point = current_gamma->size / 2;
+
+        /* Calculate the expected color temp multipliers for current temp */
+        double tmpKelvin = current_temp / 100.0;
+        double expected_green_mult;
+
+        if (tmpKelvin <= 66) {
+            double tmp = tmpKelvin;
+            double green = 99.4708025861 * log(tmp) - 161.1195681661;
+            green = fmax(0, fmin(255, green));
+            expected_green_mult = green / 255.0;
+        } else {
+            double tmp = tmpKelvin - 60;
+            double green = 288.1221695283 * pow(tmp, -0.0755148492);
+            green = fmax(0, fmin(255, green));
+            expected_green_mult = green / 255.0;
+        }
+
+        /* Calculate what the neutral brightness would be */
+        double expected_mid = (double)mid_point / (current_gamma->size - 1) * 65535.0;
+        double actual_value = current_gamma->green[mid_point];
+
+        /* Remove color temperature effect to get true brightness */
+        brightness = (actual_value / expected_mid) / expected_green_mult;
+
+        /* Clamp to reasonable values */
+        if (brightness < 0.1) brightness = 0.1;
+        if (brightness > 1.0) brightness = 1.0;
+
+        XRRFreeGamma(current_gamma);
+    }
+
+    XRRFreeScreenResources(res);
+    return brightness;
+}
+
+
+
 void
 applyrules(Client *c)
 {
@@ -1221,9 +1401,9 @@ geticonprop(Window win, unsigned int *picw, unsigned int *pich)
 	unsigned long n, extra, *p = NULL;
 	Atom real;
 
-	if (XGetWindowProperty(dpy, win, netatom[NetWMIcon], 0L, LONG_MAX, False, AnyPropertyType, 
+	if (XGetWindowProperty(dpy, win, netatom[NetWMIcon], 0L, LONG_MAX, False, AnyPropertyType,
 						   &real, &format, &n, &extra, (unsigned char **)&p) != Success)
-		return None; 
+		return None;
 	if (n == 0 || format != 32) { XFree(p); return None; }
 
 	unsigned long *bstp = NULL;
@@ -1603,7 +1783,7 @@ monocle(Monitor *m)
 {
 	int w, h, x, y;
 	Client *c;
-	
+
 	for (c = nexttiled(m->clients); c; c = nexttiled(c->next)) {
 		x = m->wx;
 		y = m->wy;

@@ -23,12 +23,12 @@ static const char *fonts[] = {
 };
 
 /* colors */
-static const char normbordercolor[]           = "#3B4252";
-static const char normbgcolor[]               = "#2E3440";
-static const char normfgcolor[]               = "#88C0D0";
-static const char selbordercolor[]            = "#434C5E";
-static const char selbgcolor[]                = "#434C5E";
-static const char selfgcolor[]                = "#88C0D0";
+static const char normbordercolor[]           = "#3b4252";
+static const char normbgcolor[]               = "#2e3440";
+static const char normfgcolor[]               = "#d8dee9";
+static const char selbordercolor[]            = "#88c0d0";
+static const char selbgcolor[]                = "#5e81ac";
+static const char selfgcolor[]                = "#eceff4";
 
 static const char *colors[][3] = {
     /*               fg           bg           border   */
@@ -96,18 +96,15 @@ static const Layout layouts[] = {
 static const char *launchercmd[]      = { "rofi", "-show", "drun", NULL };
 static const char *launcheremojicmd[] = { "rofi", "-show", "emoji", NULL };
 static const char *launchercalccmd[]  = { "rofi", "-show", "calc", "-modi", "calc", "-no-show-match", "-no-sort", NULL };
-static const char *launchersearchcmd[] = { "sh", "-c", "echo \"\" | rofi -dmenu -p \"Search\" | xargs -I {} xdg-open \"https://duckduckgo.com/?q={}&source=desktop\"", NULL };
+static const char *launchersearchcmd[]= { "sh", "-c", "echo \"\" | rofi -dmenu -p \"Search\" | xargs -I {} xdg-open \"https://duckduckgo.com/?q={}&source=desktop\"", NULL };
 static const char *termcmd[]          = { "alacritty", NULL };
-static const char *togglemutecmd[]    = { "~/DWM/scripts/sounds", NULL };
 static const char *volumeupcmd[]      = { "amixer", "-D", "pulse", "sset", "Master", "5%+", NULL };
 static const char *volumedowncmd[]    = { "amixer", "-D", "pulse", "sset", "Master", "5%-", NULL };
-static const char *micmutecmd[]       = { "amixer", "-D", "pulse", "sset", "Capture", "toggle", NULL };
 static const char *brightnessupcmd[]  = {
     "sh", "-c",
     "xrandr --output $(xrandr --current | grep \" connected\" | cut -f1 -d \" \") --brightness $(echo \"$(xrandr --verbose | grep -m 1 -i brightness | cut -f2 -d ' ') + 0.1\" | bc)",
     NULL
 };
-
 static const char *brightnessdowncmd[]= {
     "sh", "-c",
     "xrandr --output $(xrandr --current | grep \" connected\" | cut -f1 -d \" \") --brightness $(echo \"$(xrandr --verbose | grep -m 1 -i brightness | cut -f2 -d ' ') - 0.1\" | bc)",
@@ -119,7 +116,8 @@ static const char *playpausecmd[]     = { "playerctl", "play-pause", NULL };
 static const char *nextcmd[]          = { "playerctl", "next", NULL };
 static const char *prevcmd[]          = { "playerctl", "previous", NULL };
 static const char *wifimenu[]         = { "~/DWM/scripts/wifimenu", NULL };
-static const char *powermenu[]         = { "~/DWM/scripts/powermenu", NULL };
+static const char *powermenu[]        = { "~/DWM/scripts/powermenu", NULL };
+static const char *togglemutecmd[]    = { "amixer", "-D", "pulse", "sset", "Master", "toggle", NULL };
 
 static Key keys[] = {
     /* modifier                     key            function                argument */
@@ -129,9 +127,10 @@ static Key keys[] = {
     { MODKEY,        	    	    XK_c,          spawn,                  {.v = launchercalccmd} },
     { ControlMask|Mod1Mask,         XK_t,          spawn,                  {.v = termcmd } },
     { MODKEY,                       XK_b,          spawn,                  SHCMD ("brave-browser-nightly")},
-    { MODKEY|ShiftMask,             XK_b,          spawn,                  SHCMD ("tor-browser")},
     { MODKEY,                       XK_s,          spawn,                  {.v = launchersearchcmd } },
+    { MODKEY|ShiftMask,             XK_b,          spawn,                  SHCMD ("tor-browser")},
     { MODKEY,                       XK_p,          spawn,                  {.v = powermenu } },
+    { MODKEY,                       XK_slash,      spawn,                  SHCMD ("~/DWM/scripts/keybindings") },
     { MODKEY|ShiftMask,             XK_p,          spawn,                  SHCMD ("flameshot gui -p ~/Pictures/Screenshots/")},
     { MODKEY|ControlMask,           XK_p,          spawn,                  SHCMD ("flameshot full -p ~/Pictures/Screenshots/")},
     { MODKEY,                       XK_v,          spawn,                  SHCMD ("vlc")},
@@ -146,11 +145,12 @@ static Key keys[] = {
     { 0, 			      XF86XK_AudioLowerVolume, spawn,           	   {.v = volumedowncmd } },
     { 0, 			       XF86XK_MonBrightnessUp, spawn,	               {.v = brightnessupcmd } },
     { 0,			     XF86XK_MonBrightnessDown, spawn, 	               {.v = brightnessdowncmd } },
-    { 0,                      XF86XK_AudioMicMute, spawn,                  {.v = micmutecmd } },
+    { 0,                 XF86XK_AudioMicMute,      spawn,                  SHCMD("pactl set-source-mute @DEFAULT_SOURCE@ toggle") },
     { 0,                         XF86XK_WLAN,      spawn,                  {.v = airplanecmd } },
     { 0,                         XF86XK_AudioPlay, spawn,                  {.v = playpausecmd } },
     { 0,                         XF86XK_AudioNext, spawn,                  {.v = nextcmd } },
     { 0,                         XF86XK_AudioPrev, spawn,                  {.v = prevcmd } },
+    { 0,                        XF86XK_Calculator, spawn,                  {.v = launchercalccmd } },
     { MODKEY|ControlMask,           XK_b,          togglebar,              {0} },
     { MODKEY,                       XK_j,          focusstack,             {.i = +1 } },
     { MODKEY,                       XK_k,          focusstack,             {.i = -1 } },
@@ -177,6 +177,7 @@ static Key keys[] = {
     { MODKEY,                       XK_period,     focusmon,               {.i = +1 } },
     { MODKEY|ShiftMask,             XK_comma,      tagmon,                 {.i = -1 } },
     { MODKEY|ShiftMask,             XK_period,     tagmon,                 {.i = +1 } },
+    { MODKEY|ShiftMask,             XK_n,          togglewarm,             {0} },
     TAGKEYS(                        XK_1,                                  0),
     TAGKEYS(                        XK_2,                                  1),
     TAGKEYS(                        XK_3,                                  2),

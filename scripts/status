@@ -17,15 +17,16 @@ update_memory() {
   memory=$(free -h | awk 'NR==2 {print $3}')
 }
 
-# Function to fetch current time in your timezone Europe/Stockholm
+# Function to fetch current time in your timezone
+# You can find your timezone with `timedatectl` or at https://www.timeanddate.com/time/map/
 update_time() {
-  time=$(TZ='Europe/Stockholm' date +"%I:%M %p %a %b %d, %Y")
+  time=$(TZ='<Your_Continent/Your_City>' date +"%I:%M %p %a %b %d, %Y")
 }
 
 # Function to fetch weather data only if internet is available
 update_weather() {
-  if ping -c 1 -W 1 8.8.8.8 >/dev/null 2>&1; then
-    weather=$($HOME/DWM/scripts/OpWeatherinfo | tr -d '\n')  # Fetch and remove newlines
+  if ping -c 1 -W 1 9.9.9.11 >/dev/null 2>&1; then
+    weather=$($HOME/DWM/scripts/OpWeatherinfo | tr -d '\n')
   else
     weather=""
   fi
@@ -71,7 +72,7 @@ update_vol() {
     END {
       if (running_sink) {
         if (running_mute == "yes" || running_volume == "0%") {
-          print "🔇"  # Muted icon
+          print "🔇"
         } else {
           print running_volume
         }
@@ -79,7 +80,7 @@ update_vol() {
         for (sink in volumes) {
           if (volumes[sink] != "100%") {
             if (mutes[sink] == "yes" || volumes[sink] == "0%") {
-              print "🔇"  # Muted icon
+              print "🔇"
             } else {
               print volumes[sink]
             }
@@ -95,13 +96,13 @@ update_vol() {
   else
     volume_percentage="${vol_info%\%}"
     if [ "$volume_percentage" -ge 75 ]; then
-      vol="📢 $vol_info"  # High volume icon
+      vol="📢 $vol_info"
     elif [ "$volume_percentage" -ge 50 ]; then
-      vol="🔊 $vol_info"  # Medium volume icon
+      vol="🔊 $vol_info"
     elif [ "$volume_percentage" -ge 25 ]; then
-      vol="🔉 $vol_info"  # Low volume icon
+      vol="🔉 $vol_info"
     else
-      vol="🔈 $vol_info"  # Very low volume icon
+      vol="🔈 $vol_info"
     fi
   fi
 }
@@ -172,4 +173,3 @@ while true; do
   update_mic
   display
 done
-

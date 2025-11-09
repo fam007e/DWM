@@ -85,6 +85,14 @@ Configuration
 The configuration of dwm is done by creating a custom `config.h`
 and (re)compiling the source code.
 
+Important Notes
+---------------
+Some of the default keybindings in `config.def.h` use paths starting with `~/` to refer to scripts and directories. These paths may not be correctly expanded to your home directory when `dwm` is launched by a display manager.
+
+It is strongly recommended to replace all instances of `~/` with the full absolute path. For example, instead of `~/DWM/scripts/powermenu`, you should use `/home/<your_username>/DWM/scripts/powermenu`.
+
+You can find the relevant paths in `config.def.h` and update them to your system's configuration.
+
 Credits
 -------
 Project was inspired by [@ChrisTitusTech](https://github.com/ChrisTitusTech/dwm-titus) `dwm-titus` repo for Arch.
