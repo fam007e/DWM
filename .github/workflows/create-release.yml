@@ -2,10 +2,8 @@ name: Release DWM Binary
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - config.h
+    tags:
+      - 'v*'
 
 jobs:
   release:
