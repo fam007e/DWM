@@ -5,7 +5,7 @@
 
 # Path to the dwm config.h file
 # Try local directory first, then absolute path if defined
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" \u0026\u0026 pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DWM_REPO_DIR="$(dirname "$SCRIPT_DIR")"
 
 DWM_CONFIG_PATH="$DWM_REPO_DIR/config.h"
