@@ -48,8 +48,9 @@ uninstall:
 		${DESTDIR}${PREFIX}/share/xsession/dwm.desktop
 
 release: dwm
-	mkdir -p release
-	cp -f dwm release/
-	tar -czf release/dwm-${VERSION}.tar.gz -C release dwm
+	mkdir -p release/dwm-${VERSION}
+	cp -rf dwm dwm.1 dwm.desktop scripts config setup.sh LICENSE Makefile config.mk release/dwm-${VERSION}/
+	tar -czf release/dwm-${VERSION}.tar.gz -C release dwm-${VERSION}
+	rm -rf release/dwm-${VERSION}
 
 .PHONY: all clean dist install uninstall release
