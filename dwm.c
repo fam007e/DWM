@@ -1463,7 +1463,8 @@ getparentprocess(pid_t p)
 	if (!(f = fopen(buf, "r")))
 		return 0;
 
-	fscanf(f, "%*u %*s %*c %u", &v);
+	if (fscanf(f, "%*u %*s %*c %u", &v) != 1)
+		v = 0;
 	fclose(f);
 #endif /* __linux__*/
 
@@ -2425,8 +2426,10 @@ runautostart(void)
 		free(pathpfx);
 	}
 
-	if (access(path, X_OK) == 0)
-		system(path);
+	if (access(path, X_OK) == 0) {
+		if (system(path) < 0)
+			fprintf(stderr, "dwm: system() failed for %s\n", path);
+	}
 
 	/* now the non-blocking script */
 	if (sprintf(path, "%s/%s", pathpfx, autostartsh) <= 0) {
@@ -2434,8 +2437,10 @@ runautostart(void)
 		free(pathpfx);
 	}
 
-	if (access(path, X_OK) == 0)
-		system(strcat(path, " &"));
+	if (access(path, X_OK) == 0) {
+		if (system(strcat(path, " &")) < 0)
+			fprintf(stderr, "dwm: system() failed for %s\n", path);
+	}
 
 	free(pathpfx);
 	free(path);
