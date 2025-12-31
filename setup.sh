@@ -57,6 +57,15 @@ clone_config_folders() {
         if [ -d "$dir" ]; then
             cp -r "$dir" ~/.config/
             echo "Cloned $dir_name to ~/.config/"
+
+            # Automate username and switch theme in rofi config if it exists
+            if [ "$dir_name" == "rofi" ] && [ -f ~/.config/rofi/config.rasi ]; then
+                # Comment out the android theme
+                sed -i 's|^@theme "/usr/share/rofi/themes/android_notification.rasi"|//@theme "/usr/share/rofi/themes/android_notification.rasi"|' ~/.config/rofi/config.rasi
+                # Uncomment the Nord theme and replace username
+                sed -i "s|//@theme \"/home/YOURUSERNAME|@theme \"/home/$USER|g" ~/.config/rofi/config.rasi
+                echo "Automated username and switched to Nord theme in ~/.config/rofi/config.rasi"
+            fi
         else
             echo "Directory $dir_name does not exist, skipping"
         fi

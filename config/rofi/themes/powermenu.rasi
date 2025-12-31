@@ -14,25 +14,37 @@ configuration {
 
 /*****----- Global Properties -----*****/
 * {
+    nord0:     #2e3440;
+    nord1:     #3b4252;
+    nord2:     #434c5e;
+    nord3:     #4c566a;
+    nord4:     #d8dee9;
+    nord5:     #e5e9f0;
+    nord6:     #eceff4;
+    nord7:     #8fbcbb;
+    nord8:     #88c0d0;
+    nord9:     #81a1c1;
+    nord10:    #5e81ac;
+
     /* Resolution : 1920x1080 */
-    mainbox-spacing:             100px;
+    mainbox-spacing:             80px;
     mainbox-margin:              150px 400px;
-    message-margin:              0px 350px;
+    message-margin:              0px 300px;
     message-padding:             15px;
     message-border-radius:       15px;
     listview-spacing:            50px;
-    element-padding:             35px 40px;
-    element-border-radius:       20px;
+    element-padding:             35px 36px;
+    element-border-radius:       15px;
 
-    prompt-font:                 "MesloLGS Nerd Font Bold 72";
+    prompt-font:                 "MesloLGS Nerd Font Bold 60";
     textbox-font:                "MesloLGS Nerd Font 14";
-    element-text-font:           "feather 64";
+    element-text-font:           "feather 50";
 
-    background-window:           black/30%;
-    background-normal:           white/5%;
-    background-selected:         white/15%;
-    foreground-normal:           white;
-    foreground-selected:         white;
+    background-window:           #2E3440F2;
+    background-normal:           @nord1;
+    background-selected:         @nord10;
+    foreground-normal:           @nord4;
+    foreground-selected:         @nord6;
 }
 
 /*****----- Main Window -----*****/
@@ -85,8 +97,8 @@ textbox {
     font:                        var(textbox-font);
     background-color:            transparent;
     text-color:                  inherit;
-    vertical-align:              0.5;
-    horizontal-align:            0.5;
+    vertical-align:              0.8;
+    horizontal-align:            0.8;
 }
 
 /*****----- Listview -----*****/
