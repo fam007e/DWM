@@ -29,18 +29,23 @@ jobs:
 
       - name: Build and Release
         run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION_CLEAN=$(echo $VERSION | sed 's/^v//')
           make clean
-          make release
+          make release VERSION=$VERSION_CLEAN
 
       - name: Create release
         id: create_release
         run: |
-          version=$(date +'%Y.%m.%d')
+          VERSION="${{ github.ref_name }}"
+          VERSION_CLEAN=$(echo $VERSION | sed 's/^v//')
           changelog=$(git log --oneline --pretty=format:"* %s (%h)" | head -n 20)
           echo "Changelog: $changelog" > release/changelog.txt
 
-          gh release create "v${version}.$(git rev-list --count HEAD)" release/dwm-${version}.tar.gz release/changelog.txt --title "Release v${version}.$(git rev-list --count HEAD)" --notes "$changelog"
+          gh release create "$VERSION" release/dwm-$VERSION_CLEAN.tar.gz release/changelog.txt --title "Release $VERSION" --notes "$changelog"
 
       - name: Clean up
         run: |
-          rm -f release/dwm-${version}.tar.gz
+          VERSION="${{ github.ref_name }}"
+          VERSION_CLEAN=$(echo $VERSION | sed 's/^v//')
+          rm -f release/dwm-$VERSION_CLEAN.tar.gz
