@@ -1926,7 +1926,7 @@ movestack(const Arg *arg) {
 
 		arrange(selmon);
 	}
-
+	focus(NULL);
 	warp(NULL);
 }
 
@@ -3656,13 +3656,6 @@ view(const Arg *arg)
 	arrange(selmon);
 	focus(NULL);
 	warp(NULL);
-
-	for (Client *c = selmon->clients; c; c = c->next) {
-		if ((c->tags & arg->ui) && ISVISIBLE(c)) { // arg->ui is the selected tagset
-		    focus(c);
-		    break;
-		}
-	}
 }
 
 void

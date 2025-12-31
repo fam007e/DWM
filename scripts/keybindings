@@ -4,14 +4,18 @@
 # using rofi for an interactive search menu.
 
 # Path to the dwm config.h file
-DWM_CONFIG_PATH="~/DWM/config.h"
+# Try local directory first, then absolute path if defined
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" \u0026\u0026 pwd)"
+DWM_REPO_DIR="$(dirname "$SCRIPT_DIR")"
+
+DWM_CONFIG_PATH="$DWM_REPO_DIR/config.h"
 
 if [ ! -f "$DWM_CONFIG_PATH" ]; then
-    DWM_CONFIG_PATH="~/DWM/config.def.h"
+    DWM_CONFIG_PATH="$DWM_REPO_DIR/config.def.h"
 fi
 
 if [ ! -f "$DWM_CONFIG_PATH" ]; then
-    echo "Error: DWM config file not found at $DWM_CONFIG_PATH or fallback."
+    echo "Error: DWM config file not found in $DWM_REPO_DIR"
     exit 1
 fi
 
@@ -132,8 +136,11 @@ dynamic_bindings() {
         else if ($0 ~ /vlc/) desc = "Open VLC"
         else if ($0 ~ /slock/) desc = "Lock screen"
         else if ($0 ~ /thunar/) desc = "Open file manager"
-        else if ($0 ~ /zed"/) desc = "Open Zed editor"
+        else if ($0 ~ /keybindings/) desc = "Show this keybindings menu"
         else if ($0 ~ /wifimenu/) desc = "Show Wi-Fi menu"
+        else if ($0 ~ /bluetoothmenu/) desc = "Show Bluetooth menu"
+        else if ($0 ~ /powermenu/) desc = "Power menu"
+        else if ($0 ~ /antigravity/) desc = "Launch Antigravity"
         else if ($0 ~ /feh.*randomize/) desc = "Change wallpaper"
         else if ($0 ~ /looking-glass-client/) desc = "Launch Looking Glass"
         else if ($0 ~ /brightnessupcmd/ || /xrandr.*brightness.*+/) desc = "Increase brightness"
@@ -141,11 +148,11 @@ dynamic_bindings() {
         else if ($0 ~ /volumeupcmd/ || /amixer.*5%\+/) desc = "Increase volume"
         else if ($0 ~ /volumedowncmd/ || /amixer.*5%-/) desc = "Decrease volume"
         else if ($0 ~ /togglemutecmd/ || /amixer.*toggle/) desc = "Toggle mute"
-        else if ($0 ~ /powermenu/) desc = "Power menu"
         else if ($0 ~ /airplanecmd/) desc = "Toggle airplane mode"
         else if ($0 ~ /playpausecmd/) desc = "Toggle media play/pause"
         else if ($0 ~ /nextcmd/) desc = "Next media track"
         else if ($0 ~ /prevcmd/) desc = "Previous media track"
+        else if ($0 ~ /stopcmd/) desc = "Stop media playback"
         else if ($0 ~ /pactl.*set-source-mute/) desc = "Toggle microphone mute"
         else desc = "Run command"
       } else if (funcname == "togglebar") desc = "Toggle status bar"

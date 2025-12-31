@@ -10,16 +10,22 @@
 ## Calculator (Rofi)
 - `MODKEY + c`: Launch `rofi` calculator.
 
-## Terminal (Kitty)
-- `Control + Mod1 + t`: Launch `kitty` terminal emulator.
+## Terminal (Alacritty)
+- `Control + Mod1 + t`: Launch `alacritty` terminal emulator.
 
-## Open Browser
-- `MODKEY + b`: Open a web browser to the specified URL.
+## Open Browser (Brave)
+- `MODKEY + b`: Open Brave Browser Nightly.
+- `MODKEY + Shift + b`: Open Tor Browser.
+
+## Shortcuts
+- `MODKEY + a`: Launch Antigravity.
+- `MODKEY + z`: Open Zed.
+- `MODKEY + slash`: Show Keybindings menu.
 
 ## Screenshots (Flameshot)
-- `MODKEY + p`: Take a full screenshot and save to `/home/fam007e/Pictures/Screenshots/`.
-- `MODKEY + Shift + p`: Open `flameshot` GUI and save to `/home/fam007e/Pictures/Screenshots/`.
-- `MODKEY + Control + p`: Open `flameshot` GUI and copy to clipboard.
+- `MODKEY + p`: Power Menu.
+- `MODKEY + Shift + p`: Open `flameshot` GUI and save to `~/Pictures/Screenshots/`.
+- `MODKEY + Control + p`: Take a full screenshot and save to `~/Pictures/Screenshots/`.
 
 ## VLC Media Player
 - `MODKEY + v`: Launch `vlc`.
@@ -30,12 +36,10 @@
 ## File Manager (Thunar)
 - `MODKEY + e`: Open `thunar` file manager.
 
-## Wi-Fi Menu
+## System Menus
 - `MODKEY + w`: Launch Wi-Fi menu script.
+- `MODKEY + u`: Launch Bluetooth menu script.
 - `MODKEY + Shift + w`: Launch `looking-glass-client`.
-
-## Browser (Brave)
-- `MODKEY + f`: Launch `brave-browser-nightly`.
 
 ## Audio Controls
 - `XF86XK_AudioMute`: Mute/unmute audio.
@@ -43,22 +47,24 @@
 - `XF86XK_AudioLowerVolume`: Decrease volume by 5%.
 
 ## Brightness Controls
-- `XF86XK_MonBrightnessUp`: Increase screen brightness by 5%.
-- `XF86XK_MonBrightnessDown`: Decrease screen brightness by 5%.
+- `XF86XK_MonBrightnessUp`: Increase screen brightness.
+- `XF86XK_MonBrightnessDown`: Decrease screen brightness.
 
 ## Microphone Mute
 - `XF86XK_AudioMicMute`: Toggle microphone mute.
 
 ## Airplane Mode
-- `XF86XK_WLAN`: Turn off all radio connections.
+- `XF86XK_WLAN`: Toggle airplane mode.
 
 ## Media Controls
 - `XF86XK_AudioPlay`: Play/pause media.
 - `XF86XK_AudioNext`: Next track.
 - `XF86XK_AudioPrev`: Previous track.
+- `XF86XK_AudioStop`: Stop playback.
 
-## Toggle Bar
-- `MODKEY + Shift + b`: Toggle the display of the status bar.
+## Status Bar
+- `MODKEY + Control + b`: Toggle the display of the status bar.
+- `MODKEY + Control + w`: Change wallpaper (randomize from `~/Pictures/Wallpapers/`).
 
 ## Window Navigation
 - `MODKEY + j`: Focus on the next window.
@@ -82,7 +88,7 @@
 - `MODKEY + Tab`: View the previously selected tag.
 - `MODKEY + q`: Close the focused window.
 - `MODKEY + t`: Set the layout to tiling.
-- `MODKEY + Shift + f`: Set the layout to floating.
+- `MODKEY + f`: Set the layout to floating.
 - `MODKEY + m`: Set the layout to monocle.
 - `MODKEY + space`: Toggle between the current and the previous layout.
 - `MODKEY + Shift + space`: Toggle floating mode for the focused window.
@@ -98,10 +104,13 @@
 - `MODKEY + Shift + period`: Move the focused window to the next monitor.
 
 ## Tag Key Bindings
-- `MODKEY + [1-5]`: View specific tag.
-- `MODKEY + Control + [1-5]`: Toggle view of specific tag.
-- `MODKEY + Shift + [1-5]`: Move the focused window to specific tag.
-- `MODKEY + Control + Shift + [1-5]`: Toggle focused window to specific tag.
+- `MODKEY + [1-9]`: View specific tag.
+- `MODKEY + Control + [1-9]`: Toggle view of specific tag.
+- `MODKEY + Shift + [1-9]`: Move the focused window to specific tag.
+- `MODKEY + Control + Shift + [1-9]`: Toggle focused window to specific tag.
+
+## Blue Light Filter
+- `MODKEY + Shift + n`: Toggle warmth (blue light filter).
 
 ## Quit DWM
 - `MODKEY + Shift + e`: Quit `dwm`.
@@ -109,7 +118,7 @@
 ## Mouse Bindings
 
 ### Layout Symbols
-- `Button1`: Set layout.
+- `Button1`: Set layout (tiling).
 - `Button3`: Set monocle layout.
 
 ### Window Title

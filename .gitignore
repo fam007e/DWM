@@ -1,7 +1,2 @@
-
 # Ignore object files
 *.o
-
-# Ignore specific files
-Makefile
-config.mk

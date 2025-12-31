@@ -15,11 +15,12 @@ static const int topbar                   = 1;
 #define ICONSIZE                          16
 #define ICONSPACING                       6
 #define SHOWWINICON                       1
+#define SCRIPT(X)                         DWM_PATH "/scripts/" X
 
 /* fonts */
 static const char *fonts[] = {
-    "MesloLGS Nerd Font Mono:size=14",
-    "NotoColorEmoji:pixelsize=14:antialias=true:autohint=true"
+    "MesloLGS Nerd Font Mono:size=13",
+    "NotoColorEmoji:pixelsize=13:antialias=true:autohint=true"
 };
 
 /* colors */
@@ -46,8 +47,8 @@ static const char *const autostart[] = {
     "flameshot", NULL,
     "dunst", NULL,
     "picom", "--vsync", "--animations", "-b", NULL,
-    "~/DWM/scripts/wallpapersSS", NULL,
-    "~/DWM/scripts/status", NULL,
+    SCRIPT("wallpapersSS"), NULL,
+    SCRIPT("status"), NULL,
     "slstatus", NULL,
     "alacritty", NULL,
 /*    "protonvpn-app", NULL, */
@@ -115,8 +116,11 @@ static const char *airplanecmd[]      = { "nmcli", "radio", "all", "off", NULL }
 static const char *playpausecmd[]     = { "playerctl", "play-pause", NULL };
 static const char *nextcmd[]          = { "playerctl", "next", NULL };
 static const char *prevcmd[]          = { "playerctl", "previous", NULL };
-static const char *wifimenu[]         = { "~/DWM/scripts/wifimenu", NULL };
-static const char *powermenu[]        = { "~/DWM/scripts/powermenu", NULL };
+static const char *stopcmd[]          = { "playerctl", "stop", NULL };
+static const char *keybindingscmd[]   = { SCRIPT("keybindings"), NULL };
+static const char *bluetoothmenucmd[] = { SCRIPT("bluetoothmenu"), NULL };
+static const char *wifimenucmd[]      = { SCRIPT("wifimenu"), NULL };
+static const char *powermenucmd[]     = { SCRIPT("powermenu"), NULL };
 static const char *togglemutecmd[]    = { "amixer", "-D", "pulse", "sset", "Master", "toggle", NULL };
 
 static Key keys[] = {
@@ -129,15 +133,17 @@ static Key keys[] = {
     { MODKEY,                       XK_b,          spawn,                  SHCMD ("brave-browser-nightly")},
     { MODKEY,                       XK_s,          spawn,                  {.v = launchersearchcmd } },
     { MODKEY|ShiftMask,             XK_b,          spawn,                  SHCMD ("tor-browser")},
-    { MODKEY,                       XK_p,          spawn,                  {.v = powermenu } },
-    { MODKEY,                       XK_slash,      spawn,                  SHCMD ("~/DWM/scripts/keybindings") },
+    { MODKEY,                       XK_p,          spawn,                  {.v = powermenucmd } },
+    { MODKEY,                       XK_slash,      spawn,                  {.v = keybindingscmd } },
     { MODKEY|ShiftMask,             XK_p,          spawn,                  SHCMD ("flameshot gui -p ~/Pictures/Screenshots/")},
     { MODKEY|ControlMask,           XK_p,          spawn,                  SHCMD ("flameshot full -p ~/Pictures/Screenshots/")},
     { MODKEY,                       XK_v,          spawn,                  SHCMD ("vlc")},
     { MODKEY,                       XK_l,          spawn,                  SHCMD ("slock")},
     { MODKEY,                       XK_e,          spawn,                  SHCMD ("thunar")},
     { MODKEY,                       XK_z,          spawn,                  SHCMD ("~/.local/bin/zed")},
-    { MODKEY,                       XK_w,          spawn,                  {.v = wifimenu } },
+    { MODKEY,                       XK_a,          spawn,                  SHCMD ("/usr/bin/antigravity")},
+    { MODKEY,                       XK_u,          spawn,                  {.v = bluetoothmenucmd}},
+    { MODKEY,                       XK_w,          spawn,                  {.v = wifimenucmd } },
     { MODKEY|ControlMask,           XK_w,          spawn,                  SHCMD("feh --randomize --bg-fill ~/Pictures/Wallpapers/*")},
     { MODKEY|ShiftMask,             XK_w,          spawn,                  SHCMD ("looking-glass-client -F")},
     { 0, 			        XF86XK_AudioMute,      spawn,       		   {.v = togglemutecmd } },
@@ -150,6 +156,7 @@ static Key keys[] = {
     { 0,                         XF86XK_AudioPlay, spawn,                  {.v = playpausecmd } },
     { 0,                         XF86XK_AudioNext, spawn,                  {.v = nextcmd } },
     { 0,                         XF86XK_AudioPrev, spawn,                  {.v = prevcmd } },
+    { 0,                         XF86XK_AudioStop, spawn,                  {.v = stopcmd } },
     { 0,                        XF86XK_Calculator, spawn,                  {.v = launchercalccmd } },
     { MODKEY|ControlMask,           XK_b,          togglebar,              {0} },
     { MODKEY,                       XK_j,          focusstack,             {.i = +1 } },

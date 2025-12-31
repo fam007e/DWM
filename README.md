@@ -25,6 +25,8 @@ This is my personal fork with following patches:
 + hide vacant tags
 + warp v2
 + winicon
++ mouse focus fix
++ dynamic path configuration
 
 Some patches are rewritten or modified to work together.
 
@@ -85,13 +87,7 @@ Configuration
 The configuration of dwm is done by creating a custom `config.h`
 and (re)compiling the source code.
 
-Important Notes
----------------
-Some of the default keybindings in `config.def.h` use paths starting with `~/` to refer to scripts and directories. These paths may not be correctly expanded to your home directory when `dwm` is launched by a display manager.
-
-It is strongly recommended to replace all instances of `~/` with the full absolute path. For example, instead of `~/DWM/scripts/powermenu`, you should use `/home/<your_username>/DWM/scripts/powermenu`.
-
-You can find the relevant paths in `config.def.h` and update them to your system's configuration.
+This fork features a dynamic path configuration. You can use the `SCRIPT("scriptname")` macro in `config.h` to refer to scripts within the repository's `scripts/` directory. The build system will automatically determine the absolute path.
 
 Credits
 -------

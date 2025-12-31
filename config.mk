@@ -6,6 +6,7 @@ VERSION = $(shell date +%Y.%m.%d)
 # paths
 PREFIX = /usr/local
 MANPREFIX = ${PREFIX}/share/man
+DWM_PATH = $(shell pwd)
 
 X11INC = /usr/X11R6/include
 X11LIB = /usr/X11R6/lib
@@ -34,7 +35,7 @@ LIBS = -L${X11LIB} -lX11 ${XINERAMALIBS} ${FREETYPELIBS} -lXrender -lImlib2 -lX1
 OPTIMISATIONS = -march=native -mtune=native -flto=auto -O3
 
 # flags
-CPPFLAGS = -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=700L -DVERSION=\"${VERSION}\" ${XINERAMAFLAGS}
+CPPFLAGS = -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=700L -DVERSION=\"${VERSION}\" -DDWM_PATH=\"${DWM_PATH}\" ${XINERAMAFLAGS}
 CFLAGS   = ${OPTIMISATIONS} -std=c99 -pedantic -Wall -Wno-unused-function -Wno-deprecated-declarations ${INCS} ${CPPFLAGS}
 LDFLAGS  = ${LIBS}
 
