@@ -140,6 +140,7 @@ dynamic_bindings() {
         else if ($0 ~ /wifimenu/) desc = "Show Wi-Fi menu"
         else if ($0 ~ /bluetoothmenu/) desc = "Show Bluetooth menu"
         else if ($0 ~ /powermenu/) desc = "Power menu"
+        else if ($0 ~ /securepasswd_gui/) desc = "Secure Password Manager"
         else if ($0 ~ /antigravity/) desc = "Launch Antigravity"
         else if ($0 ~ /feh.*randomize/) desc = "Change wallpaper"
         else if ($0 ~ /looking-glass-client/) desc = "Launch Looking Glass"
