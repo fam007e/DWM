@@ -126,6 +126,7 @@ dynamic_bindings() {
         if ($0 ~ /launchercmd/) desc = "Launch application launcher"
         else if ($0 ~ /launcheremojicmd/) desc = "Launch emoji selector"
         else if ($0 ~ /launchercalccmd/) desc = "Launch calculator"
+        else if ($0 ~ /launcherchemcmd/) desc = "Launch chemistry periodic table"
         else if ($0 ~ /launchersearchcmd/) desc = "Search web"
         else if ($0 ~ /termcmd/) desc = "Open terminal"
         else if ($0 ~ /protonrestart/) desc = "Restart Proton"

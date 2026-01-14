@@ -6,6 +6,7 @@ This document reflects the key and mouse bindings defined in `config.def.h` (com
 - `MODKEY + r`: Launch `rofi` application launcher (drun).
 - `MODKEY + Control + r`: Run `protonrestart` command.
 - `MODKEY + s`: Open the search launcher (rofi dmenu prompt that opens selection in browser).
+- `MODKEY + g`: Launch `rofi` chemistry periodic table.
 
 ## Emoji Launcher (Rofi)
 - `Control + e`: Launch `rofi` emoji picker.

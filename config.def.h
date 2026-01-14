@@ -98,6 +98,7 @@ static const char *launchercmd[]      = { "rofi", "-show", "drun", NULL };
 static const char *launcheremojicmd[] = { "rofi", "-show", "emoji", NULL };
 static const char *launchercalccmd[]  = { "rofi", "-show", "calc", "-modi", "calc", "-no-show-match", "-no-sort", NULL };
 static const char *launchersearchcmd[]= { "sh", "-c", "echo \"\" | rofi -dmenu -p \"Search\" | xargs -I {} xdg-open \"https://duckduckgo.com/?q={}&source=desktop\"", NULL };
+static const char *launcherchemcmd[]  = { "rofi", "-modi", "chem:rofi-chem", "-show", "chem", NULL };
 static const char *termcmd[]          = { "alacritty", NULL };
 static const char *volumeupcmd[]      = { "amixer", "-D", "pulse", "sset", "Master", "5%+", NULL };
 static const char *volumedowncmd[]    = { "amixer", "-D", "pulse", "sset", "Master", "5%-", NULL };
@@ -132,6 +133,7 @@ static Key keys[] = {
     { MODKEY,                       XK_Return,     spawn,                  {.v = termcmd } },
     { MODKEY,                       XK_b,          spawn,                  SHCMD ("brave-browser-nightly")},
     { MODKEY,                       XK_s,          spawn,                  {.v = launchersearchcmd } },
+    { MODKEY,                       XK_g,          spawn,                  {.v = launcherchemcmd } },
     { MODKEY|ShiftMask,             XK_b,          spawn,                  SHCMD ("tor-browser")},
     { MODKEY|Mod1Mask,              XK_p,          spawn,                  {.v = powermenucmd } },
     { MODKEY,                       XK_p,          spawn,                  SHCMD ("/usr/bin/securepasswd_gui")},
