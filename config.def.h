@@ -23,13 +23,14 @@ static const char *fonts[] = {
     "NotoColorEmoji:pixelsize=13:antialias=true:autohint=true"
 };
 
-/* colors */
-static const char normbordercolor[]           = "#3b4252";
-static const char normbgcolor[]               = "#2e3440";
-static const char normfgcolor[]               = "#d8dee9";
-static const char selbordercolor[]            = "#88c0d0";
-static const char selbgcolor[]                = "#5e81ac";
-static const char selfgcolor[]                = "#eceff4";
+
+/* colors – Nordic-darker variant (deeper Polar Night base, subtle Frost accents) */
+static const char normbordercolor[] = "#434c5e";   // Nord2 – darker inactive border
+static const char normbgcolor[]     = "#242933";   // Deeper custom dark (close to Nord0 but blacker for max darkness)
+static const char normfgcolor[]     = "#d8dee9";   // Nord4 – keep light gray text readable
+static const char selbordercolor[]  = "#81a1c1";   // Nord9 – brighter but not overwhelming Frost blue
+static const char selbgcolor[]      = "#3b4252";   // Nord1 – elevated dark gray for focus
+static const char selfgcolor[]      = "#eceff4";   // Nord6 – crisp white-ish for selected text
 
 static const char *colors[][3] = {
     /*               fg           bg           border   */
