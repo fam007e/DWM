@@ -32,12 +32,32 @@ echo ""
 
 # ── Dependencies ─────────────────────────────────────────
 info "Installing core and custom dependencies..."
+# Added picom build deps: meson, ninja, uthash, libev, libconfig, pcre2, pixman, xorgproto, xcb-util-renderutil, xcb-util-image, mesa, libepoxy, cmake, asciidoctor
 install_packages base-devel libx11 libxft libxinerama imlib2 libxcb xcb-util freetype2 fontconfig \
-    rofi picom dunst feh flameshot dex mate-polkit alsa-utils git unzip xclip \
+    rofi dunst feh flameshot dex mate-polkit alsa-utils git unzip xclip \
     xorg-xprop thunar gvfs tumbler thunar-archive-plugin nwg-look xdg-user-dirs \
     xdg-desktop-portal-gtk pipewire pavucontrol gnome-keyring networkmanager network-manager-applet \
-    libnotify rsync python jq bc curl playerctl blueman polybar ttf-meslo-nerd noto-fonts-emoji
+    libnotify rsync python jq bc curl playerctl blueman polybar ttf-meslo-nerd noto-fonts-emoji \
+    meson ninja uthash libev libconfig pcre2 pixman xorgproto xcb-util-renderutil xcb-util-image mesa \
+    libepoxy cmake asciidoctor
 ok "Dependencies verified."
+
+# ── Custom Picom Build (fam007e fork) ───────────────────
+PICOM_BUILD_DIR="$HOME/.cache/dwm-build/picom"
+if command -v picom &>/dev/null && picom --version | grep -q "fam007e"; then
+    ok "Custom picom (fam007e fork) already installed."
+else
+    info "Building custom picom (fam007e fork) from source..."
+    mkdir -p "$(dirname "$PICOM_BUILD_DIR")"
+    rm -rf "$PICOM_BUILD_DIR"
+    git clone --depth 1 https://github.com/fam007e/picom "$PICOM_BUILD_DIR"
+    cd "$PICOM_BUILD_DIR"
+    meson setup --buildtype=release build
+    ninja -C build
+    sudo ninja -C build install
+    ok "Custom picom installed to /usr/local/bin/picom"
+fi
+cd "$REPO_DIR"
 
 # ── Portable Directory Setup ─────────────────────────────
 mkdir -p "$BG_DIR"

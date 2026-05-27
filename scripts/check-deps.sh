@@ -45,7 +45,7 @@ echo ""
 
 # ── Build dependencies ──────────────────────────────────
 echo "Build Dependencies (required to compile):"
-for pkg in base-devel libx11 libxft libxinerama imlib2 libxcb xcb-util freetype2 fontconfig; do
+for pkg in base-devel libx11 libxft libxinerama imlib2 libxcb xcb-util freetype2 fontconfig meson ninja uthash libev libconfig pcre2 pixman xorgproto xcb-util-renderutil xcb-util-image mesa libepoxy cmake asciidoctor; do
     check_pkg "$pkg"
 done
 check_cmd "cc"
@@ -72,7 +72,12 @@ done
 # ── Runtime dependencies ────────────────────────────────
 echo "Runtime Dependencies (desktop experience):"
 check_cmd "rofi"
-check_cmd "picom"
+if command -v picom &>/dev/null && picom --version | grep -q "fam007e"; then
+    printf "  ${GREEN}✓${NC} picom (fam007e fork)\n"
+else
+    printf "  ${RED}✗${NC} picom ${YELLOW}(fam007e fork missing - run ./install.sh)${NC}\n"
+    MISSING=$((MISSING + 1))
+fi
 check_cmd "dunst"
 check_cmd "feh"
 check_cmd "flameshot"
