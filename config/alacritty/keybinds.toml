@@ -1,0 +1,284 @@
+# Alacritty Keybindings - Fixed TOML Syntax
+[[keyboard.bindings]]
+# === CLIPBOARD OPERATIONS ===
+key = "C"
+mods = "Control|Shift"
+action = "Copy"
+
+[[keyboard.bindings]]
+key = "V"
+mods = "Control|Shift"
+action = "Paste"
+
+[[keyboard.bindings]]
+key = "S"
+mods = "Control|Shift"
+action = "PasteSelection"
+
+[[keyboard.bindings]]
+key = "Insert"
+mods = "Shift"
+action = "PasteSelection"
+
+# === SCROLLING ===
+[[keyboard.bindings]]
+key = "K"
+mods = "Control|Shift"
+action = "ScrollLineUp"
+
+[[keyboard.bindings]]
+key = "J"
+mods = "Control|Shift"
+action = "ScrollLineDown"
+
+[[keyboard.bindings]]
+key = "Up"
+mods = "Control|Alt"
+action = "ScrollLineUp"
+
+[[keyboard.bindings]]
+key = "Down"
+mods = "Control|Alt"
+action = "ScrollLineDown"
+
+[[keyboard.bindings]]
+key = "PageUp"
+mods = "Control|Shift"
+action = "ScrollPageUp"
+
+[[keyboard.bindings]]
+key = "PageDown"
+mods = "Control|Shift"
+action = "ScrollPageDown"
+
+[[keyboard.bindings]]
+key = "Home"
+mods = "Control|Shift"
+action = "ScrollToTop"
+
+[[keyboard.bindings]]
+key = "End"
+mods = "Control|Shift"
+action = "ScrollToBottom"
+
+# === FONT SIZE CONTROL ===
+# FIXED: Changed Equal to Equals (valid key name)
+[[keyboard.bindings]]
+key = "Equals"
+mods = "Control|Shift"
+action = "IncreaseFontSize"
+
+[[keyboard.bindings]]
+key = "Plus"
+mods = "Control|Shift"
+action = "IncreaseFontSize"
+
+[[keyboard.bindings]]
+key = "Minus"
+mods = "Control|Shift"
+action = "DecreaseFontSize"
+
+[[keyboard.bindings]]
+key = "Key0"
+mods = "Control|Shift"
+action = "ResetFontSize"
+
+# === WINDOW MANAGEMENT ===
+[[keyboard.bindings]]
+key = "N"
+mods = "Control|Shift"
+action = "SpawnNewInstance"
+
+[[keyboard.bindings]]
+key = "Enter"
+mods = "Control|Shift"
+action = "SpawnNewInstance"
+
+# FIXED: Removed Terminate action (not valid) - using Quit instead
+[[keyboard.bindings]]
+key = "W"
+mods = "Control|Shift"
+action = "Quit"
+
+[[keyboard.bindings]]
+key = "Q"
+mods = "Control|Shift"
+action = "Quit"
+
+# === SEARCH ===
+[[keyboard.bindings]]
+key = "F"
+mods = "Control|Shift"
+action = "SearchForward"
+
+[[keyboard.bindings]]
+key = "B"
+mods = "Control|Shift"
+action = "SearchBackward"
+
+# === VI MODE ===
+[[keyboard.bindings]]
+key = "Space"
+mods = "Control|Shift"
+action = "ToggleViMode"
+
+[[keyboard.bindings]]
+key = "Escape"
+action = "ClearSelection"
+
+# === ADDITIONAL USEFUL BINDINGS ===
+[[keyboard.bindings]]
+key = "L"
+mods = "Control"
+chars = "\u000c"
+
+[[keyboard.bindings]]
+key = "F11"
+action = "ToggleFullscreen"
+
+# === WORD NAVIGATION (Alt+Arrow keys) ===
+# Alt+Right Arrow - Move forward one word (emacs style)
+[[keyboard.bindings]]
+key = "Right"
+mods = "Alt"
+chars = "\u001bf"
+
+# Alt+Left Arrow - Move backward one word (emacs style)
+[[keyboard.bindings]]
+key = "Left"
+mods = "Alt"
+chars = "\u001bb"
+
+# === VI MODE BINDINGS ===
+[[keyboard.bindings]]
+key = "H"
+mods = "None"
+mode = "Vi"
+action = "Left"
+
+[[keyboard.bindings]]
+key = "J"
+mods = "None"
+mode = "Vi"
+action = "Down"
+
+[[keyboard.bindings]]
+key = "K"
+mods = "None"
+mode = "Vi"
+action = "Up"
+
+[[keyboard.bindings]]
+key = "L"
+mods = "None"
+mode = "Vi"
+action = "Right"
+
+[[keyboard.bindings]]
+key = "W"
+mods = "None"
+mode = "Vi"
+action = "SemanticRight"
+
+[[keyboard.bindings]]
+key = "B"
+mods = "None"
+mode = "Vi"
+action = "SemanticLeft"
+
+[[keyboard.bindings]]
+key = "Key0"
+mods = "None"
+mode = "Vi"
+action = "First"
+
+[[keyboard.bindings]]
+key = "Key4"
+mods = "Shift"
+mode = "Vi"
+action = "Last"
+
+[[keyboard.bindings]]
+key = "G"
+mods = "None"
+mode = "Vi"
+action = "ScrollToTop"
+
+[[keyboard.bindings]]
+key = "G"
+mods = "Shift"
+mode = "Vi"
+action = "ScrollToBottom"
+
+[[keyboard.bindings]]
+key = "Y"
+mods = "None"
+mode = "Vi"
+action = "Copy"
+
+# === SEARCH MODE BINDINGS ===
+[[keyboard.bindings]]
+key = "Enter"
+mode = "Search"
+action = "SearchConfirm"
+
+[[keyboard.bindings]]
+key = "Escape"
+mode = "Search"
+action = "SearchCancel"
+
+[[keyboard.bindings]]
+key = "C"
+mods = "Control"
+mode = "Search"
+action = "SearchCancel"
+
+[[keyboard.bindings]]
+key = "U"
+mods = "Control"
+mode = "Search"
+action = "SearchClear"
+
+[[keyboard.bindings]]
+key = "W"
+mods = "Control"
+mode = "Search"
+action = "SearchDeleteWord"
+
+[[keyboard.bindings]]
+key = "P"
+mods = "Control"
+mode = "Search"
+action = "SearchHistoryPrevious"
+
+[[keyboard.bindings]]
+key = "N"
+mods = "Control"
+mode = "Search"
+action = "SearchHistoryNext"
+
+[[keyboard.bindings]]
+key = "Up"
+mode = "Search"
+action = "SearchHistoryPrevious"
+
+[[keyboard.bindings]]
+key = "Down"
+mode = "Search"
+action = "SearchHistoryNext"
+
+[[keyboard.bindings]]
+key = "Return"
+mode = "Search"
+action = "SearchFocusNext"
+
+[[keyboard.bindings]]
+key = "Return"
+mods = "Shift"
+mode = "Search"
+action = "SearchFocusPrevious"
+
+# Mouse bindings
+[[mouse.bindings]]
+mouse = "Right"
+action = "PasteSelection"

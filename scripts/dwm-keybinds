@@ -1,0 +1,47 @@
+#!/bin/bash
+# scripts/dwm-keybinds - Dynamic Help Menu for TOML Hotkeys
+
+# 1. Locate the active hotkeys file
+CONFIG_FILE="$HOME/.config/dwm/hotkeys.toml"
+if [ ! -f "$CONFIG_FILE" ]; then
+    CONFIG_FILE="$(dirname "$0")/../config/hotkeys.toml"
+fi
+
+if [ ! -f "$CONFIG_FILE" ]; then
+    notify-send "DWM Help" "Hotkeys file not found."
+    exit 1
+fi
+
+# 2. Extract and format keybindings using awk
+# Looks for lines like: { mod="...", key="...", desc="..." }
+parse_toml() {
+    awk -F'[" ]+' '
+    /desc=/ {
+        # Extract mod, key, and desc using regex-like matching on the line
+        match($0, /mod="([^"]*)"/, m)
+        mod = m[1]
+        match($0, /key="([^"]*)"/, k)
+        key = k[1]
+        match($0, /desc="([^"]*)"/, d)
+        desc = d[1]
+        
+        # Clean up modifier presentation
+        gsub(/SUPER/, "󰖳", mod)
+        gsub(/CTRL/, "󰘵", mod)
+        gsub(/SHIFT/, "󰘶", mod)
+        gsub(/ALT/, "󱊷", mod)
+        
+        # Combine mod + key
+        combo = (mod == "" ? "" : mod " + ") key
+        
+        # Output formatted for rofi markup
+        printf "<b>%-20s</b>  <i>%s</i>\n", combo, desc
+    }
+    ' "$CONFIG_FILE"
+}
+
+# 3. Show in Rofi
+(
+  echo "  ── Hotkeys (Live from TOML) ──"
+  parse_toml | sort
+) | rofi -dmenu -i -markup-rows -p "Keybindings:" -theme-str 'window { width: 600px; }'

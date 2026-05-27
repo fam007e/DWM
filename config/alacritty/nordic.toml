@@ -1,0 +1,96 @@
+# Nordic Theme for Alacritty
+# Authentic Nordic color palette matching Kitty configuration
+[colors]
+# Primary colors
+[colors.primary]
+background = '#2e3440'  # Nordic Polar Night
+foreground = '#d8dee9'  # Nordic Snow Storm
+dim_foreground = '#a5abb6'
+
+# Cursor colors - FIXED: Better Nordic-themed cursor
+[colors.cursor]
+text = '#2e3440'        # Dark background for contrast
+cursor = '#88c0d0'      # Nordic Frost (cyan) - more visible than white
+
+# Vi mode cursor - FIXED: Different color to distinguish from normal cursor
+[colors.vi_mode_cursor]
+text = '#2e3440'        # Dark background for contrast  
+cursor = '#5e81ac'      # Nordic Frost (darker blue)
+
+# Search colors
+[colors.search]
+[colors.search.matches]
+foreground = '#2e3440'
+background = '#88c0d0'  # Nordic Frost
+
+[colors.search.focused_match]
+foreground = '#2e3440'
+background = '#5e81ac'  # Nordic Frost (darker)
+
+# Hints
+[colors.hints]
+[colors.hints.start]
+foreground = '#2e3440'
+background = '#ebcb8b'  # Nordic Aurora
+
+[colors.hints.end]
+foreground = '#2e3440'
+background = '#d08770'  # Nordic Aurora
+
+# Line indicator
+[colors.line_indicator]
+foreground = "None"
+background = "None"
+
+# Footer bar (search/select)
+[colors.footer_bar]
+foreground = '#d8dee9'
+background = '#434c5e'
+
+# Selection colors
+[colors.selection]
+text = '#2e3440'
+background = '#88c0d0'  # Nordic Frost
+
+# Normal colors
+[colors.normal]
+black   = '#3b4252'  # Nordic Polar Night
+red     = '#bf616a'  # Nordic Aurora
+green   = '#a3be8c'  # Nordic Aurora  
+yellow  = '#ebcb8b'  # Nordic Aurora
+blue    = '#81a1c1'  # Nordic Frost
+magenta = '#b48ead'  # Nordic Aurora
+cyan    = '#88c0d0'  # Nordic Frost
+white   = '#e5e9f0'  # Nordic Snow Storm
+
+# Bright colors
+[colors.bright]
+black   = '#4c566a'  # Nordic Polar Night (lighter)
+red     = '#bf616a'  # Nordic Aurora
+green   = '#a3be8c'  # Nordic Aurora
+yellow  = '#ebcb8b'  # Nordic Aurora  
+blue    = '#81a1c1'  # Nordic Frost
+magenta = '#b48ead'  # Nordic Aurora
+cyan    = '#8fbcbb'  # Nordic Frost (lighter)
+white   = '#eceff4'  # Nordic Snow Storm (brightest)
+
+# Dim colors (optional - for dimmed text)
+[colors.dim]
+black   = '#373e4d'
+red     = '#94545d'
+green   = '#809575'
+yellow  = '#b29e75'
+blue    = '#68809a'
+magenta = '#8c738c'
+cyan    = '#6d96a5'
+white   = '#aeb3bb'
+
+# Indexed colors (16-255)
+# These extend the basic 16 colors for applications that use 256-color mode
+[[colors.indexed_colors]]
+index = 16
+color = '#d08770'  # Nordic Aurora (orange)
+
+[[colors.indexed_colors]]
+index = 17
+color = '#5e81ac'  # Nordic Frost (dark blue)

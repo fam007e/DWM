@@ -1,12 +1,11 @@
 # dwm version
-VERSION = $(shell date +%Y.%m.%d)
+VERSION = 0.4
 
 # Customize below to fit your system
 
 # paths
 PREFIX = /usr/local
 MANPREFIX = ${PREFIX}/share/man
-DWM_PATH = $(shell pwd)
 
 X11INC = /usr/X11R6/include
 X11LIB = /usr/X11R6/lib
@@ -21,13 +20,9 @@ FREETYPEINC = /usr/include/freetype2
 # OpenBSD (uncomment)
 #FREETYPEINC = ${X11INC}/freetype2
 
-# Color temperature support
-RANDRLIBS = -lXrandr -lm
-
 # includes and libs
 INCS = -I${X11INC} -I${FREETYPEINC}
-LIBS = -L${X11LIB} -lX11 ${XINERAMALIBS} ${FREETYPELIBS} -lXrender -lImlib2 -lX11-xcb -lxcb -lxcb-res ${RANDRLIBS} ${KVMLIB}
-
+LIBS = -L${X11LIB} -lX11 -lXinerama -lfontconfig -lXft -lXrender -lImlib2 -lX11-xcb -lxcb -lxcb-res -lXrandr -lm ${KVMLIB}
 
 # Optional compiler optimisations may create smaller binaries and
 # faster code, but increases compile time.
@@ -35,7 +30,9 @@ LIBS = -L${X11LIB} -lX11 ${XINERAMALIBS} ${FREETYPELIBS} -lXrender -lImlib2 -lX1
 OPTIMISATIONS = -march=native -mtune=native -flto=auto -O3
 
 # flags
-CPPFLAGS = -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=700L -DVERSION=\"${VERSION}\" -DDWM_PATH=\"${DWM_PATH}\" ${XINERAMAFLAGS}
+DWM_PATH = $(shell pwd)
+REFRESH_RATE = $(shell sh $(shell pwd)/get_refresh.sh)
+CPPFLAGS = -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=700L -DVERSION=\"${VERSION}\" -DDWM_PATH=\"${DWM_PATH}\" -DREFRESH_RATE=${REFRESH_RATE} ${XINERAMAFLAGS}
 CFLAGS   = ${OPTIMISATIONS} -std=c99 -pedantic -Wall -Wno-unused-function -Wno-deprecated-declarations ${INCS} ${CPPFLAGS}
 LDFLAGS  = ${LIBS}
 

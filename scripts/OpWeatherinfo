@@ -1,69 +1,81 @@
-#!/bin/sh
+#!/bin/bash
+# scripts/OpWeatherinfo - High Entropy Secured Weather Fetcher
 
-# Fetch weather data from OpenWeather API
-# Get your API key from https://openweathermap.org/api
-API_KEY="<YOUR_API_KEY>"
-# Get your latitude and longitude from https://www.latlong.net/
-LAT="<YOUR_LATITUDE>"
-LON="<YOUR_LONGITUDE>"
-WEATHER_URL="https://api.openweathermap.org/data/2.5/weather?lat=${LAT}&lon=${LON}&appid=${API_KEY}"
+# 1. Enforcement of Private Permissions
+umask 077
+CONFIG_FILE="$HOME/.config/dwm_weather.env"
+LOG_FILE="$HOME/.cache/weather.log"
 
-# Fetch weather data with timeout
-WEATHER_DATA=$(curl -s --connect-timeout 5 "$WEATHER_URL")
-
-# Check if curl succeeded and API returned valid data
-if [ -z "$WEATHER_DATA" ] || echo "$WEATHER_DATA" | jq -e .cod >/dev/null 2>&1 && [ "$(echo "$WEATHER_DATA" | jq -r '.cod')" != "200" ]; then
+# 2. Secure Secret Retrieval
+if [[ -f "$CONFIG_FILE" ]]; then
+    source "$CONFIG_FILE"
+else
+    echo "[$(date)] ERROR: Configuration file $CONFIG_FILE not found." >> "$LOG_FILE"
     echo "󰖑 N/A"
     exit 1
 fi
 
-# Extract weather information using jq
-TEMP=$(printf '%s' "$WEATHER_DATA" | jq '.main.temp' -r)
-FEELS_LIKE=$(printf '%s' "$WEATHER_DATA" | jq '.main.feels_like' -r)
-WEATHER_MAIN=$(printf '%s' "$WEATHER_DATA" | jq '.weather[0].main' -r)
-HUMIDITY=$(printf '%s' "$WEATHER_DATA" | jq '.main.humidity' -r)
+# Validate required variables
+if [[ -z "$WEATHER_API_KEY" || -z "$WEATHER_LAT" || -z "$WEATHER_LON" ]]; then
+    echo "[$(date)] ERROR: Missing configuration in $CONFIG_FILE." >> "$LOG_FILE"
+    echo "󰖑 N/A"
+    exit 1
+fi
 
-# Convert temperature from Kelvin to Celsius
+WEATHER_URL="https://api.openweathermap.org/data/2.5/weather?lat=${WEATHER_LAT}&lon=${WEATHER_LON}&appid=${WEATHER_API_KEY}"
+
+# 3. Fetch data with timeout
+WEATHER_DATA=$(curl -s --connect-timeout 5 "$WEATHER_URL")
+
+# Check if curl succeeded and API returned valid data
+if [ -z "$WEATHER_DATA" ] || echo "$WEATHER_DATA" | jq -e .cod >/dev/null 2>&1 && [ "$(echo "$WEATHER_DATA" | jq -r '.cod')" != "200" ]; then
+    echo "[$(date)] API Error: $(echo "$WEATHER_DATA" | jq -c . || echo 'No response')" >> "$LOG_FILE"
+    echo "󰖑 N/A"
+    exit 1
+fi
+
+# 4. Extract and Sanitize
+TEMP=$(echo "$WEATHER_DATA" | jq '.main.temp' -r)
+FEELS_LIKE=$(echo "$WEATHER_DATA" | jq '.main.feels_like' -r)
+WEATHER_MAIN=$(echo "$WEATHER_DATA" | jq '.weather[0].main' -r)
+HUMIDITY=$(echo "$WEATHER_DATA" | jq '.main.humidity' -r)
+
+# 5. Calculations
 TEMP_C=$(printf '%.2f' "$(echo "$TEMP - 273.15" | bc)")
 FEELS_LIKE_C=$(printf '%.2f' "$(echo "$FEELS_LIKE - 273.15" | bc)")
 
 # Define icons for weather conditions
 case $WEATHER_MAIN in
-  Clear) ICON="󰖙" ;;  # weather-sunny
-  "Few Clouds") ICON="󰖕" ;;  # weather-partly-cloudy
-  "Scattered Clouds") ICON="󰖐" ;;  # weather-cloudy
-  "Broken Clouds") ICON="󰖐" ;;  # weather-cloudy
-  Clouds) ICON="󰖐" ;;  # weather-cloudy
-  "Light Rain") ICON="󰖗" ;;  # weather-rainy
-  Rain) ICON="󰖖" ;;  # weather-pouring
-  "Heavy Rain") ICON="󰖖" ;;  # weather-pouring
-  Drizzle) ICON="󰖗" ;;  # weather-rainy
-  Thunderstorm) ICON="󰖓" ;;  # weather-lightning
-  "Light Snow") ICON="󰖘" ;;  # weather-snowy
-  Snow) ICON="󰖘" ;;  # weather-snowy
-  "Heavy Snow") ICON="󰼶" ;;  # weather-snowy-heavy
-  Mist|Haze) ICON="󰖑" ;;  # weather-fog
-  Smoke) ICON="󰖑" ;;  # weather-fog
-  Dust) ICON="󰖝" ;;  # weather-windy
-  Fog) ICON="󰖑" ;;  # weather-fog
-  Sand) ICON="󰖝" ;;  # weather-windy
-  Ash) ICON="󰖓" ;;  # weather-lightning
-  Squall) ICON="󰖝" ;;  # weather-windy
-  Tornado) ICON="󰼸" ;;  # weather-tornado
-  *) ICON="󰖙" ;;  # weather-sunny (default)
+  Clear) ICON="󰖙" ;;
+  "Few Clouds") ICON="󰖕" ;;
+  "Scattered Clouds") ICON="󰖐" ;;
+  "Broken Clouds") ICON="󰖐" ;;
+  Clouds) ICON="󰖐" ;;
+  "Light Rain") ICON="󰖗" ;;
+  Rain) ICON="󰖖" ;;
+  "Heavy Rain") ICON="󰖖" ;;
+  Drizzle) ICON="󰖗" ;;
+  Thunderstorm) ICON="󰖓" ;;
+  "Light Snow") ICON="󰖘" ;;
+  Snow) ICON="󰖘" ;;
+  "Heavy Snow") ICON="󰼶" ;;
+  Mist|Haze|Fog|Smoke) ICON="󰖑" ;;
+  Dust|Sand|Squall) ICON="󰖝" ;;
+  Tornado) ICON="󰼸" ;;
+  *) ICON="󰖙" ;;
 esac
 
-# Define temperature icons based on Celsius value
-if [ "$(printf '%.0f\n' "$(printf '%s > 27\n' "$TEMP_C" | bc)")" -eq 1 ]; then
-    TEMP_ICON=""  # Above 27°C
-elif [ "$(printf '%.0f\n' "$(printf '%s >= 20 && %s <= 27\n' "$TEMP_C" "$TEMP_C" | bc)")" -eq 1 ]; then
-    TEMP_ICON=""  # Between 20°C and 27°C
-elif [ "$(printf '%.0f\n' "$(printf '%s >= 5 && %s < 18\n' "$TEMP_C" "$TEMP_C" | bc)")" -eq 1 ]; then
-    TEMP_ICON=""  # Between 5°C and 18°C
+# Define temperature icons
+if [ "$(printf '%.0f\n' "$(echo "$TEMP_C > 27" | bc)")" -eq 1 ]; then
+    TEMP_ICON=""
+elif [ "$(printf '%.0f\n' "$(echo "$TEMP_C >= 20" | bc)")" -eq 1 ]; then
+    TEMP_ICON=""
+elif [ "$(printf '%.0f\n' "$(echo "$TEMP_C >= 5" | bc)")" -eq 1 ]; then
+    TEMP_ICON=""
 else
-    TEMP_ICON=""  # Below 5°C
+    TEMP_ICON=""
 fi
 
-# Print weather information in a single line with temperature icon
-printf '%s %s%.0f°C(%.0f°C)💧%s%%\n' "$ICON" "$TEMP_ICON" "$TEMP_C" "$FEELS_LIKE_C" "$HUMIDITY"
-exit 0
+# 6. Final Sanitized Output
+FINAL_OUTPUT=$(printf '%s %s%.0f°C(%.0f°C)💧%s%%' "$ICON" "$TEMP_ICON" "$TEMP_C" "$FEELS_LIKE_C" "$HUMIDITY")
+echo "$FINAL_OUTPUT" #| tr -dc '[:print:]'

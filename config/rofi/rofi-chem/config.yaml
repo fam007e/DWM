@@ -1,0 +1,36 @@
+colors:
+  compound_name: '#C678DD'
+  element_name: '#61AFEF'
+  property_label: '#98C379'
+  property_value: '#E5C07B'
+  separator: '#5C6370'
+compound_fields:
+- formula
+- name
+- molecular_weight
+- density
+- melting_point
+- boiling_point
+data:
+  auto_update: false
+  last_update: null
+  update_interval_days: 30
+display:
+  compact_mode: false
+  max_results: 50
+  show_icons: false
+  use_colors: true
+element_fields:
+- symbol
+- name
+- atomic_number
+- atomic_mass
+- density
+- melting_point
+- boiling_point
+- electron_configuration
+search:
+  enable_fuzzy: true
+  fuzzy_threshold: 0.6
+  search_compounds: true
+  search_elements: true

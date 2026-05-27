@@ -2,7 +2,10 @@
 
 WALLPAPER_DIR="$HOME/Pictures/Wallpapers"
 
+# Ensure the directory exists
+mkdir -p "$WALLPAPER_DIR"
+
 while true; do
     feh --randomize --bg-fill "$WALLPAPER_DIR"
-    sleep 900  # Sleep for 15 minutes (900 seconds)
+    sleep 1800  # Sleep for 30 minutes (1800 seconds)
 done

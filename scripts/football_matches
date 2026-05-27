@@ -1,0 +1,123 @@
+#!/bin/bash
+# scripts/football_matches - High Entropy Secured Hybrid Fetcher
+
+# 1. Enforcement of Private Permissions
+umask 077
+CONFIG_FILE="$HOME/.config/dwm_football.env"
+CACHE_FILE="$HOME/.cache/football_matches.cache"
+LOG_FILE="$HOME/.cache/football_matches.log"
+
+# 2. Secure Secret Retrieval
+if [[ -f "$CONFIG_FILE" ]]; then
+    source "$CONFIG_FILE"
+else
+    echo "[$(date)] ERROR: Configuration file $CONFIG_FILE not found." >> "$LOG_FILE"
+    exit 1
+fi
+
+if [[ -z "$FOOTBALL_API_KEY" ]]; then
+    echo "[$(date)] ERROR: API Key not found in $CONFIG_FILE." >> "$LOG_FILE"
+    exit 1
+fi
+
+# 3. Data Sanitization
+sanitize() {
+    echo "$1" | tr -dc '[:print:]' | cut -c1-500
+}
+
+# === YOUR TOP TEAMS & CLUBS LIST (REGEX) ===
+TARGET_TEAMS="Spain|Argentina|France|England|Brazil|Portugal|Netherlands|Morocco|Belgium|Germany|Croatia|Senegal|Italy|Colombia|United States|USA|Mexico|Uruguay|Switzerland|Japan|Iran|Real Madrid|Bayern|Liverpool|Inter|Manchester City|Man City|Paris Saint-Germain|PSG|Barcelona|Barca|Arsenal|Bayer Leverkusen|Dortmund|Atletico|Chelsea|Roma|Benfica|Atalanta|Sporting|Frankfurt|Tottenham|Spurs|Porto|Manchester United|Man United|Club Brugge|Fiorentina|Real Betis|Aston Villa|Juventus|Juve|PSV|Feyenoord|West Ham|Lille|Milan|Lyon|Bodo|Napoli|Olympiacos|AZ Alkmaar|Leipzig|Lazio|Ajax|Newcastle|Brighton|Wolves|Everton|Brentford|Crystal Palace|Fulham|Nottingham Forest|Nottingham|Leicester|Ipswich|Southampton|Bournemouth"
+
+# 4. Fetch from API
+DATE_FROM=$(date +%Y-%m-%d)
+DATE_TO=$(date -d "+1 day" +%Y-%m-%d)
+NOW_UTC=$(date -u +%s)
+
+API_OUTPUT=$(curl -s -f -H "X-Auth-Token: $FOOTBALL_API_KEY" \
+    "https://api.football-data.org/v4/matches?dateFrom=$DATE_FROM&dateTo=$DATE_TO" 2>>"$LOG_FILE" | jq -r --arg teams "$TARGET_TEAMS" --argjson now "$NOW_UTC" '
+    .matches[] | 
+    # Status Filter: Exclude finished/cancelled
+    select(.status != "FINISHED" and .status != "CANCELLED" and .status != "AWARDED" and .status != "POSTPONED") |
+    # Time window: Match starts within 6 hours (21600s) OR started up to 3 hours ago (10800s)
+    select(
+        ((.utcDate | fromdate) - $now < 21600) and 
+        ((.utcDate | fromdate) - $now > -10800)
+    ) |
+    # Strict Filter: Both teams in target list OR it is a Premier League match
+    select(
+        (.competition.code == "PL") or 
+        ((.homeTeam.name | test($teams; "i")) and (.awayTeam.name | test($teams; "i")))
+    ) |
+    if (.status == "IN_PLAY" or .status == "PAUSED" or .status == "HALFTIME") then
+        "🔴 \(.homeTeam.shortName) vs \(.awayTeam.shortName) (\(.utcDate | fromdate | strftime("%a %H:%M")))"
+    else
+        "🕒 \(.homeTeam.shortName) vs \(.awayTeam.shortName) (\(.utcDate | fromdate | strftime("%a %H:%M")))"
+    end' | tr '\n' '|' | sed 's/|$//')
+
+# Get the directory where this script lives
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# 5. Fetch from Footybite (Scraper - which already has its own Top Team list)
+SCRAPER_OUTPUT=$(python3 "$SCRIPT_DIR/footybite_scraper.py" 2>>"$LOG_FILE")
+
+# 6. Secure Processing & De-duplication
+FINAL_OUTPUT=$(echo "$SCRAPER_OUTPUT | $API_OUTPUT" | python3 -c '
+import sys, re
+
+TARGET_LIST = "'"$TARGET_TEAMS"'".split("|")
+
+def sanitize(text):
+    return "".join(c for c in text if c.isprintable())[:2000]
+
+def get_essence(name):
+    name = name.lower()
+    # Remove generic football terms
+    name = re.sub(r"\s*(fc|cf|afc|sc|u\d+|clube|de futebol|osc|as|de|real|inter|atletico|club|athletic)\b", "", name)
+    # Map common prefixes
+    if name.startswith("man "): name = name.replace("man ", "manchester ")
+    return re.sub(r"[^a-z0-9]", "", name).strip()
+
+def get_canonical(name):
+    essence = get_essence(name)
+    # Check if essence matches any of our target teams
+    for target in TARGET_LIST:
+        target_essence = get_essence(target)
+        if target_essence in essence or essence in target_essence:
+            # Sanity check for Manchester teams
+            if "city" in name.lower() and "united" in target.lower(): continue
+            if "united" in name.lower() and "city" in target.lower(): continue
+            return target_essence
+    return essence
+
+matches = sys.stdin.read().split("|")
+unique_list = []
+seen_pairs = set()
+
+for m in matches:
+    m = sanitize(m.strip())
+    if not m: continue
+    
+    match_data = re.search(r"(?:🔴|🕒)\s*(.*?)\s*vs\s*(.*?)\s*\(", m)
+    
+    if match_data:
+        t1, t2 = match_data.groups()
+        # Create a unique key based on the "essence" of both teams
+        pair = tuple(sorted([get_canonical(t1), get_canonical(t2)]))
+        
+        if pair not in seen_pairs:
+            seen_pairs.add(pair)
+            unique_list.append(m)
+    else:
+        if m not in seen_pairs:
+            seen_pairs.add(m)
+            unique_list.append(m)
+
+print(" | ".join(unique_list))
+')
+
+# 7. Secure Cache Write
+echo "$FINAL_OUTPUT" > "$CACHE_FILE"
+chmod 600 "$CACHE_FILE" "$LOG_FILE"
+
+# Output for DWM (Already Sanitized)
+echo "$FINAL_OUTPUT"

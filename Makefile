@@ -3,10 +3,18 @@
 
 include config.mk
 
-SRC = drw.c dwm.c util.c
+USER_HOME ?= $(shell getent passwd $(or $(SUDO_USER),$(USER)) 2>/dev/null | cut -d: -f6)
+OWNER     := $(or $(SUDO_USER),$(USER))
+DATA_DIR  := ${USER_HOME}/.local/share/dwm
+CFG_DIR   := ${USER_HOME}/.config
+
+SRC = drw.c dwm.c util.c tomlparser.c effects.c
 OBJ = ${SRC:.c=.o}
 
 all: dwm
+
+test:
+	@./scripts/run-tests.sh
 
 .c.o:
 	${CC} -c ${CFLAGS} $<
@@ -20,37 +28,54 @@ dwm: ${OBJ}
 	${CC} -o $@ ${OBJ} ${LDFLAGS}
 
 clean:
-	rm -f dwm ${OBJ} dwm-${VERSION}.tar.gz
-
-dist: clean
-	mkdir -p dwm-${VERSION}
-	cp -R LICENSE Makefile README config.def.h config.mk\
-		dwm.1 drw.h util.h ${SRC} dwm.png dwm-${VERSION}
-	tar -cf dwm-${VERSION}.tar dwm-${VERSION}
-	gzip dwm-${VERSION}.tar
-	rm -rf dwm-${VERSION}
+	rm -f dwm ${OBJ} *.orig *.rej
 
 install: all
-	mkdir -p ${DESTDIR}${PREFIX}/bin
+	# Binary + man page
 	install -Dm755 dwm ${DESTDIR}${PREFIX}/bin/dwm
-	mkdir -p ${DESTDIR}${MANPREFIX}/man1
-	sed "s/VERSION/${VERSION}/g" < dwm.1 > ${DESTDIR}${MANPREFIX}/man1/dwm.1
-	chmod 644 ${DESTDIR}${MANPREFIX}/man1/dwm.1
-	mkdir -p /usr/share/xsessions/
+	sed "s/VERSION/${VERSION}/g" dwm.1 | install -Dm644 /dev/stdin ${DESTDIR}${MANPREFIX}/man1/dwm.1
+	# Session entry + xinitrc
 	test -f /usr/share/xsessions/dwm.desktop || install -Dm644 dwm.desktop /usr/share/xsessions/
-	mkdir -p release
-	cp -f dwm release/
-	tar -czf release/dwm-${VERSION}.tar.gz -C release dwm
+	test -f ${USER_HOME}/.xinitrc || install -Dm644 scripts/.xinitrc ${USER_HOME}/.xinitrc
+	# Setup Local Repo Directory
+	mkdir -p ${DATA_DIR}
+	if [ "$$(realpath .)" != "$$(realpath ${DATA_DIR})" ]; then \
+		cp -rf . ${DATA_DIR}/; \
+	fi
+
+	# Polybar: rsync -- dereferences symlinks, deletes stale files, overwrites all
+	rsync -rL --delete config/polybar/ ${CFG_DIR}/polybar/
+	# Remaining config subdirs (ghostty is a symlink to DATA_DIR -- skip it; polybar handled above)
+	for dir in config/*/; do \
+		case "$$(basename $$dir)" in polybar|ghostty) continue;; esac; \
+		cp -rfL --remove-destination "$$dir" ${CFG_DIR}/$$(basename "$$dir"); \
+	done
+	# Scripts to PATH
+	for f in scripts/*; do \
+		case "$$(basename $$f)" in autostart*) continue;; esac; \
+		install -Dm755 "$$f" ${DESTDIR}${PREFIX}/bin/$$(basename $$f); \
+	done
+	
+	# Setup User Config if they don't exist
+	mkdir -p ${CFG_DIR}/dwm
+	test -f ${CFG_DIR}/dwm/hotkeys.toml || install -Dm644 config/hotkeys.toml ${CFG_DIR}/dwm/hotkeys.toml
+	test -f ${CFG_DIR}/dwm/themes.toml  || install -Dm644 config/themes.toml  ${CFG_DIR}/dwm/themes.toml
+	test -f ${CFG_DIR}/dwm/window-rules.toml || install -Dm644 config/window-rules.toml ${CFG_DIR}/dwm/window-rules.toml
+	# Fix ownership + permissions
+	find ${DATA_DIR} ${CFG_DIR}/polybar -name '*.sh' -o -name '*.py' | xargs -r chmod +x
+	for dir in config/*/; do chown -R ${OWNER}: "${CFG_DIR}/$$(basename $$dir)"; done
+	chown -R ${OWNER}: ${DATA_DIR}
+	chown ${OWNER}: ${USER_HOME}/.xinitrc 2>/dev/null || true
 
 uninstall:
-	rm -f ${DESTDIR}${PREFIX}/bin/dwm\
-		${DESTDIR}${MANPREFIX}/man1/dwm.1\
-		${DESTDIR}${PREFIX}/share/xsession/dwm.desktop
+	rm -f ${DESTDIR}${PREFIX}/bin/dwm \
+		${DESTDIR}${MANPREFIX}/man1/dwm.1 \
+		/usr/share/xsessions/dwm.desktop
 
 release: dwm
-	mkdir -p release/dwm-${VERSION}
-	cp -rf dwm dwm.1 dwm.desktop scripts config setup.sh LICENSE Makefile config.mk release/dwm-${VERSION}/
-	tar -czf release/dwm-${VERSION}.tar.gz -C release dwm-${VERSION}
-	rm -rf release/dwm-${VERSION}
+	mkdir -p release
+	cp -f dwm dwm.desktop .xinitrc release/
+	cp -rf config scripts release/
+	tar -czf release/Omitus-${VERSION}.tar.gz -C release dwm dwm.desktop .xinitrc config scripts
 
-.PHONY: all clean dist install uninstall release
+.PHONY: all clean install uninstall release

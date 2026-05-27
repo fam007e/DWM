@@ -1,0 +1,110 @@
+# ╔══════════════════════════════════════════════════════════════════════╗
+# ║              DWM Hotkeys Configuration  ·  hotkeys.toml             ║
+# ╠══════════════════════════════════════════════════════════════════════╣
+# ║  LIVE RELOAD — save this file and changes apply instantly!           ║
+# ║  Manual reload:  kill -USR1 $(pidof dwm)                             ║
+# ╚══════════════════════════════════════════════════════════════════════╝
+
+[vars]
+terminal = "alacritty"
+webapp   = "webapp-launch"
+
+keys = [
+  # ── Launchers (Ported from legacy config) ──────────────────────────────────
+  { mod="SUPER",            key="r",       desc="App launcher",            func="spawn",       exec=["rofi", "-show", "drun"] },
+  { mod="SUPER CTRL",       key="r",       desc="Restart Proton/Steam",    func="spawn",       cmd="protonrestart" },
+  { mod="CTRL",             key="e",       desc="Emoji launcher",          func="spawn",       exec=["rofi", "-show", "emoji"] },
+  { mod="SUPER",            key="c",       desc="Calculator",              func="spawn",       exec=["rofi", "-show", "calc", "-modi", "calc", "-no-show-match", "-no-sort"] },
+  { mod="SUPER",            key="Return",  desc="Terminal",                func="spawn",       exec=["$terminal"] },
+  { mod="SUPER",            key="b",       desc="Brave Browser",           func="spawn",       cmd="brave-origin-nightly" },
+  { mod="SUPER",            key="s",       desc="Web Search",              func="spawn",       cmd="rofi -dmenu -p 'Search' | xargs -I {} brave-origin-nightly 'https://duckduckgo.com/?q={}'" },
+  { mod="SUPER",            key="g",       desc="Chemistry Search",         func="spawn",       cmd="rofi -dmenu -p 'Chem Search' | xargs -I {} brave-origin-nightly 'https://pubchem.ncbi.nlm.nih.gov/#query={}'" },
+  { mod="SUPER SHIFT",      key="g",       desc="NIST Scientific Search",   func="spawn",       cmd="rofi -dmenu -p 'NIST Search' | sed 's/[[:space:]]\\+/+/g' | xargs -I {} brave-origin-nightly 'https://physics.nist.gov/cgi-bin/cuu/Results?search_for={}'" },
+  { mod="SUPER SHIFT",      key="b",       desc="Brave Incognito",         func="spawn",       cmd="brave-origin-nightly --incognito" },
+  { mod="SUPER SHIFT",      key="t",       desc="Tor Browser",             func="spawn",       cmd="tor-browser" },
+  { mod="SUPER ALT",        key="p",       desc="Power menu",              func="spawn",       cmd="$HOME/.local/share/dwm/scripts/powermenu" },
+  { mod="SUPER",            key="p",       desc="Secure Passwd",           func="spawn",       cmd="/usr/bin/securepasswd_gui" },
+  { mod="SUPER",            key="slash",   desc="Keybindings help",        func="spawn",       cmd="$HOME/.local/share/dwm/scripts/dwm-keybinds" },
+  { mod="SUPER SHIFT",      key="p",       desc="Screenshot area",         func="spawn",       cmd="flameshot gui -p ~/Pictures/Screenshots/" },
+  { mod="SUPER CTRL",       key="p",       desc="Screenshot full",         func="spawn",       cmd="flameshot full -p ~/Pictures/Screenshots/" },
+  { mod="SUPER",            key="v",       desc="VLC",                     func="spawn",       cmd="vlc" },
+  { mod="SUPER",            key="l",       desc="Slock",                   func="spawn",       cmd="slock" },
+  { mod="SUPER",            key="e",       desc="Thunar",                  func="spawn",       cmd="thunar" },
+  { mod="SUPER",            key="z",       desc="Zed",                     func="spawn",       cmd="~/.local/bin/zed" },
+  { mod="SUPER",            key="a",       desc="Antigravity",             func="spawn",       cmd="/usr/bin/antigravity" },
+  { mod="SUPER",            key="u",       desc="Bluetooth menu",          func="spawn",       cmd="$HOME/.local/share/dwm/scripts/bluetoothmenu" },
+  { mod="SUPER",            key="w",       desc="WiFi menu",               func="spawn",       cmd="$HOME/.local/share/dwm/scripts/wifimenu" },
+  { mod="SUPER CTRL",       key="w",       desc="Random wallpaper",        func="spawn",       cmd="feh --randomize --bg-fill ~/Pictures/Wallpapers/*" },
+  { mod="SUPER SHIFT",      key="w",       desc="Looking Glass",           func="spawn",       cmd="looking-glass-client -F" },
+
+  # ── Media Keys ─────────────────────────────────────────────────────────────
+  { mod="",   key="XF86AudioMute",          desc="Mute",          func="spawn",  cmd="wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle || pactl set-sink-mute @DEFAULT_SINK@ toggle" },
+  { mod="",   key="XF86AudioRaiseVolume",   desc="Volume up",     func="spawn",  cmd="wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ || pactl set-sink-volume @DEFAULT_SINK@ +5%" },
+  { mod="",   key="XF86AudioLowerVolume",   desc="Volume down",   func="spawn",  cmd="wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- || pactl set-sink-volume @DEFAULT_SINK@ -5%" },
+  { mod="",   key="XF86MonBrightnessUp",    desc="Brightness +",  func="spawn",  cmd="xrandr --output $(xrandr --current | grep \" connected\" | cut -f1 -d \" \") --brightness $(echo \"$(xrandr --verbose | grep -m 1 -i brightness | cut -f2 -d ' ') + 0.1\" | bc)" },
+  { mod="",   key="XF86MonBrightnessDown",  desc="Brightness -",  func="spawn",  cmd="xrandr --output $(xrandr --current | grep \" connected\" | cut -f1 -d \" \") --brightness $(echo \"$(xrandr --verbose | grep -m 1 -i brightness | cut -f2 -d ' ') - 0.1\" | bc)" },
+  { mod="",   key="XF86AudioMicMute",       desc="Mic mute",      func="spawn",  cmd="wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle || pactl set-source-mute @DEFAULT_SOURCE@ toggle" },
+  { mod="",   key="XF86WLAN",               desc="Airplane mode", func="spawn",  cmd="nmcli radio all off" },
+  { mod="",   key="XF86AudioPlay",          desc="Play/Pause",    func="spawn",  cmd="playerctl play-pause" },
+  { mod="",   key="XF86AudioNext",          desc="Next",          func="spawn",  cmd="playerctl next" },
+  { mod="",   key="XF86AudioPrev",          desc="Prev",          func="spawn",  cmd="playerctl previous" },
+  { mod="",   key="XF86AudioStop",          desc="Stop",          func="spawn",  cmd="playerctl stop" },
+  { mod="",   key="XF86Calculator",         desc="Calculator",    func="spawn",  cmd="rofi -show calc" },
+
+  # ── Window Management ──────────────────────────────────────────────────────
+  { mod="SUPER CTRL",       key="b",       desc="Toggle bar",              func="togglebar" },
+  { mod="SUPER",            key="j",       desc="Focus next",              func="focusstack",  i=1 },
+  { mod="SUPER",            key="k",       desc="Focus prev",              func="focusstack",  i=-1 },
+  { mod="SUPER SHIFT",      key="j",       desc="Move stack down",         func="movestack",   i=1 },
+  { mod="SUPER SHIFT",      key="k",       desc="Move stack up",           func="movestack",   i=-1 },
+  { mod="SUPER",            key="i",       desc="Inc nmaster",             func="incnmaster",  i=1 },
+  { mod="SUPER",            key="d",       desc="Dec nmaster",             func="incnmaster",  i=-1 },
+  { mod="SUPER",            key="h",       desc="Set mfact -",             func="setmfact",    f=-0.05 },
+  { mod="SUPER CTRL",       key="l",       desc="Set mfact +",             func="setmfact",    f=0.05 },
+  { mod="SUPER SHIFT",      key="h",       desc="Set cfact +",             func="setcfact",    f=0.25 },
+  { mod="SUPER SHIFT",      key="l",       desc="Set cfact -",             func="setcfact",    f=-0.25 },
+  { mod="SUPER SHIFT",      key="o",       desc="Reset cfact",             func="setcfact",    f=0.00 },
+  { mod="CTRL ALT",         key="t",       desc="Zoom",                    func="zoom" },
+  { mod="SUPER",            key="Tab",     desc="View prev tag",           func="view" },
+  { mod="SUPER",            key="q",       desc="Kill client",             func="killclient" },
+  { mod="SUPER",            key="t",       desc="Layout Tile",             func="setlayout",   layout_idx=0 },
+  { mod="SUPER",            key="f",       desc="Layout Float",            func="setlayout",   layout_idx=1 },
+  { mod="SUPER SHIFT",      key="f",       desc="Football Selector",       func="spawn",       cmd="$HOME/.local/share/dwm/scripts/football-selector" },
+  { mod="SUPER",            key="m",       desc="Layout Monocle",          func="setlayout",   layout_idx=2 },
+  { mod="SUPER",            key="space",   desc="Toggle layout",           func="setlayout",   layout_idx=-1 },
+  { mod="SUPER SHIFT",      key="space",   desc="Toggle floating",         func="togglefloating" },
+  { mod="SUPER",            key="0",       desc="View all tags",           func="view",        ui=-1 },
+  { mod="SUPER SHIFT",      key="0",       desc="Tag all",                 func="tag",         ui=-1 },
+  { mod="SUPER",            key="comma",   desc="Focus mon prev",          func="focusmon",    i=-1 },
+  { mod="SUPER",            key="period",  desc="Focus mon next",          func="focusmon",    i=1 },
+  { mod="SUPER SHIFT",      key="comma",   desc="Tag mon prev",            func="tagmon",      i=-1 },
+  { mod="SUPER SHIFT",      key="period",  desc="Tag mon next",            func="tagmon",      i=1 },
+  { mod="SUPER SHIFT",      key="n",       desc="Toggle warm",             func="togglewarm" },
+  { mod="SUPER SHIFT",      key="e",       desc="Quit DWM",                func="quit" },
+]
+
+tag_keys = [
+  { key="1", tag=0 },
+  { key="2", tag=1 },
+  { key="3", tag=2 },
+  { key="4", tag=3 },
+  { key="5", tag=4 },
+  { key="6", tag=5 },
+  { key="7", tag=6 },
+  { key="8", tag=7 },
+  { key="9", tag=8 },
+]
+
+buttons = [
+  { click="ClkLtSymbol",   mod="",       button=1,  func="setlayout",      layout_idx=0 },
+  { click="ClkLtSymbol",   mod="",       button=3,  func="setlayout",      layout_idx=2 },
+  { click="ClkWinTitle",   mod="",       button=2,  func="zoom" },
+  { click="ClkStatusText", mod="",       button=2,  func="spawn",          exec=["$terminal"] },
+  { click="ClkClientWin",  mod="SUPER",  button=1,  func="movemouse" },
+  { click="ClkClientWin",  mod="SUPER",  button=2,  func="togglefloating" },
+  { click="ClkClientWin",  mod="SUPER",  button=3,  func="resizemouse" },
+  { click="ClkTagBar",     mod="",       button=1,  func="view" },
+  { click="ClkTagBar",     mod="",       button=3,  func="toggleview" },
+  { click="ClkTagBar",     mod="SUPER",  button=1,  func="tag" },
+  { click="ClkTagBar",     mod="SUPER",  button=3,  func="toggletag" },
+]

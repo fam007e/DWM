@@ -1,0 +1,109 @@
+# Alacritty Configuration - Nordic Theme
+# Compatible with Kitty terminal settings
+[general]
+live_config_reload = true
+working_directory = "None"
+# Import theme and keybindings
+import = [ 
+  "~/.config/alacritty/nordic.toml",
+  "~/.config/alacritty/keybinds.toml"
+]
+
+[window]
+title = "Alacritty"
+decorations = "none"
+blur = true
+opacity = 0.9
+startup_mode = "Windowed"
+
+# Window padding (similar to Kitty's margins)
+[window.padding]
+x = 1
+y = 1
+
+# Window dimensions (matching Kitty's 1920x1080 preference)
+[window.dimensions]
+columns = 160
+lines = 48
+
+[cursor]
+# Cursor styling - FIXED: Updated to new syntax
+blink_interval = 500
+blink_timeout = 15
+
+[cursor.style]
+shape = "Block"  # Changed from Beam to Block to match Kitty
+blinking = "On"
+
+[cursor.vi_mode_style]
+shape = "Block"
+blinking = "Off"
+
+# Colors configuration
+[colors]
+transparent_background_colors = true
+draw_bold_text_with_bright_colors = true
+
+# Environment variables
+[env]
+TERM = "xterm-256color"
+
+# Font configuration (matching Kitty's FiraCode setup)
+[font]
+size = 8.0 
+# FIXED: Removed builtin_box_drawing nested table - moved to top level
+builtin_box_drawing = true  # Changed from enable = true
+
+# Normal font
+[font.normal]
+family = "FiraCode Nerd Font"  # Using Nerd Font variant for better icon support
+style = "Regular"
+
+# Bold font
+[font.bold]
+family = "FiraCode Nerd Font"
+style = "Bold"
+
+# Italic font  
+[font.italic]
+family = "FiraCode Nerd Font"
+style = "Italic"
+
+# Bold italic font
+[font.bold_italic]
+family = "FiraCode Nerd Font"
+style = "Bold Italic"
+
+# Font offset for fine-tuning
+[font.offset]
+x = 0
+y = 1
+
+# Scrolling configuration
+[scrolling]
+history = 2000  # Matching Kitty's scrollback_lines
+multiplier = 5   # Matching Kitty's wheel_scroll_multiplier
+
+# Selection configuration
+[selection]
+save_to_clipboard = true
+semantic_escape_chars = ",│`|:\"' ()[]{}<>"
+
+# Mouse configuration
+[mouse]
+hide_when_typing = true
+
+# Terminal bell
+[bell]
+animation = "EaseOutExpo"
+duration = 0
+color = "0xffffff"
+command = "None"
+
+# Debug settings (optional)
+[debug]
+render_timer = false
+persistent_logging = false
+log_level = "Warn"
+print_events = false
+highlight_damage = false

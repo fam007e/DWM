@@ -3,6 +3,9 @@
 # Path to config
 THEME_FILE="$HOME/.config/rofi/themes/roundednord.rasi"
 
+# Delimiter unlikely to appear in device names
+DELIM=$'\x1f'
+
 # Check if bluetooth service is running
 if ! systemctl is-active --quiet bluetooth.service; then
     notify-send "Bluetooth" "Bluetooth service is not running" -u critical
@@ -26,10 +29,10 @@ toggle_bluetooth() {
     fi
 }
 
-# Function to scan for devices
+# Function to scan for devices (non-blocking, background)
 scan_devices() {
     notify-send "Bluetooth" "Scanning for devices..."
-    bluetoothctl --timeout 10 scan on &>/dev/null
+    bluetoothctl --timeout 10 scan on &>/dev/null &
 }
 
 # Function to get paired devices
@@ -37,19 +40,19 @@ get_paired_devices() {
     bluetoothctl devices Paired | while read -r _ mac name; do
         connected=$(bluetoothctl info "$mac" | grep "Connected: yes")
         if [[ -n "$connected" ]]; then
-            echo "󰂱 $name (Connected)|disconnect|$mac"
+            echo "󰂱 ${name} (Connected)${DELIM}disconnect${DELIM}${mac}"
         else
-            echo "󰂯 $name (Disconnected)|connect|$mac"
+            echo "󰂯 ${name} (Disconnected)${DELIM}connect${DELIM}${mac}"
         fi
     done
 }
 
-# Function to get available devices (not paired)
+# Function to get available (cached, unpaired) devices
 get_available_devices() {
     bluetoothctl devices | while read -r _ mac name; do
         is_paired=$(bluetoothctl devices Paired | grep "$mac")
         if [[ -z "$is_paired" ]]; then
-            echo "󰂳 $name|pair|$mac"
+            echo "󰂳 ${name}${DELIM}pair${DELIM}${mac}"
         fi
     done
 }
@@ -57,76 +60,56 @@ get_available_devices() {
 # Main menu
 show_main_menu() {
     local bt_status=$(get_bt_status)
-    local status_text=""
     local toggle_text=""
-    
+
     if [[ "$bt_status" == "yes" ]]; then
-        status_text="󰂯 Bluetooth: ON"
+        echo "󰂯 Bluetooth: ON"
         toggle_text="󰂲 Turn OFF"
     else
-        status_text="󰂲 Bluetooth: OFF"
+        echo "󰂲 Bluetooth: OFF"
         toggle_text="󰂯 Turn ON"
     fi
-    
-    echo "$status_text"
+
     echo "$toggle_text"
-    
+
     if [[ "$bt_status" == "yes" ]]; then
         echo "󰑓 Scan for Devices"
-        
-        # Show paired devices
-        local paired=$(get_paired_devices)
-        if [[ -n "$paired" ]]; then
-            echo "$paired"
-        fi
-        
-        # Show available devices (not paired)
-        local available=$(get_available_devices)
-        if [[ -n "$available" ]]; then
-            echo "$available"
-        fi
+        get_paired_devices
+        get_available_devices
     fi
 }
 
 # Main loop
 while true; do
     choice=$(show_main_menu | rofi -dmenu -theme "$THEME_FILE" -p "Bluetooth" -format "s" -i)
-    
-    # Exit if nothing selected (ESC pressed)
+
     [[ -z "$choice" ]] && exit 0
-    
-    # Parse the choice
+
     if [[ "$choice" == *"Bluetooth: ON"* ]] || [[ "$choice" == *"Bluetooth: OFF"* ]]; then
-        # Status display, do nothing
         continue
-        
+
     elif [[ "$choice" == *"Turn OFF"* ]] || [[ "$choice" == *"Turn ON"* ]]; then
-        # Toggle bluetooth
         toggle_bluetooth
         sleep 1
-        
+
     elif [[ "$choice" == *"Scan for Devices"* ]]; then
-        # Scan for devices
         scan_devices
-        sleep 2
-        
-    elif [[ "$choice" == *"|disconnect|"* ]]; then
-        # Disconnect from device
-        mac=$(echo "$choice" | cut -d'|' -f3)
+        sleep 10
+
+    elif [[ "$choice" == *"${DELIM}disconnect${DELIM}"* ]]; then
+        mac=$(echo "$choice" | cut -d"${DELIM}" -f3)
         bluetoothctl disconnect "$mac"
         notify-send "Bluetooth" "Disconnecting..."
         sleep 1
-        
-    elif [[ "$choice" == *"|connect|"* ]]; then
-        # Connect to paired device
-        mac=$(echo "$choice" | cut -d'|' -f3)
+
+    elif [[ "$choice" == *"${DELIM}connect${DELIM}"* ]]; then
+        mac=$(echo "$choice" | cut -d"${DELIM}" -f3)
         bluetoothctl connect "$mac"
         notify-send "Bluetooth" "Connecting..."
         sleep 2
-        
-    elif [[ "$choice" == *"|pair|"* ]]; then
-        # Pair and connect to new device
-        mac=$(echo "$choice" | cut -d'|' -f3)
+
+    elif [[ "$choice" == *"${DELIM}pair${DELIM}"* ]]; then
+        mac=$(echo "$choice" | cut -d"${DELIM}" -f3)
         notify-send "Bluetooth" "Pairing..."
         bluetoothctl pair "$mac"
         sleep 2

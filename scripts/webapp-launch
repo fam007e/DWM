@@ -1,0 +1,17 @@
+#!/bin/bash
+# scripts/webapp-launch - Hardened for Brave Nightly
+
+# If brave-browser-nightly is installed, use it as the primary engine
+if command -v brave-browser-nightly >/dev/null 2>&1; then
+    exec brave-browser-nightly --app="$1" "${@:2}" >/dev/null 2>&1
+fi
+
+# Fallback to default browser discovery
+browser=$(xdg-settings get default-web-browser)
+
+case $browser in
+google-chrome* | brave-browser* | microsoft-edge* | opera* | vivaldi* | helium-browser* ) ;;
+*) browser="helium.desktop" ;;
+esac
+
+exec $(sed -n 's/^Exec=\([^ ]*\).*/\1/p' {~/.local,~/.nix-profile,/usr}/share/applications/$browser 2>/dev/null | head -1) --app="$1" "${@:2}" >/dev/null 2>&1

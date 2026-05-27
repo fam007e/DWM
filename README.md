@@ -1,94 +1,125 @@
-dwm - dynamic window manager
-============================
-dwm is an extremely fast, small, and dynamic window manager for X.
+<div align="center">
+  <img src="./dwm.png" alt="dwm-logo" width="150" height="150"/>
 
-This is my personal fork with following patches:
+  # DWM - Modern & Hardened Edition
+  ### An extremely ***fast***, ***small***, and ***dynamic*** window manager for X.
 
-+ alwayscenter
-+ alwaysfullscreen
-+ auto start
-+ cfacts
-+ chatterino bottom
-+ cool autostart
-+ fakefullscreen client (with resize fix for chrome-based browsers + noborder fix)
-+ multikeycode
-+ movestack
-+ noborder (floating + border flicker fix)
-+ pertag
-+ placemouse
-+ resizepoint
-+ statuscmd
-+ swallow
-+ switchtag
-+ systray
-+ true fullscreen
-+ hide vacant tags
-+ warp v2
-+ winicon
-+ mouse focus fix
-+ dynamic path configuration
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
+  [![Platform: Linux](https://img.shields.io/badge/Platform-Linux-lightgrey.svg)](https://www.linux.org/)
 
-Some patches are rewritten or modified to work together.
+</div>
 
+---
 
-Requirements
-------------
-In order to build dwm you need the Xlib header files.
+This is a heavily customized fork of dwm designed for a modern, secure, and automated desktop experience. It moves away from the traditional "header-only" configuration, offering dynamic reloading and advanced status integration via Polybar.
 
-```sh
-sudo pacman -S --needed bc jq base-devel extra/git extra/libx11 extra/libxcb extra/libxinerama extra/libxft extra/imlib2
+## 🤝 Community Standards
+
+- **[Code of Conduct](./CODE_OF_CONDUCT.md)** - Our pledge for a welcoming community.
+- **[Contributing Guide](./CONTRIBUTING.md)** - How to report bugs and submit PRs.
+- **[Security Policy](./SECURITY.md)** - How to report vulnerabilities securely.
+
+### 🚀 Key Features
+
+- **Polybar Integration:** Full EWMH compliance allows for a modern, powerful status bar with workspace indicators and window titles.
+- **Dynamic Hotkeys (TOML):** Change your keybindings in `~/.config/dwm/hotkeys.toml` and they apply **instantly** without recompilation.
+- **Live Theme Engine:** Switch between Nord, Dracula, and other themes dynamically. All components (DWM, Alacritty, Rofi, Polybar) sync colors automatically.
+- **Hardened Security:** API keys and sensitive location data are isolated into restricted `.env` files with strict 600 permissions.
+- **Fully Portable:** The build system uses relative discovery. You can clone and run this repository from any directory.
+- **Automated Football Ticker:** A custom hybrid module that combines official API data with a multithreaded scraper to show upcoming matches for top international teams.
+- **Window Swallowing:** Terminals automatically "swallow" GUI windows launched from them to save screen real estate.
+
+---
+
+## 📚 Documentation
+
+For detailed information on how to use and customize this build, please refer to the following guides:
+
+- **[Installation Guide](./docs/INSTALL.md)** - Dependencies and hardened deployment.
+- **[Configuration Guide](./docs/CONFIGURATION.md)** - Dynamic hotkeys and TOML settings.
+- **[Key Features](./docs/FEATURES.md)** - Football ticker, Weather, and Warm Mode.
+- **[Security Model](./docs/SECURITY.md)** - Secret isolation and permissions.
+- **[Theming Engine](./docs/THEMING.md)** - Centralized color synchronization.
+
+---
+
+## 📋 Installation
+
+### 1. Dependencies
+This build is optimized for Arch Linux. Ensure you have the required tools:
+
+```bash
+sudo pacman -S --needed base-devel libx11 libxft libxinerama imlib2 libxcb xcb-util \
+    polybar rofi picom feh flameshot python jq bc curl playerctl blueman
 ```
 
-If you find yourself missing a library then this can usually be found by searching for the file name using pacman:
-```sh
-pacman -F Xlib-xcb.h
-extra/libx11 1.6.12-1 [installed: 1.7.2-1]
-   usr/include/X11/Xlib-xcb.h
+### 2. Build & Install
+```bash
+git clone <your-repo-url>
+cd DWM
+make clean && sudo make install
+./install.sh
 ```
 
-Installation
-------------
-Edit config.mk to match your local setup (dwm is installed into
-the /usr/local namespace by default).
-
-Afterwards enter the following command to build and install dwm (if
-necessary as root):
-```sh
-make clean install
+### 3. Testing
+To verify the build stability and script integrity:
+```bash
+make test
 ```
 
-Running dwm
------------
-Add the following line to your .xinitrc to start dwm using startx:
-```sh
-exec dwm
+### 4. Uninstall
+To remove the build and its configurations:
+```bash
+./uninstall.sh
 ```
 
-In order to connect dwm to a specific display, make sure that
-the DISPLAY environment variable is set correctly, e.g.:
-```sh
-DISPLAY=foo.bar:1 exec dwm
-```
+---
 
-(This will start dwm on display `:1` of the host `foo.bar`.)
+## ⌨️ Keybindings
 
-In order to display status info in the bar, you can do something
-like this in your .xinitrc:
-```sh
-while xsetroot -name "`date` `uptime | sed 's/.*,//'`"
-do
-    sleep 1
-done &
-exec dwm
-```
+The default modifier key is **SUPER** (Windows Key).
 
-Configuration
--------------
-The configuration of dwm is done by creating a custom `config.h`
-and (re)compiling the source code.
+| Keybind | Action |
+|---------|--------|
+| <kbd>SUPER</kbd> + <kbd>Return</kbd> | Launch Alacritty |
+| <kbd>SUPER</kbd> + <kbd>R</kbd> | App Launcher (Rofi) |
+| <kbd>SUPER</kbd> + <kbd>Q</kbd> | Close focused window |
+| <kbd>SUPER</kbd> + <kbd>/</kbd> | **Keybindings Help (Live)** |
+| <kbd>SUPER</kbd> + <kbd>SHIFT</kbd> + <kbd>N</kbd> | **Toggle Warm Mode (Native C)** |
+| <kbd>SUPER</kbd> + <kbd>SHIFT</kbd> + <kbd>F</kbd> | Football Match Selector |
+| <kbd>SUPER</kbd> + <kbd>U</kbd> / <kbd>W</kbd> | Bluetooth / WiFi Menu |
+| <kbd>SUPER</kbd> + <kbd>1-9</kbd> | Switch to tag (workspace) |
+| <kbd>SUPER</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd> | Screenshot (Area) |
+| <kbd>SUPER</kbd> + <kbd>Shift</kbd> + <kbd>Q</kbd> | Quit DWM |
 
-This fork features a dynamic path configuration. You can use the `SCRIPT("scriptname")` macro in `config.h` to refer to scripts within the repository's `scripts/` directory. The build system will automatically determine the absolute path.
+*For a full list of shortcuts, press <kbd>SUPER</kbd> + <kbd>/</kbd> or edit `~/.config/dwm/hotkeys.toml`.*
 
-Credits
--------
-Project was inspired by [@ChrisTitusTech](https://github.com/ChrisTitusTech/dwm-titus) `dwm-titus` repo for Arch.
+---
+
+## 🔧 Configuration
+
+This build uses a tiered configuration system:
+
+1.  **Hotkeys & Layouts:** Edit `~/.config/dwm/hotkeys.toml`.
+2.  **Themes & Colors:** Edit `~/.config/dwm/themes.toml`.
+3.  **Window Rules:** Edit `~/.config/dwm/window-rules.toml` (Swallowing, Floating, Tags).
+4.  **Appearance & Logic:** Edit `config.def.h` and run `make && sudo make install`.
+5.  **Secrets:** Configure your API keys in `~/.config/dwm_weather.env` and `~/.config/dwm_football.env`.
+
+---
+
+## 📁 Project Structure
+
+| Path | Purpose |
+|------|---------|
+| `dwm.c` | Core window manager source |
+| `config/` | Root for Polybar, Rofi, and Terminal configs |
+| `scripts/` | System backend (Weather, Football, Wallpapers) |
+| `install.sh` | Hardened deployment script |
+| `Makefile` | Portable build system |
+
+---
+
+## 🛡️ Security Note
+This build enforces strict file permissions (`umask 077`). Cached data and logs in `~/.cache` are owner-readable only to prevent data leakage between users on the same system.
