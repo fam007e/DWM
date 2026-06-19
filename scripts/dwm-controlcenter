@@ -20,9 +20,10 @@ fi
 THEME_FILE="${THEME_DIR:+$THEME_DIR/controlcenter.rasi}"
 
 DWM_DIR="$HOME/.local/share/dwm"
+DWM_REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 POLYBAR_DIR="$HOME/.config/polybar"
 ROFI_DIR="$HOME/.config/rofi"
-BG_DIR="$HOME/Pictures/backgrounds"
+BG_DIR="$HOME/Pictures/Wallpapers"
 
 # ── Terminal detection ───────────────────────────────────
 detect_terminal() {
@@ -229,8 +230,8 @@ run_health_check() {
             action=$(printf '%s\n' "Run install.sh (auto-fix)" "Run check-deps.sh (details)" \
                 | rofi_menu "  Fix" "Selected: $chosen") || continue
             case "$action" in
-                "Run install.sh"*)  spawn_terminal bash -c "cd '$DWM_TITUS_DIR' 2>/dev/null || cd '$(dirname "$0")/..'; bash install.sh; echo 'Press Enter to close'; read" ;;
-                "Run check-deps"*)  spawn_terminal bash -c "cd '$DWM_TITUS_DIR' 2>/dev/null || cd '$(dirname "$0")/..'; bash scripts/check-deps.sh; echo 'Press Enter to close'; read" ;;
+                "Run install.sh"*)  spawn_terminal bash -c "cd '$DWM_REPO_DIR' 2>/dev/null || cd '$(dirname "$0")/..'; bash install.sh; echo 'Press Enter to close'; read" ;;
+                "Run check-deps"*)  spawn_terminal bash -c "cd '$DWM_REPO_DIR' 2>/dev/null || cd '$(dirname "$0")/..'; bash scripts/check-deps.sh; echo 'Press Enter to close'; read" ;;
             esac
         fi
     done
@@ -297,10 +298,10 @@ run_quick_actions() {
             spawn_terminal bash -c "sudo systemctl restart NetworkManager && echo 'NetworkManager restarted'; sleep 2"
             ;;
         *"Run Dependency Check"*)
-            spawn_terminal bash -c "cd '$DWM_TITUS_DIR' 2>/dev/null || cd '$(dirname "$0")/..'; bash scripts/check-deps.sh; echo; echo 'Press Enter to close'; read"
+            spawn_terminal bash -c "cd '$DWM_REPO_DIR' 2>/dev/null || cd '$(dirname "$0")/..'; bash scripts/check-deps.sh; echo; echo 'Press Enter to close'; read"
             ;;
         *"Install Missing Deps"*)
-            spawn_terminal bash -c "cd '$DWM_TITUS_DIR' 2>/dev/null || cd '$(dirname "$0")/..'; bash install.sh; echo; echo 'Press Enter to close'; read"
+            spawn_terminal bash -c "cd '$DWM_REPO_DIR' 2>/dev/null || cd '$(dirname "$0")/..'; bash install.sh; echo; echo 'Press Enter to close'; read"
             ;;
     esac
     done

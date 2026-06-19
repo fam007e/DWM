@@ -1,22 +1,12 @@
 configuration {
-    modi: "window,run,drun,emoji,calc";
-
-    /* Icons */
-    show-icons:         true;
+    modi:               "window,run,drun,emoji,calc";
+    show-icons:         false;
     icon-theme:         "hicolor";
-
-    /* Sorting & Matching */
-    matching:           "fuzzy";
-    sorting-method:     "fzf";
+    matching:           "normal";      /* exact substring, faster and more predictable */
+    sorting-method:     "fzf";         /* ranks by match quality */
     levenshtein-sort:   true;
-
-    /* drun specific */
+    case-sensitive:     false;
     drun-show-actions:  false;
     drun-match-fields:  "name,generic,exec,categories";
-
-    /* General */
-    case-sensitive:     false;
 }
-
-//@theme "/usr/share/rofi/themes/android_notification.rasi"
-@theme "/home/fam007e/.config/rofi/themes/roundednord.rasi"
+@theme "$HOME/.config/rofi/themes/roundednord.rasi"

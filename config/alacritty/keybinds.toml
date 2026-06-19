@@ -1,6 +1,7 @@
-# Alacritty Keybindings - Fixed TOML Syntax
-[[keyboard.bindings]]
+# Alacritty Keybindings
+
 # === CLIPBOARD OPERATIONS ===
+[[keyboard.bindings]]
 key = "C"
 mods = "Control|Shift"
 action = "Copy"
@@ -62,7 +63,6 @@ mods = "Control|Shift"
 action = "ScrollToBottom"
 
 # === FONT SIZE CONTROL ===
-# FIXED: Changed Equal to Equals (valid key name)
 [[keyboard.bindings]]
 key = "Equals"
 mods = "Control|Shift"
@@ -94,7 +94,6 @@ key = "Enter"
 mods = "Control|Shift"
 action = "SpawnNewInstance"
 
-# FIXED: Removed Terminate action (not valid) - using Quit instead
 [[keyboard.bindings]]
 key = "W"
 mods = "Control|Shift"
@@ -116,17 +115,39 @@ key = "B"
 mods = "Control|Shift"
 action = "SearchBackward"
 
-# === VI MODE ===
+# === VI MODE TOGGLE ===
 [[keyboard.bindings]]
 key = "Space"
 mods = "Control|Shift"
 action = "ToggleViMode"
 
+# === ESCAPE KEY ===
+# Priority order matters here. Alacritty matches top-down, most specific wins.
+#
+# 1. In Search mode: cancel the search (most specific, checked first)
+# 2. In Vi mode:     exit vi mode
+# 3. Normal mode:    send raw \x1b byte to PTY so programs (nvim, fzf, etc.) receive it
+#    ClearSelection is intentionally dropped — Alacritty clears selection
+#    automatically on any input, so the explicit action is redundant and
+#    was the sole reason Escape was being swallowed.
+
 [[keyboard.bindings]]
 key = "Escape"
-action = "ClearSelection"
+mode = "Search"
+action = "SearchCancel"
 
-# === ADDITIONAL USEFUL BINDINGS ===
+[[keyboard.bindings]]
+key = "Escape"
+mode = "Vi"
+action = "ToggleViMode"
+
+[[keyboard.bindings]]
+key = "Escape"
+mods = "None"
+mode = "~Search|~Vi"
+chars = "\x1b"
+
+# === ADDITIONAL BINDINGS ===
 [[keyboard.bindings]]
 key = "L"
 mods = "Control"
@@ -136,14 +157,12 @@ chars = "\u000c"
 key = "F11"
 action = "ToggleFullscreen"
 
-# === WORD NAVIGATION (Alt+Arrow keys) ===
-# Alt+Right Arrow - Move forward one word (emacs style)
+# === WORD NAVIGATION ===
 [[keyboard.bindings]]
 key = "Right"
 mods = "Alt"
 chars = "\u001bf"
 
-# Alt+Left Arrow - Move backward one word (emacs style)
 [[keyboard.bindings]]
 key = "Left"
 mods = "Alt"
@@ -223,11 +242,6 @@ mode = "Search"
 action = "SearchConfirm"
 
 [[keyboard.bindings]]
-key = "Escape"
-mode = "Search"
-action = "SearchCancel"
-
-[[keyboard.bindings]]
 key = "C"
 mods = "Control"
 mode = "Search"
@@ -278,7 +292,7 @@ mods = "Shift"
 mode = "Search"
 action = "SearchFocusPrevious"
 
-# Mouse bindings
+# === MOUSE BINDINGS ===
 [[mouse.bindings]]
 mouse = "Right"
 action = "PasteSelection"

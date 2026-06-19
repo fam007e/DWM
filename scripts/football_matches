@@ -3,7 +3,7 @@
 
 # 1. Enforcement of Private Permissions
 umask 077
-CONFIG_FILE="$HOME/.config/dwm_football.env"
+CONFIG_FILE="$HOME/.config/dwm/secrets/football.env"
 CACHE_FILE="$HOME/.cache/football_matches.cache"
 LOG_FILE="$HOME/.cache/football_matches.log"
 

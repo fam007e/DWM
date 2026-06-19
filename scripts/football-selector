@@ -1,47 +1,112 @@
 #!/bin/bash
-# scripts/football-selector - Rofi-based football match selector
+# scripts/football-selector — Rofi-based match selector (footybite.vc)
+#
+# Calls footybite_scraper.py --links to get all live/upcoming matches,
+# displays them in rofi grouped by sport category, and opens the
+# selected match stream in Brave (incognito).
+
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-MATCHES=$(python3 "$SCRIPT_DIR/footybite_scraper.py" --links)
+SCRAPER="$SCRIPT_DIR/footybite_scraper.py"
 
-if [[ -z "$MATCHES" ]]; then
-    notify-send "Football" "No live or upcoming matches found with streaming links."
+# ── Fetch matches ────────────────────────────────────────────────────────────
+RAW=$(python3 "$SCRAPER" --links 2>/dev/null) || true
+
+if [[ -z "$RAW" ]]; then
+    notify-send -u normal -i dialog-information \
+        "⚽ Matches" "No live or upcoming matches found on footybite.vc"
     exit 0
 fi
 
-# Format matches for Rofi (labels only)
-LABELS=$(echo "$MATCHES" | awk -F'|||' '{print $1}')
+# ── Build rofi input ─────────────────────────────────────────────────────────
+# Lines come in two forms:
+#   ---🏅 Category Name---          (section header)
+#   🔴 LIVE | Team1 vs Team2|||URL  (match)
+#
+# For rofi we show both, but category headers are non-selectable.
+# We use ||| as a delimiter that rofi never sees (labels only).
 
-# Choose match using Rofi
-# Using the nord theme as it's common in this repo
-THEME="$HOME/.config/rofi/themes/nord.rasi"
-if [[ ! -f "$THEME" ]]; then
-    # Search for any available theme if nord is missing
-    THEME=$(find "$HOME/.config/rofi/themes" -name "*.rasi" | head -n 1)
-fi
+LABELS=""
+MATCH_COUNT=0
 
-CHOSEN=$(echo "$LABELS" | rofi -dmenu -i -p "⚽ Match" -theme "$THEME")
-
-if [[ -n "$CHOSEN" ]]; then
-    # Get the URL for the chosen label
-    URL=$(echo "$MATCHES" | grep -F "$CHOSEN" | awk -F'|||' '{print $2}' | head -n 1)
-    
-    if [[ -n "$URL" ]]; then
-        # Check if URL is relative
-        if [[ ! "$URL" =~ ^http ]]; then
-             URL="https://www.footybite.do$URL"
+while IFS= read -r line; do
+    if [[ "$line" == ---*--- ]]; then
+        # Category header — strip the --- markers for display
+        header="${line#---}"
+        header="${header%---}"
+        # Add a blank separator before non-first categories
+        if [[ $MATCH_COUNT -gt 0 ]]; then
+            LABELS+=$'\n'" "
         fi
-        
-        # Open in brave-origin --incognito as requested
-        notify-send "Football" "Opening stream for $CHOSEN..."
-        
-        # Use brave-origin if it exists, else fallback to brave-browser-nightly found in config
-        if command -v brave-origin >/dev/null 2>&1; then
-            brave-origin --incognito "$URL" >/dev/null 2>&1 &
-        else
-            brave-browser-nightly --incognito "$URL" >/dev/null 2>&1 &
-        fi
+        LABELS+=$'\n'"━━ ${header} ━━"
     else
-        notify-send "Football" "Error: Could not find link for $CHOSEN"
+        label="${line%%|||*}"
+        LABELS+=$'\n'"$label"
+        MATCH_COUNT=$((MATCH_COUNT + 1))
     fi
+done <<< "$RAW"
+
+# Trim leading newline
+LABELS="${LABELS#$'\n'}"
+
+if [[ $MATCH_COUNT -eq 0 ]]; then
+    notify-send -u normal -i dialog-information \
+        "⚽ Matches" "No matches parsed from footybite.vc"
+    exit 0
 fi
+
+# ── Rofi theme selection ─────────────────────────────────────────────────────
+# Prefer newnord, fall back to any available .rasi theme
+THEME="$HOME/.config/rofi/themes/newnord.rasi"
+if [[ ! -f "$THEME" ]]; then
+    THEME="$HOME/.config/rofi/themes/nord.rasi"
+fi
+if [[ ! -f "$THEME" ]]; then
+    THEME=$(find "$HOME/.config/rofi/themes" -name "*.rasi" 2>/dev/null | head -n 1)
+fi
+
+ROFI_ARGS=(-dmenu -i -p "⚽ Matches" -no-custom)
+if [[ -n "${THEME:-}" && -f "${THEME:-}" ]]; then
+    ROFI_ARGS+=(-theme "$THEME")
+fi
+
+# ── Show rofi and handle selection ───────────────────────────────────────────
+CHOSEN=$(echo "$LABELS" | rofi "${ROFI_ARGS[@]}") || exit 0
+
+# Ignore category headers and blank lines
+if [[ -z "$CHOSEN" || "$CHOSEN" == ━━* || "$CHOSEN" == " " ]]; then
+    exit 0
+fi
+
+# Find the URL for the chosen label
+URL=$(echo "$RAW" | grep -F "$CHOSEN" | head -n 1 | awk -F'|||' '{print $2}')
+
+if [[ -z "$URL" ]]; then
+    notify-send -u critical -i dialog-error \
+        "⚽ Matches" "Could not find stream link for:\n$CHOSEN"
+    exit 1
+fi
+
+# Ensure absolute URL
+if [[ ! "$URL" =~ ^https?:// ]]; then
+    URL="https://footybite.vc${URL}"
+fi
+
+# ── Open in Brave incognito ──────────────────────────────────────────────────
+notify-send -u low -i web-browser \
+    "⚽ Opening Stream" "$CHOSEN"
+
+if command -v brave-origin >/dev/null 2>&1; then
+    brave-origin --incognito "$URL" >/dev/null 2>&1 &
+elif command -v brave-browser-nightly >/dev/null 2>&1; then
+    brave-browser-nightly --incognito "$URL" >/dev/null 2>&1 &
+elif command -v brave-browser >/dev/null 2>&1; then
+    brave-browser --incognito "$URL" >/dev/null 2>&1 &
+else
+    notify-send -u critical -i dialog-error \
+        "⚽ Matches" "No Brave browser found (tried brave-origin, brave-browser-nightly, brave-browser)"
+    exit 1
+fi
+
+disown

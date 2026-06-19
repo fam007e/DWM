@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
 
 # CMDs
 uptime="`uptime -p | sed -e 's/up //g'`"
@@ -50,6 +50,9 @@ run_cmd() {
 					;;
 				plasma)
 					qdbus org.kde.ksmserver /KSMServer logout 0 0 0
+					;;
+				dwm|*)
+					pkill -x dwm
 					;;
 			esac
 			;;

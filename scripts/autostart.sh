@@ -9,12 +9,21 @@ xset s off
 xset s noblank
 xset -dpms
 
+# Set XDG environment variables for portals and desktop services
+export XDG_CURRENT_DESKTOP=dwm
+export XDG_SESSION_TYPE=x11
+
 # Export display env to systemd/dbus in parallel (both are IPC round-trips)
 if command -v systemctl >/dev/null 2>&1; then
-    systemctl --user import-environment DISPLAY XAUTHORITY &
+    systemctl --user import-environment DISPLAY XAUTHORITY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE &
 fi
-dbus-update-activation-environment --systemd DISPLAY XAUTHORITY 2>/dev/null &
+dbus-update-activation-environment --systemd DISPLAY XAUTHORITY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE 2>/dev/null &
 wait
+
+# Restart xdg-desktop-portal so it inherits the correct environment variables (crucial for flameshot/portals)
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl --user restart xdg-desktop-portal xdg-desktop-portal-gtk 2>/dev/null &
+fi
 
 # ── Phase 2: Background services ───────────────────────────────────────────────
 
@@ -63,6 +72,13 @@ command -v blueman-applet > /dev/null 2>&1 && blueman-applet &
 (while true; do "$SCRIPT_DIR/football_matches" >/dev/null 2>&1; sleep 3600; done) &
 
 # Launch terminal with tmux on startup
-alacritty -e tmux &
+TERM_CMD="xterm"
+for t in ghostty alacritty kitty st; do
+    if command -v "$t" >/dev/null 2>&1; then
+        TERM_CMD="$t"
+        break
+    fi
+done
+$TERM_CMD -e tmux &
 
 dex -a 2>/dev/null

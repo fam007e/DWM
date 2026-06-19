@@ -3,8 +3,8 @@
 # Path to config
 THEME_FILE="$HOME/.config/rofi/themes/roundednord.rasi"
 
-# Delimiter unlikely to appear in device names
-DELIM=$'\x1f'
+# Printable delimiter unlikely to appear in device names
+DELIM="|"
 
 # Check if bluetooth service is running
 if ! systemctl is-active --quiet bluetooth.service; then
@@ -57,7 +57,7 @@ get_available_devices() {
     done
 }
 
-# Main menu
+# Main menu — emits full lines with delimiters
 show_main_menu() {
     local bt_status=$(get_bt_status)
     local toggle_text=""
@@ -81,9 +81,19 @@ show_main_menu() {
 
 # Main loop
 while true; do
-    choice=$(show_main_menu | rofi -dmenu -theme "$THEME_FILE" -p "Bluetooth" -format "s" -i)
+    # Build full menu (lines may contain DELIM for device entries)
+    menu=$(show_main_menu)
 
-    [[ -z "$choice" ]] && exit 0
+    # Strip everything from DELIM onward so rofi only displays the label
+    display=$(echo "$menu" | cut -d"${DELIM}" -f1)
+
+    # Show clean labels in rofi
+    choice_display=$(echo "$display" | rofi -dmenu -theme "$THEME_FILE" -p "Bluetooth" -format "s" -i)
+
+    [[ -z "$choice_display" ]] && exit 0
+
+    # Re-match the display label back to the full line to recover MAC/action
+    choice=$(echo "$menu" | grep -F "${choice_display}" | head -1)
 
     if [[ "$choice" == *"Bluetooth: ON"* ]] || [[ "$choice" == *"Bluetooth: OFF"* ]]; then
         continue

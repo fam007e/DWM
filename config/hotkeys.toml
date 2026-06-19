@@ -3,6 +3,11 @@
 # ╠══════════════════════════════════════════════════════════════════════╣
 # ║  LIVE RELOAD — save this file and changes apply instantly!           ║
 # ║  Manual reload:  kill -USR1 $(pidof dwm)                             ║
+# ║                                                                      ║
+# ║  SYNTAX:                                                             ║
+# ║  exec=["bin", "arg"]  — faster, avoids shell injection.              ║
+# ║  cmd="bin | grep arg" — uses shell, needed for pipes and variables.  ║
+# ║  Note: Brightness math uses GNU bc extensions (if/else).             ║
 # ╚══════════════════════════════════════════════════════════════════════╝
 
 [vars]
@@ -25,8 +30,8 @@ keys = [
   { mod="SUPER ALT",        key="p",       desc="Power menu",              func="spawn",       cmd="$HOME/.local/share/dwm/scripts/powermenu" },
   { mod="SUPER",            key="p",       desc="Secure Passwd",           func="spawn",       cmd="/usr/bin/securepasswd_gui" },
   { mod="SUPER",            key="slash",   desc="Keybindings help",        func="spawn",       cmd="$HOME/.local/share/dwm/scripts/dwm-keybinds" },
-  { mod="SUPER SHIFT",      key="p",       desc="Screenshot area",         func="spawn",       cmd="flameshot gui -p ~/Pictures/Screenshots/" },
-  { mod="SUPER CTRL",       key="p",       desc="Screenshot full",         func="spawn",       cmd="flameshot full -p ~/Pictures/Screenshots/" },
+  { mod="SUPER SHIFT",      key="p",       desc="Screenshot area",         func="spawn",       cmd="$HOME/.local/share/dwm/scripts/dwm-screenshot gui" },
+  { mod="SUPER CTRL",       key="p",       desc="Screenshot full",         func="spawn",       cmd="$HOME/.local/share/dwm/scripts/dwm-screenshot full" },
   { mod="SUPER",            key="v",       desc="VLC",                     func="spawn",       cmd="vlc" },
   { mod="SUPER",            key="l",       desc="Slock",                   func="spawn",       cmd="slock" },
   { mod="SUPER",            key="e",       desc="Thunar",                  func="spawn",       cmd="thunar" },
@@ -36,13 +41,14 @@ keys = [
   { mod="SUPER",            key="w",       desc="WiFi menu",               func="spawn",       cmd="$HOME/.local/share/dwm/scripts/wifimenu" },
   { mod="SUPER CTRL",       key="w",       desc="Random wallpaper",        func="spawn",       cmd="feh --randomize --bg-fill ~/Pictures/Wallpapers/*" },
   { mod="SUPER SHIFT",      key="w",       desc="Looking Glass",           func="spawn",       cmd="looking-glass-client -F" },
+  { mod="SUPER",            key="x",       desc="Football Details",        func="spawn",       cmd="$HOME/.local/share/dwm/scripts/football-selector" },
 
   # ── Media Keys ─────────────────────────────────────────────────────────────
   { mod="",   key="XF86AudioMute",          desc="Mute",          func="spawn",  cmd="wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle || pactl set-sink-mute @DEFAULT_SINK@ toggle" },
   { mod="",   key="XF86AudioRaiseVolume",   desc="Volume up",     func="spawn",  cmd="wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ || pactl set-sink-volume @DEFAULT_SINK@ +5%" },
   { mod="",   key="XF86AudioLowerVolume",   desc="Volume down",   func="spawn",  cmd="wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- || pactl set-sink-volume @DEFAULT_SINK@ -5%" },
-  { mod="",   key="XF86MonBrightnessUp",    desc="Brightness +",  func="spawn",  cmd="xrandr --output $(xrandr --current | grep \" connected\" | cut -f1 -d \" \") --brightness $(echo \"$(xrandr --verbose | grep -m 1 -i brightness | cut -f2 -d ' ') + 0.1\" | bc)" },
-  { mod="",   key="XF86MonBrightnessDown",  desc="Brightness -",  func="spawn",  cmd="xrandr --output $(xrandr --current | grep \" connected\" | cut -f1 -d \" \") --brightness $(echo \"$(xrandr --verbose | grep -m 1 -i brightness | cut -f2 -d ' ') - 0.1\" | bc)" },
+  { mod="",   key="XF86MonBrightnessUp",    desc="Brightness +",  func="adjustbrightness", f=0.1 },
+  { mod="",   key="XF86MonBrightnessDown",  desc="Brightness -",  func="adjustbrightness", f=-0.1 },
   { mod="",   key="XF86AudioMicMute",       desc="Mic mute",      func="spawn",  cmd="wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle || pactl set-source-mute @DEFAULT_SOURCE@ toggle" },
   { mod="",   key="XF86WLAN",               desc="Airplane mode", func="spawn",  cmd="nmcli radio all off" },
   { mod="",   key="XF86AudioPlay",          desc="Play/Pause",    func="spawn",  cmd="playerctl play-pause" },

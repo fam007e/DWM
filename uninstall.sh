@@ -56,7 +56,8 @@ if confirm "Remove Polybar, Rofi, and Terminal configurations?"; then
 fi
 
 # ── 4. Remove Secrets (Optional) ─────────────────────────
-if confirm "Remove API secrets (~/.config/dwm_*.env)?"; then
+if confirm "Remove API secrets (~/.config/dwm/secrets/)?"; then
+    rm -rf "$HOME/.config/dwm/secrets"
     rm -f "$HOME/.config/dwm_weather.env" "$HOME/.config/dwm_football.env"
     ok "Secrets removed."
 fi

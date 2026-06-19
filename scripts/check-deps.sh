@@ -83,6 +83,10 @@ check_cmd "feh"
 check_cmd "flameshot"
 check_cmd "dex"
 check_cmd "amixer"
+check_cmd "python3"
+check_cmd "jq"
+check_cmd "curl"
+check_cmd "bc"
 echo ""
 
 # ── Terminal emulators ──────────────────────────────────

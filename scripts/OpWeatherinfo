@@ -3,7 +3,7 @@
 
 # 1. Enforcement of Private Permissions
 umask 077
-CONFIG_FILE="$HOME/.config/dwm_weather.env"
+CONFIG_FILE="$HOME/.config/dwm/secrets/weather.env"
 LOG_FILE="$HOME/.cache/weather.log"
 
 # 2. Secure Secret Retrieval

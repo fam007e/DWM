@@ -10,7 +10,7 @@ A hybrid "Ticker" module for Polybar.
 - **Animation:** Slides smoothly across the center of your Polybar.
 
 ## 2. Hardened Weather Logic
-A custom Bash implementation (`OpWeatherinfo`) that replaces the Titus default.
+A custom Bash implementation (`OpWeatherinfo`) that replaces the Legacy default.
 - **Secure:** Loads API keys and coordinates from an isolated environment file.
 - **Detailed:** Provides Temperature, "Feels Like," and Humidity.
 - **Efficient:** Fetches data every 20 minutes to respect API rate limits.
@@ -37,3 +37,6 @@ A dynamic keybinding viewer that reads your actual `hotkeys.toml` file in real-t
 - **Bluetooth/WiFi Menus:** Custom Rofi-based wrappers around `nmcli` and `bluetoothctl` for fast management.
 - **Football Selector:** A GUI to toggle match tracking for specific leagues or teams.
 - **Power Menu:** A hardened logout/lock/reboot/shutdown interface.
+
+## 7. Custom Picom Animations
+This build uses a specialized fork of `picom` (`fam007e/picom`) that provides modern, buttery-smooth window animations (fade, zoom, slide) that are not present in the standard upstream repository.

@@ -1,128 +1,272 @@
+#!/usr/bin/env python3
+"""
+footybite_scraper.py — Scrape live/upcoming matches from home.footybite.vc
+
+Modes:
+  (default)   Output filtered matches as pipe-separated labels for football_matches dedup
+  --links     Output ALL matches with URLs for rofi selector, grouped by sport category
+
+Output format (--links):
+  ---CATEGORY_NAME---              (section header)
+  EMOJI STATUS | Team1 vs Team2|||URL
+
+Output format (default):
+  🕒 Team vs Team (status) | ...
+"""
+
 import urllib.request
+import sys
 import re
 from html.parser import HTMLParser
-from datetime import datetime, timezone
-import concurrent.futures
 
-# Helper to convert UK time to Local time
-def uk_to_local(date_str, time_str):
-    try:
-        dt_str = f"{date_str} {time_str}"
-        dt_utc = datetime.strptime(dt_str, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
-        local_dt = dt_utc.astimezone()
-        return local_dt.strftime("%H:%M")
-    except:
-        return time_str
+
+# ─── Sport category emoji mapping ───────────────────────────────────────────
+CATEGORY_EMOJI = {
+    "important games": "⚽",
+    "f1":              "🏎️",
+    "wnba":            "🏀",
+    "nba":             "🏀",
+    "nhl":             "🏒",
+    "mlb":             "⚾",
+    "nfl":             "🏈",
+    "ufc":             "🥊",
+    "boxing":          "🥊",
+    "cricket":         "🏏",
+    "tennis":          "🎾",
+    "rugby":           "🏉",
+    "motogp":          "🏍️",
+}
+
+# ─── Target teams for the default (filtered) mode ───────────────────────────
+TARGET_TEAMS = [
+    # International
+    "Spain", "Argentina", "France", "England", "Brazil", "Portugal",
+    "Netherlands", "Morocco", "Belgium", "Germany", "Croatia", "Senegal",
+    "Italy", "Colombia", "United States", "USA", "Mexico", "Uruguay",
+    "Switzerland", "Japan", "Iran",
+    # Clubs
+    "Real Madrid", "Bayern", "Liverpool", "Inter", "Manchester City",
+    "Man City", "Paris Saint-Germain", "PSG", "Barcelona", "Barca",
+    "Arsenal", "Bayer Leverkusen", "Dortmund", "Atletico", "Chelsea",
+    "Roma", "Benfica", "Atalanta", "Sporting", "Frankfurt", "Tottenham",
+    "Spurs", "Porto", "Manchester United", "Man United", "Club Brugge",
+    "Fiorentina", "Real Betis", "Aston Villa", "Juventus", "Juve",
+    "PSV", "Feyenoord", "West Ham", "Lille", "Milan", "Lyon", "Bodo",
+    "Napoli", "Olympiacos", "AZ Alkmaar", "Leipzig", "Lazio", "Ajax",
+    "Newcastle", "Brighton", "Wolves", "Everton", "Brentford",
+    "Crystal Palace", "Fulham", "Nottingham Forest", "Nottingham",
+    "Leicester", "Ipswich", "Southampton", "Bournemouth",
+]
+
 
 class FootybiteParser(HTMLParser):
+    """
+    Parse the home.footybite.vc HTML to extract matches grouped by category.
+
+    HTML structure (per section):
+      <div class="my-1">                      ← category header container
+        <img ... alt="F1">  <span>F1</span>   ← non-"Important Games" categories
+      </div>
+      OR for Important Games:
+        <h4 ...> Important Games</h4>
+
+      <a target="_blank" href="https://footybite.vc/Team1-vs-Team2/12345">
+        <span class="txt-team">Team1</span>
+        <span>Starts in 8min</span>           ← middle column status
+        <span class="txt-team">Team2</span>
+      </a>
+    """
+
     def __init__(self):
         super().__init__()
+        # Final result: list of (category, home, away, status, url)
         self.matches = []
-        self.current_match = {}
-        self.in_team = False
-        self.team_count = 0
-        # === YOUR TOP TEAMS & CLUBS LIST ===
-        self.target_teams = [
-            # International
-            "Spain", "Argentina", "France", "England", "Brazil", "Portugal", "Netherlands", 
-            "Morocco", "Belgium", "Germany", "Croatia", "Senegal", "Italy", "Colombia", 
-            "United States", "USA", "Mexico", "Uruguay", "Switzerland", "Japan", "Iran",
-            # Clubs
-            "Real Madrid", "Bayern", "Liverpool", "Inter", "Manchester City", "Man City",
-            "Paris Saint-Germain", "PSG", "Barcelona", "Barca", "Arsenal", "Bayer Leverkusen",
-            "Dortmund", "Atletico", "Chelsea", "Roma", "Benfica", "Atalanta", "Sporting",
-            "Frankfurt", "Tottenham", "Spurs", "Porto", "Manchester United", "Man United",
-            "Club Brugge", "Fiorentina", "Real Betis", "Aston Villa", "Juventus", "Juve",
-            "PSV", "Feyenoord", "West Ham", "Lille", "Milan", "Lyon", "Bodo", "Napoli",
-            "Olympiacos", "AZ Alkmaar", "Leipzig", "Lazio", "Ajax",
-            "Newcastle", "Brighton", "Wolves", "Everton", "Brentford", "Crystal Palace", 
-            "Fulham", "Nottingham Forest", "Nottingham", "Leicester", "Ipswich", 
-            "Southampton", "Bournemouth"
-        ]
+
+        # State tracking
+        self._current_category = "Important Games"
+        self._in_h4 = False
+        self._in_category_span = False
+        self._saw_category_icon = False  # True after we see an <img class="img-icone">
+
+        self._current_url = ""
+        self._in_match_link = False
+        self._in_team_span = False
+        self._in_status_span = False
+        self._home = ""
+        self._away = ""
+        self._status = ""
+        self._team_count = 0
+
+        # Track nesting inside the time-txt div
+        self._in_time_div = False
 
     def handle_starttag(self, tag, attrs):
-        attrs_dict = dict(attrs)
-        if tag == "a" and "href" in attrs_dict:
-            if "-vs-" in attrs_dict["href"]:
-                self.current_match["url"] = attrs_dict["href"]
-        elif tag == "span" and attrs_dict.get("class") == "txt-team":
-            self.in_team = True
+        d = dict(attrs)
+
+        # ── Category headers ──
+        if tag == "h4":
+            self._in_h4 = True
+
+        # Category icon: <img ... class="img-icone" alt="F1">
+        if tag == "img" and "img-icone" in d.get("class", ""):
+            alt = d.get("alt", "").strip()
+            if alt:
+                self._current_category = alt
+                self._saw_category_icon = True
+
+        # Span right after category icon holds category name
+        if tag == "span" and self._saw_category_icon:
+            self._in_category_span = True
+
+        # ── Match link ──
+        if tag == "a" and d.get("target") == "_blank":
+            href = d.get("href", "")
+            if "footybite.vc/" in href and "-vs-" in href.lower():
+                self._current_url = href
+                self._in_match_link = True
+                self._team_count = 0
+                self._home = ""
+                self._away = ""
+                self._status = ""
+
+        # ── Team name ──
+        if tag == "span" and d.get("class", "") == "txt-team" and self._in_match_link:
+            self._in_team_span = True
+
+        # ── Status / time (middle column) ──
+        if tag == "div" and "time-txt" in d.get("class", "") and self._in_match_link:
+            self._in_time_div = True
+
+        # The actual status text is inside a nested <span> within time-txt
+        if tag == "span" and self._in_time_div and self._in_match_link:
+            self._in_status_span = True
+
+    def handle_endtag(self, tag):
+        if tag == "h4":
+            self._in_h4 = False
+        if tag == "div" and self._in_time_div:
+            self._in_time_div = False
+            self._in_status_span = False
+        if tag == "a" and self._in_match_link:
+            # Finalize match
+            if self._home and self._away and self._current_url:
+                self.matches.append((
+                    self._current_category,
+                    self._home,
+                    self._away,
+                    self._status.strip() or "Scheduled",
+                    self._current_url,
+                ))
+            self._in_match_link = False
 
     def handle_data(self, data):
-        data = data.strip()
-        if self.in_team and data:
-            if self.team_count == 0:
-                self.current_match["home"] = data
-                self.team_count = 1
+        text = data.strip()
+        if not text:
+            return
+
+        # Category from <h4>
+        if self._in_h4:
+            if text.lower().startswith("important"):
+                self._current_category = "Important Games"
+
+        # Category from <span> after icon
+        if self._in_category_span:
+            self._current_category = text
+            self._in_category_span = False
+            self._saw_category_icon = False
+
+        # Team names
+        if self._in_team_span and self._in_match_link:
+            if self._team_count == 0:
+                self._home = text
             else:
-                self.current_match["away"] = data
-                self.add_match()
-            self.in_team = False
+                self._away = text
+            self._team_count += 1
+            self._in_team_span = False
 
-    def add_match(self):
-        home = self.current_match.get("home", "")
-        away = self.current_match.get("away", "")
-        url = self.current_match.get("url", "")
-        
-        # Check if BOTH teams are in our target list
-        home_is_target = any(target.lower() in home.lower() for target in self.target_teams)
-        away_is_target = any(target.lower() in away.lower() for target in self.target_teams)
-        
-        if home_is_target and away_is_target:
-            self.matches.append({"home": home, "away": away, "url": url})
-        
-        self.current_match = {}
-        self.team_count = 0
+        # Status
+        if self._in_status_span and self._in_match_link:
+            # Skip "Live Streams" button text or empty fragments
+            clean = text.strip()
+            if clean and clean.lower() != "live streams":
+                if not self._status:
+                    self._status = clean
 
-def fetch_match_detail(m):
-    url = m["url"]
-    try:
-        if not url.startswith("http"):
-            url = "https://www.footybite.do" + (url if url.startswith("/") else "/" + url)
-        
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req, timeout=5) as response:
-            html = response.read().decode('utf-8')
-            match = re.search(r"(\d{4}-\d{2}-\d{2}),\s+(\d{2}:\d{2})\s+uk time", html)
-            if match:
-                dt_str = f"{match.group(1)} {match.group(2)}"
-                dt_utc = datetime.strptime(dt_str, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
-                now_utc = datetime.now(timezone.utc)
-                diff = (dt_utc - now_utc).total_seconds()
-                
-                # Filter: starts within 6 hours (21600s) OR started up to 3 hours ago (10800s)
-                if -10800 < diff < 21600:
-                    local_time = uk_to_local(match.group(1), match.group(2))
-                    return f"🕒 {m['home']} vs {m['away']} ({local_time})|||{url}"
-    except:
-        pass
-    return None
+
+def status_emoji(status_text):
+    """Return an appropriate emoji for match status."""
+    s = status_text.lower()
+    if "started" in s or "live" in s:
+        return "🔴"
+    elif "starts in" in s:
+        return "🕒"
+    elif "ended" in s or "finished" in s:
+        return "⏹️"
+    return "📅"
+
+
+def is_target_match(home, away):
+    """Check if both teams are in the target list (for default/filtered mode)."""
+    h_lower = home.lower()
+    a_lower = away.lower()
+    home_ok = any(t.lower() in h_lower for t in TARGET_TEAMS)
+    away_ok = any(t.lower() in a_lower for t in TARGET_TEAMS)
+    return home_ok and away_ok
+
+
+def fetch_page():
+    """Fetch and return the HTML from home.footybite.vc."""
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+        ),
+    }
+    req = urllib.request.Request("https://home.footybite.vc", headers=headers)
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        return resp.read().decode("utf-8", errors="replace")
+
 
 def main():
-    import sys
     show_links = "--links" in sys.argv
+
     try:
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        req = urllib.request.Request("https://www.footybite.do", headers=headers)
-        with urllib.request.urlopen(req, timeout=10) as response:
-            html = response.read().decode('utf-8')
-            parser = FootybiteParser()
-            parser.feed(html)
-            
-            with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
-                results = list(executor.map(fetch_match_detail, parser.matches))
-            
-            cleaned_results = [r for r in results if r]
-            if show_links:
-                for r in cleaned_results:
-                    print(r)
-            else:
-                # Compatibility mode: just labels separated by |
-                labels = [r.split("|||")[0] for r in cleaned_results]
-                print(" | ".join(labels))
-    except Exception:
-        pass
+        html = fetch_page()
+    except Exception as e:
+        print(f"Error fetching footybite.vc: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    parser = FootybiteParser()
+    parser.feed(html)
+
+    if not parser.matches:
+        sys.exit(0)
+
+    if show_links:
+        # ── rofi mode: all matches, grouped by category ──
+        current_cat = None
+        for category, home, away, status, url in parser.matches:
+            if category != current_cat:
+                current_cat = category
+                cat_emoji = CATEGORY_EMOJI.get(category.lower(), "🏅")
+                print(f"---{cat_emoji} {category}---")
+
+            emoji = status_emoji(status)
+            # Clean up status for display
+            display_status = re.sub(r"\s+", " ", status).strip()
+            print(f"{emoji} {display_status} | {home} vs {away}|||{url}")
+    else:
+        # ── default mode: filtered, pipe-separated labels for football_matches ──
+        labels = []
+        for category, home, away, status, url in parser.matches:
+            # Only include Important Games / football that match target teams
+            if category.lower() == "important games" and is_target_match(home, away):
+                emoji = status_emoji(status)
+                display_status = re.sub(r"\s+", " ", status).strip()
+                labels.append(f"{emoji} {home} vs {away} ({display_status})")
+        if labels:
+            print(" | ".join(labels))
+
 
 if __name__ == "__main__":
     main()

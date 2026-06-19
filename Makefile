@@ -52,7 +52,7 @@ install: all
 	done
 	# Scripts to PATH
 	for f in scripts/*; do \
-		case "$$(basename $$f)" in autostart*) continue;; esac; \
+		case "$$(basename $$f)" in autostart*|.xinitrc) continue;; esac; \
 		install -Dm755 "$$f" ${DESTDIR}${PREFIX}/bin/$$(basename $$f); \
 	done
 	
@@ -74,7 +74,7 @@ uninstall:
 
 release: dwm
 	mkdir -p release
-	cp -f dwm dwm.desktop .xinitrc release/
+	cp -f dwm dwm.desktop scripts/.xinitrc release/
 	cp -rf config scripts release/
 	tar -czf release/Omitus-${VERSION}.tar.gz -C release dwm dwm.desktop .xinitrc config scripts
 

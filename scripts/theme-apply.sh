@@ -167,7 +167,7 @@ EOF
     # Ensure kitty.conf has 'include active-theme.conf'
     if [[ -f "$KITTY_DIR/kitty.conf" ]]; then
         # Remove any existing theme includes to avoid conflicts
-        sed -i '/include.*\.conf/d' "$KITTY_DIR/kitty.conf"
+        sed -i '/include.*active-theme\.conf/d' "$KITTY_DIR/kitty.conf"
         # Add the active theme include at the bottom to ensure it takes precedence
         echo "include ./active-theme.conf" >> "$KITTY_DIR/kitty.conf"
     fi

@@ -416,7 +416,6 @@ struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };
 /* monitor-specific tag management */
 static int monitorcount = 1;
 static unsigned int getmontagmask(int monnum);
-static int getmonitorforselectedtag(void);
 static void updatemonitorcount(void);
 static void initmonitortags(void);
 
@@ -715,6 +714,10 @@ cleanup(void)
 	XSync(dpy, False);
 	XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot, CurrentTime);
 	XDeleteProperty(dpy, root, netatom[NetActiveWindow]);
+	if (inotify_fd >= 0) {
+		close(inotify_fd);
+		inotify_fd = -1;
+	}
 }
 
 void
@@ -2724,6 +2727,7 @@ static void (*lookup_func(const char *name))(const Arg *)
 	if (strcmp(name, "resizemouse")          == 0) return resizemouse;
 	if (strcmp(name, "sigstatusbar")         == 0) return sigstatusbar;
 	if (strcmp(name, "togglewarm")           == 0) return togglewarm;
+	if (strcmp(name, "adjustbrightness")     == 0) return adjustbrightness;
 	return NULL;
 
 }
@@ -4412,6 +4416,7 @@ xerrorstart(Display *dpy, XErrorEvent *ee)
 void
 zoom(const Arg *arg)
 {
+	(void)arg;
 	Client *c = selmon->sel;
 
 	if (!selmon->lt[selmon->sellt]->arrange || !c || c->isfloating)
@@ -4473,10 +4478,10 @@ getmonlogicalindex(Monitor *target)
 unsigned int
 getmontagmask(int monnum)
 {
-	int tagspermon, start, end, i;
 	unsigned int mask = 0;
+	int logicalindex = -1;
 	Monitor *m;
-	int logicalindex;
+	unsigned int tagspermon, start, end, i;
 	
 	/* Find monitor by num and get its logical index based on position */
 	for (m = mons; m; m = m->next) {
@@ -4486,7 +4491,7 @@ getmontagmask(int monnum)
 		}
 	}
 	
-	if (!m) {
+	if (logicalindex == -1) {
 		logicalindex = monnum;
 	}
 	
@@ -4496,17 +4501,17 @@ getmontagmask(int monnum)
 	if (monitorcount <= 1)
 		return TAGMASK;
 		
-	tagspermon = LENGTH(tags) / monitorcount;
+	tagspermon = (unsigned int)(LENGTH(tags) / monitorcount);
 	if (tagspermon == 0) tagspermon = 1;
 	
-	start = logicalindex * tagspermon;
+	start = (unsigned int)logicalindex * tagspermon;
 	end = start + tagspermon;
 	
 	if (logicalindex == monitorcount - 1)
-		end = LENGTH(tags);
+		end = (unsigned int)LENGTH(tags);
 	
-	if (start >= LENGTH(tags)) start = LENGTH(tags) - 1;
-	if (end > LENGTH(tags)) end = LENGTH(tags);
+	if (start >= (unsigned int)LENGTH(tags)) start = (unsigned int)LENGTH(tags) - 1;
+	if (end > (unsigned int)LENGTH(tags)) end = (unsigned int)LENGTH(tags);
 	if (start >= end) {
 		return 1 << (monnum % LENGTH(tags));
 	}
@@ -4517,27 +4522,7 @@ getmontagmask(int monnum)
 	return mask ? mask : (1 << (monnum % LENGTH(tags)));
 }
 
-int
-getmonitorforselectedtag(void)
-{
-	unsigned int curtag = selmon->tagset[selmon->seltags];
-	int tagspermon, i;
-	
-	if (monitorcount <= 1 || !curtag)
-		return 0;
-		
-	tagspermon = LENGTH(tags) / monitorcount;
-	if (tagspermon == 0) tagspermon = 1;
-	
-	/* Find which tag bit is set */
-	for (i = 0; i < LENGTH(tags); i++) {
-		if (curtag & (1 << i)) {
-			return i / tagspermon >= monitorcount ? monitorcount - 1 : i / tagspermon;
-		}
-	}
-	
-	return 0;
-}
+
 
 /* Initialize monitor-specific tags after all monitors are created */
 void

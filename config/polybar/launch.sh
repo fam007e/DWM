@@ -13,7 +13,10 @@ if [[ "$SCRIPT_DIR" == *".config/polybar"* ]]; then
     export DWM_SCRIPTS="$HOME/.local/share/dwm/scripts"
 fi
 
-# Kill existing polybar instances only if running
+# Kill existing polybar instances before launching new ones
+killall -q polybar 2>/dev/null || true
+while pgrep -u "$UID" -x polybar >/dev/null; do sleep 0.1; done
+
 if [ -f "$HOME/.config/polybar/themes/$THEME/config.ini" ]; then
     CONFIG_DIR="$HOME/.config/polybar"
 elif [ -f "$SCRIPT_DIR/themes/$THEME/config.ini" ]; then

@@ -61,7 +61,7 @@ cd "$REPO_DIR"
 
 # ── Portable Directory Setup ─────────────────────────────
 mkdir -p "$BG_DIR"
-mkdir -p "$HOME/.config/dwm"
+mkdir -p "$HOME/.config/dwm/secrets"
 mkdir -p "$DWM_DATA_DIR/scripts"
 
 # ── Compile & Install Binary ─────────────────────────────
@@ -75,13 +75,13 @@ ok "DWM binary installed to /usr/local/bin/dwm"
 info "Deploying configurations..."
 
 # Rofi & Terminals
-mirror_dir "$REPO_DIR/config/rofi" "$HOME/.config/rofi"
-mirror_dir "$REPO_DIR/config/alacritty" "$HOME/.config/alacritty"
-mirror_dir "$REPO_DIR/config/kitty" "$HOME/.config/kitty"
-mirror_dir "$REPO_DIR/config/ghostty" "$HOME/.config/ghostty"
+seed_dir "$REPO_DIR/config/rofi" "$HOME/.config/rofi"
+seed_dir "$REPO_DIR/config/alacritty" "$HOME/.config/alacritty"
+seed_dir "$REPO_DIR/config/kitty" "$HOME/.config/kitty"
+seed_dir "$REPO_DIR/config/ghostty" "$HOME/.config/ghostty"
 
 # Polybar
-mirror_dir "$REPO_DIR/config/polybar" "$HOME/.config/polybar"
+seed_dir "$REPO_DIR/config/polybar" "$HOME/.config/polybar"
 chmod +x "$HOME/.config/polybar/launch.sh"
 find "$HOME/.config/polybar/scripts" -type f -name "*.sh" -exec chmod +x {} +
 
@@ -92,8 +92,8 @@ cp -n "$REPO_DIR/config/window-rules.toml" "$HOME/.config/dwm/window-rules.toml"
 
 # ── Scripts & Backend Deployment ─────────────────────────
 info "Deploying system scripts to $DWM_DATA_DIR/scripts..."
-cp -f "$REPO_DIR/scripts/"* "$DWM_DATA_DIR/scripts/"
-chmod +x "$DWM_DATA_DIR/scripts/"*
+mirror_dir "$REPO_DIR/scripts" "$DWM_DATA_DIR/scripts"
+find "$DWM_DATA_DIR/scripts" -type f -exec chmod +x {} +
 
 # Mirror themes into data dir
 mirror_dir "$REPO_DIR/config/ghostty/themes" "$DWM_DATA_DIR/ghostty/themes"
@@ -101,12 +101,16 @@ mirror_dir "$REPO_DIR/config/ghostty/themes" "$DWM_DATA_DIR/ghostty/themes"
 # ── Final Security & Secret Verification ─────────────────
 info "Running security check..."
 
-if [ ! -f "$HOME/.config/dwm_weather.env" ]; then
-    warn "MISSING: Weather secrets. Run: echo 'WEATHER_API_KEY=\"...\"' > ~/.config/dwm_weather.env"
+# Migrate old secrets if they exist
+[ -f "$HOME/.config/dwm_weather.env" ] && mv "$HOME/.config/dwm_weather.env" "$HOME/.config/dwm/secrets/weather.env"
+[ -f "$HOME/.config/dwm_football.env" ] && mv "$HOME/.config/dwm_football.env" "$HOME/.config/dwm/secrets/football.env"
+
+if [ ! -f "$HOME/.config/dwm/secrets/weather.env" ]; then
+    warn "MISSING: Weather secrets. Run: echo 'WEATHER_API_KEY=\"...\"' > ~/.config/dwm/secrets/weather.env"
 fi
 
-if [ ! -f "$HOME/.config/dwm_football.env" ]; then
-    warn "MISSING: Football secrets. Run: echo 'FOOTBALL_API_KEY=\"...\"' > ~/.config/dwm_football.env"
+if [ ! -f "$HOME/.config/dwm/secrets/football.env" ]; then
+    warn "MISSING: Football secrets. Run: echo 'FOOTBALL_API_KEY=\"...\"' > ~/.config/dwm/secrets/football.env"
 fi
 
 # Apply initial theme

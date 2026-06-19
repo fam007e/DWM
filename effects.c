@@ -163,6 +163,7 @@ setcolortemp(int temp)
 void
 togglewarm(const Arg *arg)
 {
+    (void)arg;
     if (!dpy) return; /* safety if called before effects_init */
     if (current_temp == 6500) {
         saved_brightness = get_neutral_brightness();
@@ -171,5 +172,24 @@ togglewarm(const Arg *arg)
     }
 
     current_temp = (current_temp == 6500) ? 3500 : 6500;
+    setcolortemp(current_temp);
+}
+
+void
+adjustbrightness(const Arg *arg)
+{
+    if (!dpy) return;
+
+    /* Sync current brightness to handle any external changes */
+    if (current_temp == 6500) {
+        saved_brightness = get_neutral_brightness();
+    } else {
+        saved_brightness = get_current_brightness_compensated();
+    }
+
+    saved_brightness += arg->f;
+    if (saved_brightness < 0.1) saved_brightness = 0.1;
+    if (saved_brightness > 1.0) saved_brightness = 1.0;
+
     setcolortemp(current_temp);
 }

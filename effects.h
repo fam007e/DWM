@@ -6,6 +6,7 @@
 
 /* Effect toggles */
 void togglewarm(const Arg *arg);
+void adjustbrightness(const Arg *arg);
 
 /* Modular initialization to keep dwm.c globals static */
 void effects_init(Display *dpy, Window root);

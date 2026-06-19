@@ -155,12 +155,12 @@ fi
 header "Shell Startup Integration"
 
 ENV_SNIPPET='# Export display env to systemd user session (needed for XDG autostart)
-systemctl --user import-environment DISPLAY XAUTHORITY 2>/dev/null
-dbus-update-activation-environment --systemd DISPLAY XAUTHORITY 2>/dev/null'
+systemctl --user import-environment DISPLAY XAUTHORITY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE 2>/dev/null
+dbus-update-activation-environment --systemd DISPLAY XAUTHORITY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE 2>/dev/null'
 
 XINITRC_PATHS=(
     "${HOME}/.xinitrc"
-    "${HOME}/.local/share/dwm-titus/.xinitrc"
+    "${HOME}/.local/share/dwm/.xinitrc"
     "${HOME}/.config/X11/xinitrc"
 )
 
