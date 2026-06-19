@@ -32,8 +32,8 @@ echo ""
 info "Installing core and custom dependencies..."
 # Added picom build deps: meson, ninja, uthash, libev, libconfig, pcre2, pixman, xorgproto, xcb-util-renderutil, xcb-util-image, mesa, libepoxy, cmake, asciidoctor
 install_packages base-devel libx11 libxft libxinerama imlib2 libxcb xcb-util freetype2 fontconfig \
-    xorg-server xorg-xinit \
-    rofi dunst feh flameshot dex mate-polkit alsa-utils git unzip xclip \
+    xorg-server xorg-xinit xorg-xrandr xorg-xset xorg-xsetroot \
+    rofi rofi-emoji rofi-calc dunst feh flameshot dex mate-polkit alsa-utils git unzip xclip \
     xorg-xprop thunar gvfs tumbler thunar-archive-plugin nwg-look xdg-user-dirs \
     xdg-desktop-portal-gtk pipewire pavucontrol gnome-keyring networkmanager network-manager-applet \
     libnotify rsync python jq bc curl playerctl blueman polybar ttf-meslo-nerd noto-fonts-emoji \
@@ -79,8 +79,8 @@ seed_dir "$REPO_DIR/config/alacritty" "$HOME/.config/alacritty"
 seed_dir "$REPO_DIR/config/kitty" "$HOME/.config/kitty"
 seed_dir "$REPO_DIR/config/ghostty" "$HOME/.config/ghostty"
 
-# Polybar
-seed_dir "$REPO_DIR/config/polybar" "$HOME/.config/polybar"
+# Polybar (mirror to keep scripts and themes in sync with repo)
+mirror_dir "$REPO_DIR/config/polybar" "$HOME/.config/polybar"
 chmod +x "$HOME/.config/polybar/launch.sh"
 find "$HOME/.config/polybar/scripts" -type f -name "*.sh" -exec chmod +x {} +
 

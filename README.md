@@ -51,8 +51,8 @@ This build is optimized for Arch Linux. Ensure you have the required tools:
 
 ```bash
 sudo pacman -S --needed base-devel libx11 libxft libxinerama imlib2 libxcb xcb-util \
-    xorg-server xorg-xinit \
-    polybar rofi picom feh flameshot python jq bc curl playerctl blueman
+    xorg-server xorg-xinit xorg-xrandr xorg-xset xorg-xsetroot \
+    polybar rofi rofi-emoji rofi-calc picom feh flameshot python jq bc curl playerctl blueman
 ```
 
 ### 2. Build & Install
