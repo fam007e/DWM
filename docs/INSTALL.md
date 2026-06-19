@@ -10,7 +10,7 @@ The `install.sh` script will attempt to install these automatically, but you sho
 
 | Component | Packages |
 |-----------|----------|
-| **Build** | `base-devel`, `libx11`, `libxft`, `libxinerama`, `imlib2`, `libxcb`, `freetype2` |
+| **Build** | `base-devel`, `libx11`, `libxft`, `libxinerama`, `imlib2`, `libxcb`, `freetype2`, `xorg-server`, `xorg-xinit` |
 | **Status Bar** | `polybar`, `jq`, `bc`, `curl` |
 | **Utilities** | `rofi`, `picom`, `feh`, `flameshot`, `blueman`, `playerctl` |
 | **Logic** | `python` (for Football Scraper) |

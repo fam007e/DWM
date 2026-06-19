@@ -32,6 +32,7 @@ echo ""
 info "Installing core and custom dependencies..."
 # Added picom build deps: meson, ninja, uthash, libev, libconfig, pcre2, pixman, xorgproto, xcb-util-renderutil, xcb-util-image, mesa, libepoxy, cmake, asciidoctor
 install_packages base-devel libx11 libxft libxinerama imlib2 libxcb xcb-util freetype2 fontconfig \
+    xorg-server xorg-xinit \
     rofi dunst feh flameshot dex mate-polkit alsa-utils git unzip xclip \
     xorg-xprop thunar gvfs tumbler thunar-archive-plugin nwg-look xdg-user-dirs \
     xdg-desktop-portal-gtk pipewire pavucontrol gnome-keyring networkmanager network-manager-applet \
