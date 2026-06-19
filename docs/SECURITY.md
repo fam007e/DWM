@@ -3,23 +3,23 @@
 This build follows a **High Entropy Security** model to ensure your configurations and secrets remain private.
 
 ## 1. Secret Isolation
-Never hardcode API keys in scripts. This build uses isolated `.env` files stored in `~/.config/`:
+Never hardcode API keys in scripts. This build uses isolated `.env` files stored in `~/.config/dwm/secrets/`:
 
-### Weather Secret (`~/.config/dwm_weather.env`)
+### Weather Secret (`~/.config/dwm/secrets/weather.env`)
 ```bash
 WEATHER_API_KEY="your_key"
 WEATHER_LAT="your_lat"
 WEATHER_LON="your_lon"
 ```
 
-### Football Secret (`~/.config/dwm_football.env`)
+### Football Secret (`~/.config/dwm/secrets/football.env`)
 ```bash
 FOOTBALL_API_KEY="your_token"
 ```
 
 ## 2. File Permissions
 The `install.sh` script and the fetcher scripts enforce strict **Owner-Only** access:
-- **Umask 077:** All new files created during installation are restricted to the owner.
+- **Strict 700/600 Permissions:** The secrets directory is set to 700 (`drwx------`) and the `.env` secret files are set to 600 (`-rw-------`).
 - **Strict 600:** Cache files (`~/.cache/football_matches.cache`) and Log files are set to 600 permissions. This prevents other users on the system from reading your API logs or cached data.
 
 ## 3. Data Sanitization

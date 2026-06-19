@@ -34,43 +34,22 @@ install: all
 	# Binary + man page
 	install -Dm755 dwm ${DESTDIR}${PREFIX}/bin/dwm
 	sed "s/VERSION/${VERSION}/g" dwm.1 | install -Dm644 /dev/stdin ${DESTDIR}${MANPREFIX}/man1/dwm.1
-	# Session entry + xinitrc
-	test -f /usr/share/xsessions/dwm.desktop || install -Dm644 dwm.desktop /usr/share/xsessions/
-	test -f ${USER_HOME}/.xinitrc || install -Dm644 scripts/.xinitrc ${USER_HOME}/.xinitrc
-	# Setup Local Repo Directory
-	mkdir -p ${DATA_DIR}
-	if [ "$$(realpath .)" != "$$(realpath ${DATA_DIR})" ]; then \
-		cp -rf . ${DATA_DIR}/; \
-	fi
-
-	# Polybar: rsync -- dereferences symlinks, deletes stale files, overwrites all
-	rsync -rL --delete config/polybar/ ${CFG_DIR}/polybar/
-	# Remaining config subdirs (ghostty is a symlink to DATA_DIR -- skip it; polybar handled above)
-	for dir in config/*/; do \
-		case "$$(basename $$dir)" in polybar|ghostty) continue;; esac; \
-		cp -rfL --remove-destination "$$dir" ${CFG_DIR}/$$(basename "$$dir"); \
-	done
+	# Session entry
+	test -f ${DESTDIR}/usr/share/xsessions/dwm.desktop || install -Dm644 dwm.desktop ${DESTDIR}/usr/share/xsessions/dwm.desktop
 	# Scripts to PATH
 	for f in scripts/*; do \
 		case "$$(basename $$f)" in autostart*|.xinitrc) continue;; esac; \
 		install -Dm755 "$$f" ${DESTDIR}${PREFIX}/bin/$$(basename $$f); \
 	done
-	
-	# Setup User Config if they don't exist
-	mkdir -p ${CFG_DIR}/dwm
-	test -f ${CFG_DIR}/dwm/hotkeys.toml || install -Dm644 config/hotkeys.toml ${CFG_DIR}/dwm/hotkeys.toml
-	test -f ${CFG_DIR}/dwm/themes.toml  || install -Dm644 config/themes.toml  ${CFG_DIR}/dwm/themes.toml
-	test -f ${CFG_DIR}/dwm/window-rules.toml || install -Dm644 config/window-rules.toml ${CFG_DIR}/dwm/window-rules.toml
-	# Fix ownership + permissions
-	find ${DATA_DIR} ${CFG_DIR}/polybar -name '*.sh' -o -name '*.py' | xargs -r chmod +x
-	for dir in config/*/; do chown -R ${OWNER}: "${CFG_DIR}/$$(basename $$dir)"; done
-	chown -R ${OWNER}: ${DATA_DIR}
-	chown ${OWNER}: ${USER_HOME}/.xinitrc 2>/dev/null || true
 
 uninstall:
 	rm -f ${DESTDIR}${PREFIX}/bin/dwm \
 		${DESTDIR}${MANPREFIX}/man1/dwm.1 \
-		/usr/share/xsessions/dwm.desktop
+		${DESTDIR}/usr/share/xsessions/dwm.desktop
+	for f in scripts/*; do \
+		case "$$(basename $$f)" in autostart*|.xinitrc) continue;; esac; \
+		rm -f ${DESTDIR}${PREFIX}/bin/$$(basename $$f); \
+	done
 
 release: dwm
 	mkdir -p release

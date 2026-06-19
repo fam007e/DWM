@@ -105,7 +105,7 @@ This build uses a tiered configuration system:
 2.  **Themes & Colors:** Edit `~/.config/dwm/themes.toml`.
 3.  **Window Rules:** Edit `~/.config/dwm/window-rules.toml` (Swallowing, Floating, Tags).
 4.  **Appearance & Logic:** Edit `config.def.h` and run `make && sudo make install`.
-5.  **Secrets:** Configure your API keys in `~/.config/dwm_weather.env` and `~/.config/dwm_football.env`.
+5.  **Secrets:** Configure your API keys in `~/.config/dwm/secrets/weather.env` and `~/.config/dwm/secrets/football.env`.
 
 ---
 

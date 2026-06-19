@@ -44,6 +44,6 @@ exec dwm
 
 ## 5. Post-Install Secrets
 You must configure your API keys for the status bar to function:
-- Create `~/.config/dwm_weather.env` for Weather data.
-- Create `~/.config/dwm_football.env` for the Football ticker.
+- Create `~/.config/dwm/secrets/weather.env` for Weather data.
+- Create `~/.config/dwm/secrets/football.env` for the Football ticker.
 - See [SECURITY.md](./SECURITY.md) for the exact format.

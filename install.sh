@@ -11,8 +11,6 @@ ok()   { printf "${GREEN}[OK]${NC} %s\n" "$1"; }
 warn() { printf "${YELLOW}[WARN]${NC} %s\n" "$1"; }
 err()  { printf "${RED}[ERROR]${NC} %s\n" "$1"; }
 
-# Enforcement of private umask for config deployment
-umask 077
 
 # Mirror src -> dst exactly, removing stale files no longer in repo.
 mirror_dir() { local src="$1" dst="$2"; mkdir -p "$dst"; rsync -a --delete "$src/" "$dst/"; }
@@ -90,6 +88,9 @@ cp -n "$REPO_DIR/config/hotkeys.toml" "$HOME/.config/dwm/hotkeys.toml" 2>/dev/nu
 cp -n "$REPO_DIR/config/themes.toml" "$HOME/.config/dwm/themes.toml" 2>/dev/null || true
 cp -n "$REPO_DIR/config/window-rules.toml" "$HOME/.config/dwm/window-rules.toml" 2>/dev/null || true
 
+# User .xinitrc (Preserve user edits)
+cp -n "$REPO_DIR/scripts/.xinitrc" "$HOME/.xinitrc" 2>/dev/null || true
+
 # ── Scripts & Backend Deployment ─────────────────────────
 info "Deploying system scripts to $DWM_DATA_DIR/scripts..."
 mirror_dir "$REPO_DIR/scripts" "$DWM_DATA_DIR/scripts"
@@ -104,6 +105,10 @@ info "Running security check..."
 # Migrate old secrets if they exist
 [ -f "$HOME/.config/dwm_weather.env" ] && mv "$HOME/.config/dwm_weather.env" "$HOME/.config/dwm/secrets/weather.env"
 [ -f "$HOME/.config/dwm_football.env" ] && mv "$HOME/.config/dwm_football.env" "$HOME/.config/dwm/secrets/football.env"
+
+# Secure secrets directory and env files specifically
+chmod 700 "$HOME/.config/dwm/secrets" 2>/dev/null || true
+chmod 600 "$HOME/.config/dwm/secrets"/*.env 2>/dev/null || true
 
 if [ ! -f "$HOME/.config/dwm/secrets/weather.env" ]; then
     warn "MISSING: Weather secrets. Run: echo 'WEATHER_API_KEY=\"...\"' > ~/.config/dwm/secrets/weather.env"
