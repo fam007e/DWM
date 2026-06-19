@@ -1,8 +1,8 @@
 # Alacritty Configuration - Nordic Theme
-# Compatible with Kitty terminal settings
 [general]
 live_config_reload = true
 working_directory = "None"
+
 # Import theme and keybindings
 import = [ 
   "~/.config/alacritty/nordic.toml",
@@ -16,23 +16,22 @@ blur = true
 opacity = 0.9
 startup_mode = "Windowed"
 
-# Window padding (similar to Kitty's margins)
+# Window padding
 [window.padding]
 x = 1
 y = 1
 
-# Window dimensions (matching Kitty's 1920x1080 preference)
+# Window dimensions
 [window.dimensions]
 columns = 160
 lines = 48
 
 [cursor]
-# Cursor styling - FIXED: Updated to new syntax
 blink_interval = 500
 blink_timeout = 15
 
 [cursor.style]
-shape = "Block"  # Changed from Beam to Block to match Kitty
+shape = "Block"
 blinking = "On"
 
 [cursor.vi_mode_style]
@@ -48,15 +47,14 @@ draw_bold_text_with_bright_colors = true
 [env]
 TERM = "xterm-256color"
 
-# Font configuration (matching Kitty's FiraCode setup)
+# Font configuration
 [font]
 size = 8.0 
-# FIXED: Removed builtin_box_drawing nested table - moved to top level
-builtin_box_drawing = true  # Changed from enable = true
+builtin_box_drawing = true
 
 # Normal font
 [font.normal]
-family = "FiraCode Nerd Font"  # Using Nerd Font variant for better icon support
+family = "FiraCode Nerd Font"
 style = "Regular"
 
 # Bold font
@@ -81,8 +79,8 @@ y = 1
 
 # Scrolling configuration
 [scrolling]
-history = 2000  # Matching Kitty's scrollback_lines
-multiplier = 5   # Matching Kitty's wheel_scroll_multiplier
+history = 2000
+multiplier = 5
 
 # Selection configuration
 [selection]
