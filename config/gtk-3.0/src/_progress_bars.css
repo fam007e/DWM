@@ -1,0 +1,32 @@
+/*****************
+ * Progress bars *
+ *****************/
+progressbar {
+  font-size: smaller;
+  color: rgba(216, 222, 233, 0.4); }
+  progressbar.horizontal trough,
+  progressbar.horizontal progress {
+    min-height: 6px; }
+  progressbar.vertical trough,
+  progressbar.vertical progress {
+    min-width: 6px; }
+  progressbar.horizontal progress {
+    margin: 0; }
+  progressbar.vertical progress {
+    margin: 0; }
+  progressbar:backdrop {
+    box-shadow: none;
+    transition: 200ms ease-out; }
+  progressbar.osd {
+    min-width: 3px;
+    min-height: 3px;
+    background-color: transparent; }
+    progressbar.osd trough {
+      border-style: none;
+      border-radius: 0;
+      background-color: transparent;
+      box-shadow: none; }
+    progressbar.osd progress {
+      border-style: none;
+      border-radius: 0; }
+

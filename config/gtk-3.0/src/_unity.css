@@ -1,0 +1,77 @@
+/********
+* Unity *
+*********/
+/* Unity window border color */
+/* Unity window text color */
+/* Backdrop Unity window text color */
+/* Unity panel color #454D50 */
+UnityDecoration {
+  /* Border properties (top, right, bottom, left) */
+  -UnityDecoration-extents: 28px 1px 1px 1px;
+  /* the size of the decorations  */
+  -UnityDecoration-input-extents: 10px;
+  /* the extra size of the input areas */
+  /* Shadows settings */
+  -UnityDecoration-shadow-offset-x: 1px;
+  /* Size property, the shadow x offset */
+  -UnityDecoration-shadow-offset-y: 1px;
+  /* Size property, the shadow y offset */
+  -UnityDecoration-active-shadow-color: rgba 0, 0, 0, 0.647;
+  /* Color property, active window shadow color */
+  -UnityDecoration-active-shadow-radius: 8px;
+  /* Size property, active window shadow radius */
+  -UnityDecoration-inactive-shadow-color: rgba 0, 0, 0, 0.647;
+  /* Color property, inactive windows shadow color */
+  -UnityDecoration-inactive-shadow-radius: 5px;
+  /* Size property, inactive windows shadow radius */
+  /* Glow applied to the selected scaled window */
+  -UnityDecoration-glow-size: 8px;
+  /* Size property, size of glow */
+  -UnityDecoration-glow-color: @theme_selected_bg_color;
+  /* Color property of the glow */
+  /* Title settings */
+  -UnityDecoration-title-indent: 10px;
+  /* Size property, left indent of the title */
+  -UnityDecoration-title-fade: 35px;
+  /* Size property, space of the title that can be faded */
+  -UnityDecoration-title-alignment: 0.0;
+  /* Float from 0.0 to 1.0, to align the title */
+  background-color: #eeeeee;
+  color: #31363D; }
+  UnityDecoration .top {
+    padding: 0 5px 0 5px;
+    border-radius: 4px 4px 0px 0px;
+    box-shadow: none;
+    border: 1px solid #eeeeee;
+    border-bottom-width: 0;
+    background-color: #eeeeee;
+    color: #31363D;
+    border-top: 1px solid rgba(255, 255, 255, 0.1); }
+    UnityDecoration .top:backdrop {
+      border-bottom-width: 0;
+      color: #1a1d21;
+      border-top: 1px solid rgba(255, 255, 255, 0.1); }
+    UnityDecoration .top .menuitem {
+      color: #31363D; }
+      UnityDecoration .top .menuitem:backdrop {
+        color: #1a1d21; }
+
+UnityDecoration.left,
+UnityDecoration.right {
+  background-repeat: repeat-x;
+  background-color: #ececec;
+  background-size: 1px 120px;
+  background-clip: border-box;
+  background-image: linear-gradient(to bottom, #eeeeee, #ececec); }
+
+UnityDecoration.bottom {
+  background-size: 1px;
+  background-repeat: repeat-x;
+  background-color: #ececec; }
+
+UnityDecoration.left:backdrop,
+UnityDecoration.right:backdrop,
+UnityDecoration.bottom:backdrop {
+  background-size: 1px;
+  background-repeat: repeat-x; }
+

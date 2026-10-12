@@ -1,0 +1,22 @@
+/*********
+ * Geary *
+ *********/
+.geary-titlebar-left .separator,
+.geary-titlebar-right .separator {
+  opacity: 0; }
+
+ConversationListView {
+  -GtkTreeView-grid-line-width: 0; }
+  ConversationListView .view:active, ConversationListView iconview:active, ConversationListView .view:selected, ConversationListView iconview:selected {
+    background-color: @theme_selected_bg_color;
+    color: @theme_selected_fg_color; }
+    ConversationListView .view:active:backdrop, ConversationListView iconview:active:backdrop, ConversationListView .view:selected:backdrop, ConversationListView iconview:selected:backdrop {
+      background-color: @theme_unfocused_selected_bg_color;
+      color: @theme_unfocused_fg_color; }
+  ConversationListView .view .cell, ConversationListView iconview .cell {
+    border: solid rgba(0, 0, 0, 0.2);
+    border-width: 0 0 1px 0; }
+    ConversationListView .view .cell:selected, ConversationListView iconview .cell:selected {
+      color: @theme_selected_fg_color;
+      border: 0px solid #6fa9a8; }
+

@@ -1,0 +1,21 @@
+/**************
+* Text Styles *
+**************/
+.h1 {
+  font-size: 24px; }
+
+.h2 {
+  font-weight: 300;
+  font-size: 18px; }
+
+.h3 {
+  font-size: 11px; }
+
+.h4,
+.category-label {
+  font-size: 12px;
+  padding: 6px;
+  color: rgba(216, 222, 233, 0.3);
+  font-weight: bold;
+  text-shadow: 0 1px rgba(255, 255, 255, 0.2); }
+

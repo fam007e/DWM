@@ -1,0 +1,142 @@
+/**************
+ * Tree Views *
+ **************/
+treeview.view {
+  border-left-color: #8a909e;
+  border-top-color: #434c5e; }
+  * {
+    -GtkTreeView-horizontal-separator: 4;
+    -GtkTreeView-grid-line-width: 1;
+    -GtkTreeView-grid-line-pattern: '';
+    -GtkTreeView-tree-line-width: 1;
+    -GtkTreeView-tree-line-pattern: '';
+    -GtkTreeView-expander-size: 16; }
+  treeview.view:hover,
+  treeview.view .cell:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: @theme_fg_color; }
+  treeview.view:selected:focus, treeview.view:selected {
+    border-radius: 0;
+    background: @theme_selected_bg_color;
+    color: @theme_selected_fg_color; }
+  treeview.view:selected:backdrop {
+    background-color: @theme_unfocused_selected_bg_color;
+    color: @theme_unfocused_selected_fg_color; }
+  treeview.view:disabled {
+    color: #8e95a4; }
+    treeview.view:disabled:selected {
+      color: #68868a; }
+      treeview.view:disabled:selected:backdrop {
+        color: rgba(131, 171, 172, 0.85); }
+    treeview.view:disabled:backdrop {
+      color: #63708b; }
+  treeview.view.separator {
+    min-height: 2px;
+    color: @theme_fg_color; }
+    treeview.view.separator:backdrop {
+      color: rgba(67, 76, 94, 0.1); }
+  treeview.view:backdrop {
+    border-left-color: #697181;
+    border-top: #434c5e; }
+  treeview.view:drop(active) {
+    border-style: solid none;
+    border-width: 1px;
+    border-color: #6fa9a8; }
+    treeview.view:drop(active).after {
+      border-top-style: none; }
+    treeview.view:drop(active).before {
+      border-bottom-style: none; }
+  treeview.view.expander {
+    -gtk-icon-source: -gtk-icontheme("pan-end-symbolic");
+    color: #a9afbc; }
+    treeview.view.expander:dir(rtl) {
+      -gtk-icon-source: -gtk-icontheme("pan-end-symbolic-rtl"); }
+    treeview.view.expander:hover {
+      color: @theme_fg_color; }
+    treeview.view.expander:selected {
+      color: @theme_selected_fg_color; }
+      treeview.view.expander:selected:hover {
+        color: @theme_selected_fg_color; }
+      treeview.view.expander:selected:backdrop {
+        color: rgba(101, 129, 133, 0.65); }
+    treeview.view.expander:checked {
+      -gtk-icon-source: -gtk-icontheme("pan-down-symbolic"); }
+    treeview.view.expander:backdrop {
+      color: #767d8c; }
+  treeview.view.progressbar {
+    border: 1px solid #6fa9a8;
+    border-radius: 4px;
+    background-color: @theme_selected_bg_color;
+    background-image: linear-gradient(to bottom, @theme_selected_bg_color, #6fa9a8);
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.15), 0 1px rgba(0, 0, 0, 0.1); }
+    treeview.view.progressbar:selected:focus, treeview.view.progressbar:selected {
+      border-radius: 4px;
+      box-shadow: inset 0 1px rgba(255, 255, 255, 0.05);
+      color: @theme_selected_fg_color;
+      background-image: linear-gradient(to bottom, @theme_selected_bg_color, #262a34); }
+      treeview.view.progressbar:selected:focus:backdrop, treeview.view.progressbar:selected:backdrop {
+        border-color: #3d4455;
+        background-color: #3d4455; }
+    treeview.view.progressbar:backdrop {
+      border-color: #3d4455;
+      background-image: none;
+      box-shadow: none; }
+  treeview.view.trough {
+    background-color: rgba(216, 222, 233, 0.1);
+    border-radius: 4px; }
+    treeview.view.trough:selected:focus, treeview.view.trough:selected {
+      background-color: #6fa9a8;
+      border-radius: 4px; }
+  treeview.view header button {
+    color: @theme_selected_fg_color;
+    background-color: @theme_selected_bg_color;
+    font-weight: bold;
+    text-shadow: none;
+    box-shadow: none; }
+    treeview.view header button:hover {
+      color: @theme_selected_fg_color;
+      box-shadow: none;
+      transition: none; }
+    treeview.view header button:active {
+      color: @theme_selected_fg_color;
+      transition: none; }
+  treeview.view header button:last-child:backdrop, treeview.view header button:last-child {
+    border-right-style: none; }
+  treeview.view button.dnd:active, treeview.view button.dnd:selected, treeview.view button.dnd:hover, treeview.view button.dnd,
+  treeview.view header.button.dnd:active,
+  treeview.view header.button.dnd:selected,
+  treeview.view header.button.dnd:hover,
+  treeview.view header.button.dnd {
+    padding: 0 6px;
+    transition: none;
+    background-image: none;
+    background-color: @theme_selected_bg_color;
+    color: @theme_selected_fg_color;
+    border-radius: 0;
+    border-style: none;
+    box-shadow: inset 0 0 0 1px @theme_selected_fg_color;
+    text-shadow: none; }
+  treeview.view acceleditor > label {
+    background-color: @theme_selected_bg_color; }
+
+treeview.view header button, treeview.view header button:hover, treeview.view header button:active {
+  padding: 0 6px;
+  border-radius: 0;
+  background-image: none;
+  text-shadow: none;
+  border-width: 1px;
+  border-style: none solid solid none;
+  border-color: #434c5e; }
+  treeview.view header button:disabled {
+    border-color: #434c5e;
+    background-image: none; }
+  treeview.view header button:backdrop {
+    border-color: #434c5e;
+    border-style: none solid solid none;
+    color: #697181;
+    background-image: none;
+    background-color: #3d4455; }
+    treeview.view header button:backdrop:disabled {
+      border-color: #434c5e;
+      background-image: none; }
+

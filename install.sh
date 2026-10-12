@@ -43,10 +43,11 @@ echo ""
 info "Installing core and custom dependencies..."
 install_packages base-devel libx11 libxft libxinerama imlib2 libxcb xcb-util freetype2 fontconfig \
     xorg-server xorg-xinit xorg-xrandr xorg-xset xorg-xsetroot \
-    rofi rofi-emoji rofi-calc dunst feh flameshot dex mate-polkit alsa-utils git unzip xclip \
+    dunst feh flameshot dex mate-polkit alsa-utils git unzip xclip zenity \
     xorg-xprop thunar gvfs tumbler thunar-archive-plugin nwg-look xdg-user-dirs \
     xdg-desktop-portal-gtk pipewire pavucontrol gnome-keyring networkmanager network-manager-applet \
-    libnotify rsync python jq bc curl playerctl blueman polybar ttf-meslo-nerd noto-fonts-emoji \
+    libnotify rsync python jq bc curl playerctl blueman ttf-meslo-nerd noto-fonts-emoji \
+    quickshell wmctrl xdotool brightnessctl libqalculate packagekit python-gobject khal \
     meson ninja uthash libev libconfig pcre2 pixman xorgproto xcb-util-renderutil xcb-util-image mesa \
     libepoxy cmake asciidoctor
 ok "Dependencies verified."
@@ -78,33 +79,33 @@ mkdir -p "$DWM_DATA_DIR/scripts"
 info "Compiling portable DWM binary..."
 cd "$REPO_DIR"
 make clean && make
-sudo make install
+sudo make install-system
 ok "DWM binary installed to /usr/local/bin/dwm"
 
 # ── Configuration Deployment ──────────────────────────────────────────────────
 info "Deploying configurations..."
 
-# Rofi & Terminals (seed — preserve user edits)
+# Terminals & legacy configs (seed — preserve user edits)
 seed_dir "$REPO_DIR/config/rofi"      "$HOME/.config/rofi"
 seed_dir "$REPO_DIR/config/alacritty" "$HOME/.config/alacritty"
-seed_dir "$REPO_DIR/config/kitty"     "$HOME/.config/kitty"
 seed_dir "$REPO_DIR/config/ghostty"   "$HOME/.config/ghostty"
 
-# Polybar:
-#   scripts/ → mirror (must stay in sync with repo, user should not edit these)
-#   themes/  → seed  (user may customise themes)
-#   fonts/   → seed  (no reason to delete user fonts)
-#   top-level files (launch.sh, fonts.ini) → seed (preserve user edits)
-warn "Mirroring polybar/scripts — local changes there will be overwritten."
-mirror_dir "$REPO_DIR/config/polybar/scripts" "$HOME/.config/polybar/scripts"
-seed_dir   "$REPO_DIR/config/polybar/themes"  "$HOME/.config/polybar/themes"
-seed_dir   "$REPO_DIR/config/polybar/fonts"   "$HOME/.config/polybar/fonts"
-rsync -a --ignore-existing \
-    --exclude=scripts --exclude=themes --exclude=fonts --exclude=screenshots \
-    "$REPO_DIR/config/polybar/" "$HOME/.config/polybar/"
-chmod +x "$HOME/.config/polybar/launch.sh"
-# Only make actual scripts executable, not data files
-find "$HOME/.config/polybar/scripts" -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} +
+# Patched MesloLGS Nerd Font (with custom LibreWolf glyph)
+if [ -f "$REPO_DIR/config/MesloLGSNerdFontMono-Regular.ttf" ]; then
+    info "Installing patched MesloLGS Nerd Font..."
+    mkdir -p "$HOME/.local/share/fonts"
+    cp "$REPO_DIR/config/MesloLGSNerdFontMono-"*.ttf "$HOME/.local/share/fonts/"
+    if command -v fc-cache &>/dev/null; then
+        fc-cache -f "$HOME/.local/share/fonts" >/dev/null 2>&1 || true
+    fi
+    ok "Installed patched font to ~/.local/share/fonts"
+fi
+
+# Quickshell Desktop Shell
+info "Deploying Quickshell configuration..."
+mirror_dir "$REPO_DIR/config/quickshell" "$HOME/.config/quickshell"
+
+# Quickshell is the primary desktop shell — deployed via mirror_dir above.
 
 # TOML config (seed with explicit warning on skip)
 for toml in hotkeys.toml themes.toml window-rules.toml; do
@@ -116,6 +117,11 @@ for toml in hotkeys.toml themes.toml window-rules.toml; do
     fi
 done
 
+# Managed default theme config (used as baseline/recovery source by dwm-settings-theme)
+mkdir -p "$DWM_DATA_DIR/config"
+cp "$REPO_DIR/config/themes.toml" "$DWM_DATA_DIR/config/themes.toml"
+ok "Deployed managed themes.toml baseline to $DWM_DATA_DIR/config/themes.toml"
+
 # .xinitrc (seed with explicit warning on skip)
 if [ ! -f "$HOME/.xinitrc" ]; then
     cp "$REPO_DIR/scripts/.xinitrc" "$HOME/.xinitrc"
@@ -126,13 +132,12 @@ fi
 
 # ── Session Environment (SDDM-compatible) ─────────────────────────────────────
 # systemd reads ~/.config/environment.d/*.conf and exports vars into the user session.
-# This ensures DWM_DATA_DIR and DWM_POLYBAR_SCRIPTS are available to polybar
+# This ensures DWM_DATA_DIR is available to Quickshell and helper scripts
 # regardless of whether you use startx or SDDM.
 info "Writing session environment vars..."
 mkdir -p "$HOME/.config/environment.d"
 cat > "$HOME/.config/environment.d/dwm.conf" <<EOF
 DWM_DATA_DIR=$DWM_DATA_DIR
-DWM_POLYBAR_SCRIPTS=$HOME/.config/polybar/scripts
 EOF
 ok "Session env written to ~/.config/environment.d/dwm.conf"
 
@@ -147,12 +152,14 @@ find "$DWM_DATA_DIR/scripts" -type f ! -name "*.*" -exec chmod +x {} +
 # Mirror ghostty themes into data dir
 mirror_dir "$REPO_DIR/config/ghostty/themes" "$DWM_DATA_DIR/ghostty/themes"
 
+# Register user desktop update receipt
+python3 "$REPO_DIR/scripts/dwm-desktop-update" record-user "$REPO_DIR" 2>/dev/null || true
+
 # ── Final Security & Secret Verification ──────────────────────────────────────
 info "Running security check..."
 
 # Migrate old secrets if they exist
-[ -f "$HOME/.config/dwm_weather.env" ]  && mv "$HOME/.config/dwm_weather.env"  "$HOME/.config/dwm/secrets/weather.env"
-[ -f "$HOME/.config/dwm_football.env" ] && mv "$HOME/.config/dwm_football.env" "$HOME/.config/dwm/secrets/football.env"
+[ -f "$HOME/.config/dwm_weather.env" ] && mv "$HOME/.config/dwm_weather.env" "$HOME/.config/dwm/secrets/weather.env"
 
 # Secure secrets dir
 chmod 700 "$HOME/.config/dwm/secrets"
@@ -161,10 +168,6 @@ find "$HOME/.config/dwm/secrets" -name "*.env" -exec chmod 600 {} +
 
 if [ ! -f "$HOME/.config/dwm/secrets/weather.env" ]; then
     warn "MISSING: Weather secrets. Run: echo 'WEATHER_API_KEY=\"...\"' > ~/.config/dwm/secrets/weather.env"
-fi
-
-if [ ! -f "$HOME/.config/dwm/secrets/football.env" ]; then
-    warn "MISSING: Football secrets. Run: echo 'FOOTBALL_API_KEY=\"...\"' > ~/.config/dwm/secrets/football.env"
 fi
 
 # Apply initial theme — surface failure instead of silencing it

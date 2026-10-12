@@ -1,7 +1,7 @@
 #!/bin/sh
 # dwm autostart — single unified autostart script
 # Phase 1: Blocking setup (must complete before windows appear)
-# Phase 2: Background services (compositor, notifications, polybar, tray apps)
+# Phase 2: Background services (compositor, notifications, quickshell, tray apps)
 
 # ── Phase 1: Blocking ──────────────────────────────────────────────────────────
 # Disable DPMS and screen blanking (prevents GPU/display wake issues)
@@ -35,10 +35,9 @@ THEME_ENV="${XDG_CONFIG_HOME:-$HOME/.config}/dwm/theme-env.sh"
 # Get the directory where this script lives to find sibling scripts
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# Export DWM runtime paths so polybar modules and scripts can resolve correctly.
+# Export DWM runtime paths so modules and scripts can resolve correctly.
 # SCRIPT_DIR is ~/.local/share/dwm/scripts, so dirname gives the data root.
 export DWM_DATA_DIR="$(dirname "$SCRIPT_DIR")"
-export DWM_POLYBAR_SCRIPTS="$HOME/.config/polybar/scripts"
 
 # Wallpaper rotation (every 30 mins)
 "$SCRIPT_DIR/wallpapersSS" &
@@ -64,25 +63,48 @@ for agent in \
     fi
 done
 
-# Launch Polybar (no stderr suppression — surface errors during debugging)
-"$HOME/.config/polybar/launch.sh" &
+# Start Quickshell Desktop Shell
+QS_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell"
+if [ ! -f "$QS_CONFIG/shell.qml" ] && [ -f "$SCRIPT_DIR/../config/quickshell/shell.qml" ]; then
+    QS_CONFIG="$SCRIPT_DIR/../config/quickshell"
+fi
+
+if [ -f "$QS_CONFIG/shell.qml" ] && command -v quickshell >/dev/null 2>&1; then
+    quickshell --path "$QS_CONFIG" --no-duplicate &
+elif command -v quickshell >/dev/null 2>&1; then
+    quickshell --no-duplicate &
+fi
+
+# Root-window status publisher for Quickshell
+if [ -x "$SCRIPT_DIR/dwm-status" ]; then
+    "$SCRIPT_DIR/dwm-status" &
+elif command -v dwm-status >/dev/null 2>&1; then
+    dwm-status &
+fi
 
 # Tray Applets
-flameshot &
-nm-applet &
+pgrep -x flameshot >/dev/null 2>&1 || flameshot &
+pgrep -x nm-applet >/dev/null 2>&1 || nm-applet &
 command -v blueman-applet >/dev/null 2>&1 && blueman-applet &
-
-# Periodic Football Match Updates (every 1 hour)
-(while true; do "$SCRIPT_DIR/football_matches" >/dev/null 2>&1; sleep 3600; done) &
 
 # Launch terminal with tmux on startup
 TERM_CMD="xterm"
-for t in ghostty alacritty kitty st; do
+for t in alacritty ghostty st; do
     if command -v "$t" >/dev/null 2>&1; then
         TERM_CMD="$t"
         break
     fi
 done
 $TERM_CMD -e tmux &
+
+# Prevent dex/XDG autostart from launching duplicates of applets managed above
+AUTOSTART_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/autostart"
+mkdir -p "$AUTOSTART_DIR"
+for app in Flameshot blueman nm-applet; do
+    df="$AUTOSTART_DIR/${app}.desktop"
+    if [ ! -f "$df" ] || ! grep -q "^Hidden=true" "$df"; then
+        printf "[Desktop Entry]\nType=Application\nName=%s\nExec=%s\nHidden=true\n" "$app" "$app" > "$df"
+    fi
+done
 
 dex -a 2>/dev/null

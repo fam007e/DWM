@@ -29,32 +29,53 @@ dwm: ${OBJ}
 
 clean:
 	rm -f dwm ${OBJ} *.orig *.rej
+	rm -rf release
+
+XSESSIONSDIR ?= /usr/share/xsessions
+DATADIR      ?= ${PREFIX}/share
 
 install: all
 	# Binary + man page
 	install -Dm755 dwm ${DESTDIR}${PREFIX}/bin/dwm
 	sed "s/VERSION/${VERSION}/g" dwm.1 | install -Dm644 /dev/stdin ${DESTDIR}${MANPREFIX}/man1/dwm.1
 	# Session entry
-	test -f ${DESTDIR}/usr/share/xsessions/dwm.desktop || install -Dm644 dwm.desktop ${DESTDIR}/usr/share/xsessions/dwm.desktop
+	test -f ${DESTDIR}${XSESSIONSDIR}/dwm.desktop || install -Dm644 dwm.desktop ${DESTDIR}${XSESSIONSDIR}/dwm.desktop
 	# Scripts to PATH
 	for f in scripts/*; do \
-		case "$$(basename $$f)" in autostart*|.xinitrc) continue;; esac; \
+		case "$$(basename $$f)" in autostart*|.xinitrc|*.pyc|__pycache__) continue;; esac; \
 		install -Dm755 "$$f" ${DESTDIR}${PREFIX}/bin/$$(basename $$f); \
 	done
+	mkdir -p ${DESTDIR}${PREFIX}/libexec/dwm
+	sed "s|@PREFIX@|${PREFIX}|g" scripts/dwm-desktop-update-root | install -Dm755 /dev/stdin ${DESTDIR}${PREFIX}/libexec/dwm/dwm-desktop-update-root
+
+install-system: install
+	python3 scripts/dwm-desktop-update record-system \
+		--source-dir . \
+		--destdir "${DESTDIR}" \
+		--prefix "${PREFIX}" \
+		--manprefix "${MANPREFIX}" \
+		--xsessions "${XSESSIONSDIR}" \
+		--datadir "${DATADIR}" \
+		--commands dwm $$(for f in scripts/*; do case "$$(basename $$f)" in autostart*|.xinitrc|dwm-desktop-update-root|*.pyc|__pycache__) continue;; esac; basename "$$f"; done) \
+		--helpers dwm-desktop-update-root \
+		--packages base-devel libx11 libxft libxinerama imlib2 libxcb quickshell picom
 
 uninstall:
 	rm -f ${DESTDIR}${PREFIX}/bin/dwm \
 		${DESTDIR}${MANPREFIX}/man1/dwm.1 \
-		${DESTDIR}/usr/share/xsessions/dwm.desktop
+		${DESTDIR}${XSESSIONSDIR}/dwm.desktop \
+		${DESTDIR}${PREFIX}/libexec/dwm/dwm-desktop-update-root \
+		${DESTDIR}${PREFIX}/share/dwm/desktop-install.json
 	for f in scripts/*; do \
-		case "$$(basename $$f)" in autostart*|.xinitrc) continue;; esac; \
+		case "$$(basename $$f)" in autostart*|.xinitrc|*.pyc|__pycache__) continue;; esac; \
 		rm -f ${DESTDIR}${PREFIX}/bin/$$(basename $$f); \
 	done
 
 release: dwm
 	mkdir -p release
 	cp -f dwm dwm.desktop scripts/.xinitrc release/
+	cp -f install.sh uninstall.sh README.md LICENSE release/ 2>/dev/null || true
 	cp -rf config scripts release/
-	tar -czf release/Omitus-${VERSION}.tar.gz -C release dwm dwm.desktop .xinitrc config scripts
+	tar -czf release/dwm-${VERSION}.tar.gz -C release dwm dwm.desktop .xinitrc install.sh uninstall.sh README.md LICENSE config scripts
 
-.PHONY: all clean install uninstall release
+.PHONY: all clean install install-system uninstall release

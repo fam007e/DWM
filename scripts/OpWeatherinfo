@@ -1,81 +1,241 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# ────────────────────────────────────────────────────────────────────────────
 # scripts/OpWeatherinfo - High Entropy Secured Weather Fetcher
-
-# 1. Enforcement of Private Permissions
+# Returns compact status text by default, or structured JSON when called with --json
+# ────────────────────────────────────────────────────────────────────────────
+set -euo pipefail
 umask 077
+
 CONFIG_FILE="$HOME/.config/dwm/secrets/weather.env"
-LOG_FILE="$HOME/.cache/weather.log"
+CACHE_FILE="${XDG_CACHE_HOME:-$HOME/.cache}/weather_data.json"
+LOG_FILE="${XDG_CACHE_HOME:-$HOME/.cache}/weather.log"
 
-# 2. Secure Secret Retrieval
-if [[ -f "$CONFIG_FILE" ]]; then
-    source "$CONFIG_FILE"
+FORMAT="compact"
+if [[ "${1:-}" == "--json" ]]; then
+    FORMAT="json"
+fi
+
+mkdir -p "$(dirname "$CACHE_FILE")"
+
+deg_to_compass() {
+    local deg="${1:-0}"
+    local compass=("N" "NNE" "NE" "ENE" "E" "ESE" "SE" "SSE" "S" "SSW" "SW" "WSW" "W" "WNW" "NW" "NNW")
+    local idx
+    idx=$(awk -v d="$deg" 'BEGIN { printf "%d", int((d + 11.25) / 22.5) % 16 }')
+    echo "${compass[$idx]}"
+}
+
+# 1. Check cached data (valid for 15 minutes / 900 seconds)
+if [[ -f "$CACHE_FILE" ]]; then
+    now=$(date +%s)
+    mtime=$(stat -c %Y "$CACHE_FILE" 2>/dev/null || stat -f %m "$CACHE_FILE" 2>/dev/null || echo 0)
+    if (( now - mtime < 900 )); then
+        WEATHER_DATA=$(cat "$CACHE_FILE")
+    fi
+fi
+
+# 2. Fetch fresh data if cache is absent or expired
+if [[ -z "${WEATHER_DATA:-}" ]]; then
+    # Try OpenWeatherMap secret first
+    if [[ -f "$CONFIG_FILE" ]]; then
+        # shellcheck disable=SC1090
+        source "$CONFIG_FILE"
+    fi
+
+    if [[ -n "${WEATHER_API_KEY:-}" && -n "${WEATHER_LAT:-}" && -n "${WEATHER_LON:-}" ]]; then
+        WEATHER_URL="https://api.openweathermap.org/data/2.5/weather?lat=${WEATHER_LAT}&lon=${WEATHER_LON}&units=metric&appid=${WEATHER_API_KEY}"
+        FETCHED=$(curl -s --connect-timeout 4 "$WEATHER_URL" 2>/dev/null || true)
+        if [[ -n "$FETCHED" ]] && echo "$FETCHED" | jq -e .cod >/dev/null 2>&1 && [[ "$(echo "$FETCHED" | jq -r '.cod')" == "200" ]]; then
+            # Prefer explicit city or reverse-geocoded city name over obscure local sub-district
+            CITY_NAME="${WEATHER_CITY:-}"
+            if [[ -z "$CITY_NAME" ]]; then
+                GEO_URL="https://api.openweathermap.org/geo/1.0/reverse?lat=${WEATHER_LAT}&lon=${WEATHER_LON}&limit=1&appid=${WEATHER_API_KEY}"
+                GEO_NAME=$(curl -s --connect-timeout 3 "$GEO_URL" 2>/dev/null | jq -r '.[0].name // empty' 2>/dev/null || true)
+                if [[ -n "$GEO_NAME" ]]; then
+                    CITY_NAME="$GEO_NAME"
+                fi
+            fi
+            if [[ -n "$CITY_NAME" ]]; then
+                FETCHED=$(echo "$FETCHED" | jq --arg city "$CITY_NAME" '.name = $city')
+            fi
+            WEATHER_DATA="$FETCHED"
+            echo "$WEATHER_DATA" > "$CACHE_FILE"
+        fi
+    fi
+
+    # Fallback: wttr.in (zero configuration required, geolocated by IP)
+    if [[ -z "${WEATHER_DATA:-}" ]]; then
+        WTTR_JSON=$(curl -s --connect-timeout 4 "https://wttr.in/?format=j1" 2>/dev/null || true)
+        if [[ -n "$WTTR_JSON" ]] && echo "$WTTR_JSON" | jq -e '.current_condition[0]' >/dev/null 2>&1; then
+            # Normalize wttr.in into our standard schema
+            temp_c=$(echo "$WTTR_JSON" | jq -r '.current_condition[0].temp_C')
+            feels_c=$(echo "$WTTR_JSON" | jq -r '.current_condition[0].FeelsLikeC')
+            min_c=$(echo "$WTTR_JSON" | jq -r '.weather[0].mintempC // empty')
+            max_c=$(echo "$WTTR_JSON" | jq -r '.weather[0].maxtempC // empty')
+            desc=$(echo "$WTTR_JSON" | jq -r '.current_condition[0].weatherDesc[0].value')
+            humidity=$(echo "$WTTR_JSON" | jq -r '.current_condition[0].humidity')
+            city=$(echo "$WTTR_JSON" | jq -r '.nearest_area[0].areaName[0].value // "Current Location"')
+            country=$(echo "$WTTR_JSON" | jq -r '.nearest_area[0].country[0].value // ""')
+            wind=$(echo "$WTTR_JSON" | jq -r '.current_condition[0].windspeedKmph')
+            wind_dir=$(echo "$WTTR_JSON" | jq -r '.current_condition[0].winddir16Point // ""')
+            wind_deg=$(echo "$WTTR_JSON" | jq -r '.current_condition[0].winddirDegree // 0')
+            pressure=$(echo "$WTTR_JSON" | jq -r '.current_condition[0].pressure // ""')
+            visibility=$(echo "$WTTR_JSON" | jq -r '.current_condition[0].visibility // ""')
+            clouds=$(echo "$WTTR_JSON" | jq -r '.current_condition[0].cloudcover // ""')
+            sunrise=$(echo "$WTTR_JSON" | jq -r '.weather[0].astronomy[0].sunrise // ""')
+            sunset=$(echo "$WTTR_JSON" | jq -r '.weather[0].astronomy[0].sunset // ""')
+
+            WEATHER_DATA=$(jq -n \
+                --arg temp "$temp_c" \
+                --arg min "$min_c" \
+                --arg max "$max_c" \
+                --arg feels "$feels_c" \
+                --arg desc "$desc" \
+                --arg humidity "$humidity" \
+                --arg city "$city" \
+                --arg country "$country" \
+                --arg wind "$wind" \
+                --arg wind_dir "$wind_dir" \
+                --arg wind_deg "$wind_deg" \
+                --arg pressure "$pressure" \
+                --arg visibility "$visibility" \
+                --arg clouds "$clouds" \
+                --arg sunrise "$sunrise" \
+                --arg sunset "$sunset" \
+                '{temp: ($temp|tonumber), temp_min: (if $min != "" then ($min|tonumber) else ($temp|tonumber) end), temp_max: (if $max != "" then ($max|tonumber) else ($temp|tonumber) end), feels_like: ($feels|tonumber), desc: $desc, humidity: ($humidity|tonumber), city: $city, country: $country, wind_kmh: ($wind|tonumber), wind_dir: $wind_dir, wind_deg: ($wind_deg|tonumber), pressure: $pressure, visibility_km: $visibility, clouds: $clouds, sunrise: $sunrise, sunset: $sunset, source: "wttr.in"}')
+            echo "$WEATHER_DATA" > "$CACHE_FILE"
+        fi
+    fi
+fi
+
+# If completely unavailable, return fallback
+if [[ -z "${WEATHER_DATA:-}" ]]; then
+    if [[ "$FORMAT" == "json" ]]; then
+        echo '{"available":false,"icon":"󰖑","temp":"--","temp_exact":"--","temp_min":"--","temp_max":"--","feels":"--","desc":"Offline","detailed_desc":"Offline","city":"N/A","country":"","humidity":"--","pressure":"--","visibility":"--","clouds":"--","wind":"--","wind_deg":0,"wind_dir":"","wind_gust":"","sunrise":"--","sunset":"--","sunrise_epoch":0,"sunset_epoch":0}'
+    else
+        echo "󰖑 --°C"
+    fi
+    exit 0
+fi
+
+# 3. Parse weather variables
+if echo "$WEATHER_DATA" | jq -e '.source == "wttr.in"' >/dev/null 2>&1; then
+    TEMP_C=$(echo "$WEATHER_DATA" | jq -r '.temp')
+    TEMP_MIN_C=$(echo "$WEATHER_DATA" | jq -r '.temp_min // .temp')
+    TEMP_MAX_C=$(echo "$WEATHER_DATA" | jq -r '.temp_max // .temp')
+    FEELS_LIKE_C=$(echo "$WEATHER_DATA" | jq -r '.feels_like')
+    WEATHER_DESC=$(echo "$WEATHER_DATA" | jq -r '.desc')
+    DETAILED_DESC="$WEATHER_DESC"
+    RAW_ICON=""
+    HUMIDITY=$(echo "$WEATHER_DATA" | jq -r '.humidity')
+    CITY=$(echo "$WEATHER_DATA" | jq -r '.city')
+    COUNTRY=$(echo "$WEATHER_DATA" | jq -r '.country // ""')
+    PRESSURE=$(echo "$WEATHER_DATA" | jq -r '.pressure // "--"')
+    VISIBILITY_KM=$(echo "$WEATHER_DATA" | jq -r '.visibility_km // "--"')
+    CLOUDS=$(echo "$WEATHER_DATA" | jq -r '.clouds // "--"')
+    WIND=$(echo "$WEATHER_DATA" | jq -r '.wind_kmh')
+    WIND_DEG=$(echo "$WEATHER_DATA" | jq -r '.wind_deg // 0')
+    WIND_DIR=$(echo "$WEATHER_DATA" | jq -r '.wind_dir // ""')
+    WIND_GUST=""
+    SUNRISE=$(echo "$WEATHER_DATA" | jq -r '.sunrise // "--"')
+    SUNSET=$(echo "$WEATHER_DATA" | jq -r '.sunset // "--"')
+    SUNRISE_EPOCH=0
+    SUNSET_EPOCH=0
 else
-    echo "[$(date)] ERROR: Configuration file $CONFIG_FILE not found." >> "$LOG_FILE"
-    echo "󰖑 N/A"
-    exit 1
+    # OpenWeatherMap schema
+    RAW_TEMP=$(echo "$WEATHER_DATA" | jq '.main.temp' -r)
+    RAW_FEELS=$(echo "$WEATHER_DATA" | jq '.main.feels_like' -r)
+    RAW_MIN=$(echo "$WEATHER_DATA" | jq '.main.temp_min // .main.temp' -r)
+    RAW_MAX=$(echo "$WEATHER_DATA" | jq '.main.temp_max // .main.temp' -r)
+    WEATHER_DESC=$(echo "$WEATHER_DATA" | jq '.weather[0].main' -r)
+    DETAILED_DESC=$(echo "$WEATHER_DATA" | jq -r '.weather[0].description // .weather[0].main // "Clear"' | awk '{for(i=1;i<=NF;i++)sub(/./,toupper(substr($i,1,1)),$i)}1')
+    RAW_ICON=$(echo "$WEATHER_DATA" | jq -r '.weather[0].icon // ""')
+    HUMIDITY=$(echo "$WEATHER_DATA" | jq '.main.humidity // "--"' -r)
+    PRESSURE=$(echo "$WEATHER_DATA" | jq '.main.pressure // "--"' -r)
+    CITY=$(echo "$WEATHER_DATA" | jq '.name // "Local"' -r)
+    COUNTRY=$(echo "$WEATHER_DATA" | jq '.sys.country // ""' -r)
+    CLOUDS=$(echo "$WEATHER_DATA" | jq '.clouds.all // 0' -r)
+    VISIBILITY_RAW=$(echo "$WEATHER_DATA" | jq '.visibility // 10000' -r)
+    VISIBILITY_KM=$(awk -v v="$VISIBILITY_RAW" 'BEGIN { printf "%.1f", v / 1000 }' | sed 's/\.0$//')
+    WIND_SPEED_MS=$(echo "$WEATHER_DATA" | jq '.wind.speed // 0' -r)
+    WIND=$(awk -v s="$WIND_SPEED_MS" 'BEGIN { printf "%d", int(s * 3.6 + 0.5) }')
+    WIND_DEG=$(echo "$WEATHER_DATA" | jq '.wind.deg // 0' -r)
+    WIND_DIR=$(deg_to_compass "$WIND_DEG")
+    WIND_GUST_MS=$(echo "$WEATHER_DATA" | jq '.wind.gust // 0' -r)
+    WIND_GUST=$(awk -v g="$WIND_GUST_MS" 'BEGIN { if (g > 0) printf "%d", int(g * 3.6 + 0.5); else print "" }')
+    SUNRISE_EPOCH=$(echo "$WEATHER_DATA" | jq '.sys.sunrise // 0' -r)
+    SUNSET_EPOCH=$(echo "$WEATHER_DATA" | jq '.sys.sunset // 0' -r)
+    SUNRISE=$(if (( SUNRISE_EPOCH > 0 )); then date -d @"$SUNRISE_EPOCH" +"%H:%M" 2>/dev/null || echo "--"; else echo "--"; fi)
+    SUNSET=$(if (( SUNSET_EPOCH > 0 )); then date -d @"$SUNSET_EPOCH" +"%H:%M" 2>/dev/null || echo "--"; else echo "--"; fi)
+
+    # If raw value is > 150, it was returned in Kelvin (subtract 273.15)
+    if (( $(echo "$RAW_TEMP > 150" | bc -l 2>/dev/null || echo 0) )); then
+        TEMP_C=$(printf '%.1f' "$(echo "$RAW_TEMP - 273.15" | bc)")
+        FEELS_LIKE_C=$(printf '%.1f' "$(echo "$RAW_FEELS - 273.15" | bc)")
+        TEMP_MIN_C=$(printf '%.1f' "$(echo "$RAW_MIN - 273.15" | bc)")
+        TEMP_MAX_C=$(printf '%.1f' "$(echo "$RAW_MAX - 273.15" | bc)")
+    else
+        TEMP_C=$(printf '%.1f' "$RAW_TEMP")
+        FEELS_LIKE_C=$(printf '%.1f' "$RAW_FEELS")
+        TEMP_MIN_C=$(printf '%.1f' "$RAW_MIN")
+        TEMP_MAX_C=$(printf '%.1f' "$RAW_MAX")
+    fi
 fi
 
-# Validate required variables
-if [[ -z "$WEATHER_API_KEY" || -z "$WEATHER_LAT" || -z "$WEATHER_LON" ]]; then
-    echo "[$(date)] ERROR: Missing configuration in $CONFIG_FILE." >> "$LOG_FILE"
-    echo "󰖑 N/A"
-    exit 1
+# Weather condition icon mapping
+is_night=0
+if [[ "$RAW_ICON" == *"n"* ]]; then
+    is_night=1
 fi
 
-WEATHER_URL="https://api.openweathermap.org/data/2.5/weather?lat=${WEATHER_LAT}&lon=${WEATHER_LON}&appid=${WEATHER_API_KEY}"
-
-# 3. Fetch data with timeout
-WEATHER_DATA=$(curl -s --connect-timeout 5 "$WEATHER_URL")
-
-# Check if curl succeeded and API returned valid data
-if [ -z "$WEATHER_DATA" ] || echo "$WEATHER_DATA" | jq -e .cod >/dev/null 2>&1 && [ "$(echo "$WEATHER_DATA" | jq -r '.cod')" != "200" ]; then
-    echo "[$(date)] API Error: $(echo "$WEATHER_DATA" | jq -c . || echo 'No response')" >> "$LOG_FILE"
-    echo "󰖑 N/A"
-    exit 1
-fi
-
-# 4. Extract and Sanitize
-TEMP=$(echo "$WEATHER_DATA" | jq '.main.temp' -r)
-FEELS_LIKE=$(echo "$WEATHER_DATA" | jq '.main.feels_like' -r)
-WEATHER_MAIN=$(echo "$WEATHER_DATA" | jq '.weather[0].main' -r)
-HUMIDITY=$(echo "$WEATHER_DATA" | jq '.main.humidity' -r)
-
-# 5. Calculations
-TEMP_C=$(printf '%.2f' "$(echo "$TEMP - 273.15" | bc)")
-FEELS_LIKE_C=$(printf '%.2f' "$(echo "$FEELS_LIKE - 273.15" | bc)")
-
-# Define icons for weather conditions
-case $WEATHER_MAIN in
-  Clear) ICON="󰖙" ;;
-  "Few Clouds") ICON="󰖕" ;;
-  "Scattered Clouds") ICON="󰖐" ;;
-  "Broken Clouds") ICON="󰖐" ;;
-  Clouds) ICON="󰖐" ;;
-  "Light Rain") ICON="󰖗" ;;
-  Rain) ICON="󰖖" ;;
-  "Heavy Rain") ICON="󰖖" ;;
-  Drizzle) ICON="󰖗" ;;
-  Thunderstorm) ICON="󰖓" ;;
-  "Light Snow") ICON="󰖘" ;;
-  Snow) ICON="󰖘" ;;
-  "Heavy Snow") ICON="󰼶" ;;
-  Mist|Haze|Fog|Smoke) ICON="󰖑" ;;
-  Dust|Sand|Squall) ICON="󰖝" ;;
-  Tornado) ICON="󰼸" ;;
-  *) ICON="󰖙" ;;
+case "$WEATHER_DESC" in
+  *Clear*|*Sunny*)
+      if (( is_night )); then ICON="󰖔"; else ICON="󰖙"; fi ;;
+  *Partly*|*"Few Clouds"*)
+      if (( is_night )); then ICON="󰼱"; else ICON="󰖕"; fi ;;
+  *Cloud*|*Overcast*)
+      ICON="󰖐" ;;
+  *Drizzle*|*"Light Rain"*)
+      ICON="󰖗" ;;
+  *Rain*|*Showers*)
+      ICON="󰖖" ;;
+  *Thunderstorm*)
+      ICON="󰖓" ;;
+  *Snow*)
+      ICON="󰖘" ;;
+  *Mist*|*Haze*|*Fog*|*Smoke*)
+      ICON="󰖑" ;;
+  *)
+      ICON="󰖐" ;;
 esac
 
-# Define temperature icons
-if [ "$(printf '%.0f\n' "$(echo "$TEMP_C > 27" | bc)")" -eq 1 ]; then
-    TEMP_ICON=""
-elif [ "$(printf '%.0f\n' "$(echo "$TEMP_C >= 20" | bc)")" -eq 1 ]; then
-    TEMP_ICON=""
-elif [ "$(printf '%.0f\n' "$(echo "$TEMP_C >= 5" | bc)")" -eq 1 ]; then
-    TEMP_ICON=""
+# 4. Emit output
+if [[ "$FORMAT" == "json" ]]; then
+    jq -n \
+        --arg available "true" \
+        --arg icon "$ICON" \
+        --arg temp "$(printf '%.0f' "$TEMP_C")" \
+        --arg temp_exact "$TEMP_C" \
+        --arg temp_min "$(printf '%.0f' "$TEMP_MIN_C")" \
+        --arg temp_max "$(printf '%.0f' "$TEMP_MAX_C")" \
+        --arg feels "$(printf '%.0f' "$FEELS_LIKE_C")" \
+        --arg desc "$WEATHER_DESC" \
+        --arg detailed_desc "$DETAILED_DESC" \
+        --arg humidity "$HUMIDITY" \
+        --arg city "$CITY" \
+        --arg country "$COUNTRY" \
+        --arg pressure "$PRESSURE" \
+        --arg visibility "$VISIBILITY_KM" \
+        --arg clouds "$CLOUDS" \
+        --arg wind "$WIND" \
+        --arg wind_deg "$WIND_DEG" \
+        --arg wind_dir "$WIND_DIR" \
+        --arg wind_gust "$WIND_GUST" \
+        --arg sunrise "$SUNRISE" \
+        --arg sunset "$SUNSET" \
+        --argjson sunrise_epoch "$SUNRISE_EPOCH" \
+        --argjson sunset_epoch "$SUNSET_EPOCH" \
+        '{available: true, icon: $icon, temp: $temp, temp_exact: $temp_exact, temp_min: $temp_min, temp_max: $temp_max, feels: $feels, desc: $desc, detailed_desc: $detailed_desc, humidity: $humidity, city: $city, country: $country, pressure: $pressure, visibility: $visibility, clouds: $clouds, wind: $wind, wind_deg: $wind_deg, wind_dir: $wind_dir, wind_gust: $wind_gust, sunrise: $sunrise, sunset: $sunset, sunrise_epoch: $sunrise_epoch, sunset_epoch: $sunset_epoch}'
 else
-    TEMP_ICON=""
+    printf '%s %.0f°C\n' "$ICON" "$TEMP_C"
 fi
-
-# 6. Final Sanitized Output
-FINAL_OUTPUT=$(printf '%s %s%.0f°C(%.0f°C)💧%s%%' "$ICON" "$TEMP_ICON" "$TEMP_C" "$FEELS_LIKE_C" "$HUMIDITY")
-echo "$FINAL_OUTPUT" #| tr -dc '[:print:]'

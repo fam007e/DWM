@@ -1,0 +1,26 @@
+/*$selected_bg_color: #00e8c6;06d6a0*/
+/*********
+* Common *
+*********/
+* {
+  padding: 0;
+  -GtkToolButton-icon-spacing: 4;
+  -GtkTextView-error-underline-color: #b84f59;
+  -GtkScrolledWindow-scrollbar-spacing: 0;
+  -GtkToolItemGroup-expander-size: 11;
+  -GtkWidget-text-handle-width: 20;
+  -GtkWidget-text-handle-height: 24;
+  -GtkDialog-button-spacing: 4;
+  -GtkDialog-action-area-border: 0;
+  outline-color: rgba(216, 222, 233, 0.3);
+  outline-style: dashed;
+  outline-offset: -3px;
+  outline-width: 1px;
+  -gtk-outline-radius: 2px;
+  -gtk-secondary-caret-color: @theme_selected_bg_color; }
+
+.sidebar, placessidebar, stacksidebar, .sidebar treeview.view, placessidebar treeview.view {
+  background-color: #3f4758;
+  color: @theme_fg_color;
+}
+

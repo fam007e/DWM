@@ -1,0 +1,143 @@
+/* GTK NAMED COLORS
+   ----------------
+   Nordic-darker variant (DWM sync) */
+
+/* widget text/foreground color (normfgcolor) */
+@define-color theme_fg_color #D8DEE9;
+/* text color for entries, views and content in general (normfgcolor) */
+@define-color theme_text_color @theme_fg_color;
+/* widget base background color (normbgcolor) */
+@define-color theme_bg_color #2e3440;
+/* text widgets and the like base background color (normbgcolor) */
+@define-color theme_base_color #242933;
+/* base background color of selections (selbgcolor) */
+@define-color theme_selected_bg_color #88c0d0;
+/* text/foreground color of selections (selfgcolor) */
+@define-color theme_selected_fg_color #2e3440;
+
+/* base background color of disabled widgets */
+@define-color insensitive_bg_color #2e3440;
+/* text foreground color of disabled widgets */
+@define-color insensitive_fg_color #6b778d;
+/* disabled text widgets and the like base background color */
+@define-color insensitive_base_color #2e3440;
+
+/* widget text/foreground color on backdrop windows */
+@define-color theme_unfocused_fg_color #4c566a;
+/* text color for entries, views and content in general on backdrop windows */
+@define-color theme_unfocused_text_color @theme_fg_color;
+/* widget base background color on backdrop windows */
+@define-color theme_unfocused_bg_color #242933;
+/* text widgets and the like base background color on backdrop windows */
+@define-color theme_unfocused_base_color #242933;
+/* base background color of selections on backdrop windows */
+@define-color theme_unfocused_selected_bg_color #4c566a;
+/* text/foreground color of selections on backdrop windows */
+@define-color theme_unfocused_selected_fg_color @theme_fg_color;
+
+/* widgets main borders color (normbordercolor) */
+@define-color borders #4c566a;
+/* widgets main borders color on backdrop windows */
+@define-color unfocused_borders #3b4252;
+
+/* these are pretty self explicative */
+@define-color warning_color #ebcb8b;
+@define-color error_color #bf616a;
+@define-color success_color #a3be8c;
+
+@define-color fg_color @theme_fg_color;
+@define-color text_color @theme_fg_color;
+@define-color bg_color #2e3440;
+@define-color base_color #242933;
+@define-color selected_bg_color #88c0d0;
+@define-color selected_fg_color #2e3440;
+
+@define-color unfocused_fg_color #4c566a;
+@define-color unfocused_text_color @theme_fg_color;
+@define-color unfocused_bg_color #242933;
+@define-color unfocused_base_color #242933;
+@define-color unfocused_selected_bg_color #4c566a;
+@define-color unfocused_selected_fg_color @theme_fg_color;
+
+/* these colors are exported for the window manager and shouldn't be used in applications,
+read if you used those and something break with a version upgrade you're on your own... */
+@define-color wm_title @theme_fg_color;
+@define-color wm_unfocused_title #4c566a;
+@define-color wm_highlight rgba(0, 0, 0, 0);
+@define-color wm_borders_edge rgba(255, 255, 255, 0.05);
+@define-color wm_bg_a #353c4a;
+@define-color wm_bg_b #242933;
+@define-color wm_shadow alpha(black, 0.5);
+@define-color wm_border #434c5e;
+@define-color wm_button_hover_color_a #434c5e;
+@define-color wm_button_hover_color_b #3b4252;
+@define-color wm_button_active_color_a #81a1c1;
+@define-color wm_button_active_color_b #5e81ac;
+@define-color wm_button_active_color_c #5e81ac;
+
+@define-color content_view_bg #242933;
+@define-color text_view_bg #242933;
+@define-color budgie_tasklist_indicator_color #81a1c1;
+@define-color budgie_tasklist_indicator_color_active #81a1c1;
+@define-color placeholder_text_color #4c566a;
+
+@define-color STRAWBERRY_100 #ff8c82;
+@define-color STRAWBERRY_300 #ed5353;
+@define-color STRAWBERRY_500 #c6262e;
+@define-color STRAWBERRY_700 #a10705;
+@define-color STRAWBERRY_900 #7a0000;
+@define-color ORANGE_100 #ffc27d;
+@define-color ORANGE_300 #ffa154;
+@define-color ORANGE_500 #f37329;
+@define-color ORANGE_700 #cc3b02;
+@define-color ORANGE_900 #a62100;
+@define-color BANANA_100 #fff394;
+@define-color BANANA_300 #ffe16b;
+@define-color BANANA_500 #f9c440;
+@define-color BANANA_700 #d48e15;
+@define-color BANANA_900 #ad5f00;
+@define-color LIME_100 #d1ff82;
+@define-color LIME_300 #9bdb4d;
+@define-color LIME_500 #68b723;
+@define-color LIME_700 #3a9104;
+@define-color LIME_900 #206b00;
+@define-color MINT_100 #89ffdd;
+@define-color MINT_300 #43d6b5;
+@define-color MINT_500 #28bca3;
+@define-color MINT_700 #0e9a83;
+@define-color MINT_900 #007367;
+@define-color BLUEBERRY_100 #8cd5ff;
+@define-color BLUEBERRY_300 #64baff;
+@define-color BLUEBERRY_500 #3689e6;
+@define-color BLUEBERRY_700 #0d52bf;
+@define-color BLUEBERRY_900 #002e99;
+@define-color BUBBLEGUM_100 #fe9ab8;
+@define-color BUBBLEGUM_300 #f4679d;
+@define-color BUBBLEGUM_500 #de3e80;
+@define-color BUBBLEGUM_700 #bc245d;
+@define-color BUBBLEGUM_900 #910e38;
+@define-color GRAPE_100 #e4c6fa;
+@define-color GRAPE_300 #cd9ef7;
+@define-color GRAPE_500 #a56de2;
+@define-color GRAPE_700 #7239b3;
+@define-color GRAPE_900 #452981;
+@define-color COCOA_100 #a3907c;
+@define-color COCOA_300 #8a715e;
+@define-color COCOA_500 #715344;
+@define-color COCOA_700 #57392d;
+@define-color COCOA_900 #3d211b;
+@define-color SILVER_100 #fafafa;
+@define-color SILVER_300 #d4d4d4;
+@define-color SILVER_500 #abacae;
+@define-color SILVER_700 #7e8087;
+@define-color SILVER_900 #555761;
+@define-color SLATE_100 #95a3ab;
+@define-color SLATE_300 #667885;
+@define-color SLATE_500 #485a6c;
+@define-color SLATE_700 #273445;
+@define-color SLATE_900 #0e141f;
+@define-color BLACK_100 #666;
+@define-color BLACK_300 #4d4d4d;
+@define-color BLACK_500 #333;
+@define-color BLACK_700 #1a1a1a;
+@define-color BLACK_900 #000;

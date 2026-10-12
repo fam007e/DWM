@@ -1,0 +1,10 @@
+/*********
+ * Noise *
+ *********/
+NoiseLibraryWindow {
+  border-radius: 0 0 4px 4px; }
+  NoiseLibraryWindow .action-bar {
+    border-radius: 0 0 4px 4px; }
+  NoiseLibraryWindow .window-frame {
+    border-radius: 3px; }
+

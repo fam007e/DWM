@@ -1,0 +1,59 @@
+#!/bin/sh
+# ────────────────────────────────────────────────────────────────────────────
+# dwm-web-search  —  Lightweight web search prompt using zenity
+# Replaces rofi -dmenu for DuckDuckGo / Chemistry / NIST searches
+# ────────────────────────────────────────────────────────────────────────────
+# Usage:
+#   dwm-web-search           → DuckDuckGo general search
+#   dwm-web-search chem      → Chemistry search via rofi-chem (if installed)
+#                               or PubChem fallback
+#   dwm-web-search nist      → NIST physical constants search
+# ────────────────────────────────────────────────────────────────────────────
+set -eu
+
+# Locate a dmenu-style prompt tool (prefer zenity, fallback to dmenu)
+prompt_query() {
+    title="$1"
+    if command -v zenity >/dev/null 2>&1; then
+        zenity --entry --title="$title" --text="Enter search query:" --width=400 2>/dev/null || true
+    elif command -v dmenu >/dev/null 2>&1; then
+        printf '' | dmenu -p "$title:"
+    else
+        # Last resort: xterm + read
+        tmpfile=$(mktemp "${XDG_RUNTIME_DIR:-/tmp}/dwm-search.XXXXXX")
+        trap 'rm -f -- "$tmpfile"' EXIT
+        xterm -title "$title" -e sh -c "printf '%s: ' '$title'; read q; printf '%s' \"\$q\" > '$tmpfile'"
+        cat "$tmpfile"
+    fi
+}
+
+mode="${1:-ddg}"
+
+case "$mode" in
+    chem)
+        # If rofi-chem is installed, use it directly (it is a single binary,
+        # not a rofi plugin). Otherwise, fall back to PubChem web search.
+        if command -v rofi-chem >/dev/null 2>&1; then
+            exec rofi-chem
+        fi
+        query=$(prompt_query "Chemistry Search")
+        [ -z "$query" ] && exit 0
+        # Sanitize: strip control chars, limit to 200 chars
+        query=$(printf '%s' "$query" | tr -d '\000-\037' | head -c 200)
+        exec xdg-open "https://pubchem.ncbi.nlm.nih.gov/#query=${query}"
+        ;;
+    nist)
+        query=$(prompt_query "NIST Search")
+        [ -z "$query" ] && exit 0
+        query=$(printf '%s' "$query" | tr -d '\000-\037' | head -c 200)
+        # URL-encode spaces as '+'
+        encoded=$(printf '%s' "$query" | sed 's/[[:space:]]\{1,\}/+/g')
+        exec xdg-open "https://physics.nist.gov/cgi-bin/cuu/Results?search_for=${encoded}"
+        ;;
+    ddg|*)
+        query=$(prompt_query "Web Search")
+        [ -z "$query" ] && exit 0
+        query=$(printf '%s' "$query" | tr -d '\000-\037' | head -c 200)
+        exec xdg-open "https://duckduckgo.com/?q=${query}&source=desktop"
+        ;;
+esac

@@ -1,0 +1,89 @@
+#!/bin/sh
+# ────────────────────────────────────────────────────────────────────────────
+# dwm-emoji-picker  —  Lightweight emoji picker (no rofi-emoji dependency)
+# ────────────────────────────────────────────────────────────────────────────
+# Reads a bundled or system emoji list, shows a fuzzy picker via zenity/dmenu,
+# copies the chosen emoji to clipboard via xclip, and types it via xdotool.
+# ────────────────────────────────────────────────────────────────────────────
+set -eu
+
+# ── Locate emoji data ────────────────────────────────────────────────────────
+# Prefer a local bundled file, fall back to system emoji data, then download
+EMOJI_DATA=""
+for candidate in \
+    "${XDG_DATA_HOME:-$HOME/.local/share}/dwm/emoji-data.txt" \
+    "/usr/share/unicode/emoji/emoji-test.txt" \
+    "/usr/share/unicode/emoji-data.txt"; do
+    [ -f "$candidate" ] && EMOJI_DATA="$candidate" && break
+done
+
+# If no local data, generate a compact list from Unicode CLDR on first run
+if [ -z "$EMOJI_DATA" ]; then
+    EMOJI_DATA="${XDG_DATA_HOME:-$HOME/.local/share}/dwm/emoji-data.txt"
+    mkdir -p "$(dirname "$EMOJI_DATA")"
+
+    # Use Python to dump a basic emoji list (available on Arch base)
+    python3 -c '
+import unicodedata, sys
+for cp in range(0x1F600, 0x1FAFF):
+    c = chr(cp)
+    try:
+        name = unicodedata.name(c)
+        print(f"{c}  {name.lower()}")
+    except ValueError:
+        pass
+' > "$EMOJI_DATA" 2>/dev/null || true
+
+    if [ ! -s "$EMOJI_DATA" ]; then
+        notify-send "Emoji Picker" "Could not generate emoji data. Install unicode-character-database." -u warning
+        exit 1
+    fi
+fi
+
+# ── Parse emoji-test.txt or plain data ────────────────────────────────────────
+# emoji-test.txt format: "codepoints ; status # emoji E14.0 description"
+# Our plain format:      "emoji  description"
+parse_emojis() {
+    if grep -q '^#' "$EMOJI_DATA" 2>/dev/null; then
+        # Unicode standard emoji-test.txt
+        grep '^[0-9A-F]' "$EMOJI_DATA" \
+            | grep '; fully-qualified' \
+            | sed 's/.*# \(.\{1,8\}\) E[0-9.]* /\1  /' \
+            | head -4000
+    else
+        # Plain format
+        head -4000 "$EMOJI_DATA"
+    fi
+}
+
+# ── Show picker ──────────────────────────────────────────────────────────────
+emoji_list=$(parse_emojis)
+
+if command -v zenity >/dev/null 2>&1; then
+    chosen=$(printf '%s\n' "$emoji_list" \
+        | zenity --list --title="Emoji Picker" --column="Emoji" \
+            --width=500 --height=600 --print-column=1 2>/dev/null) || exit 0
+elif command -v dmenu >/dev/null 2>&1; then
+    chosen=$(printf '%s\n' "$emoji_list" | dmenu -i -l 20 -p "Emoji:") || exit 0
+else
+    notify-send "Emoji Picker" "Install zenity or dmenu for the emoji picker." -u warning
+    exit 1
+fi
+
+[ -z "$chosen" ] && exit 0
+
+# Extract just the emoji character (first field before spaces)
+emoji=$(printf '%s' "$chosen" | cut -d' ' -f1)
+
+# ── Copy to clipboard and type ───────────────────────────────────────────────
+if command -v xclip >/dev/null 2>&1; then
+    printf '%s' "$emoji" | xclip -selection clipboard
+fi
+
+if command -v xdotool >/dev/null 2>&1; then
+    # Small delay to let the picker window close
+    sleep 0.15
+    xdotool type --clearmodifiers -- "$emoji"
+fi
+
+notify-send "Emoji" "$emoji copied to clipboard" -t 1500

@@ -1,0 +1,13 @@
+/*********
+ * Gnucash *
+*********/
+#gnc-id-main-window entry.gnc-class-register-foreground {
+  background: transparent;
+  border: none;
+  box-shadow: none; }
+#gnc-id-main-window .arrow.button.toggle {
+  transition: none;
+  box-shadow: none; }
+  #gnc-id-main-window .arrow.button.toggle:hover {
+    border-color: @theme_selected_bg_color; }
+

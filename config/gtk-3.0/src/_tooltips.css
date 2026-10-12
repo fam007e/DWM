@@ -1,0 +1,20 @@
+/************
+ * Tooltips *
+ ************/
+tooltip {
+  padding: 4px;
+  /* not working */
+  border-radius: 5px;
+  box-shadow: none;
+  text-shadow: 0 1px black; }
+  tooltip.background {
+    background-color: rgba(40, 45, 55, 0.93);
+    background-clip: padding-box;
+    border: 1px solid #232831; }
+  tooltip decoration {
+    background-color: transparent; }
+  tooltip * {
+    padding: 4px;
+    background-color: transparent;
+    color: white; }
+

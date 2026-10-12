@@ -1,0 +1,57 @@
+/************
+ * Toolbars *
+ ************/
+toolbar, .inline-toolbar, searchbar,
+.location-bar {
+  -GtkWidget-window-dragging: true;
+  padding: 4px;
+  background-color: #434c5e; }
+
+toolbar {
+  padding: 4px 3px 3px 4px; }
+  .osd toolbar {
+    background-color: transparent; }
+  toolbar.osd {
+    padding: 13px;
+    border: none;
+    border-radius: 5px;
+    background-color: rgba(40, 45, 55, 0.93); }
+    toolbar.osd.left, toolbar.osd.right, toolbar.osd.top, toolbar.osd.bottom {
+      border-radius: 0; }
+  toolbar.horizontal separator {
+    margin: 0 7px 1px 6px; }
+  toolbar.vertical separator {
+    margin: 6px 1px 7px 0; }
+  toolbar:not(.inline-toolbar):not(.osd) switch,
+  toolbar:not(.inline-toolbar):not(.osd) scale,
+  toolbar:not(.inline-toolbar):not(.osd) entry,
+  toolbar:not(.inline-toolbar):not(.osd) spinbutton,
+  toolbar:not(.inline-toolbar):not(.osd) button {
+    margin-right: 1px;
+    margin-bottom: 1px; }
+
+.inline-toolbar {
+  padding: 3px;
+  border-width: 0 1px 1px;
+  border-radius: 0  0 5px 5px; }
+
+searchbar,
+.location-bar {
+  border-width: 0 0 1px;
+  padding: 3px; }
+
+.inline-toolbar, searchbar,
+.location-bar {
+  border-style: solid;
+  border-color: #232831;
+  background-color: #394151; }
+  .inline-toolbar:backdrop, searchbar:backdrop,
+  .location-bar:backdrop {
+    border-color: #262c36;
+    background-color: #394150;
+    box-shadow: none;
+    transition: 200ms ease-out; }
+
+searchbar {
+  background: #3b4252; }
+

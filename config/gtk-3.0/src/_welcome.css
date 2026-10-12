@@ -1,0 +1,10 @@
+/***********
+ * Welcome *
+ **********/
+GraniteWidgetsWelcome {
+  background-color: #3b4252; }
+  GraniteWidgetsWelcome GtkLabel {
+    color: @theme_fg_color; }
+  GraniteWidgetsWelcome .h1, GraniteWidgetsWelcome .h3 {
+    color: rgba(216, 222, 233, 0.8); }
+

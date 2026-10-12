@@ -1,0 +1,17 @@
+/********
+ * Misc *
+ ********/
+.content-view {
+  background-color: #343b49; }
+  .content-view:hover {
+    -gtk-icon-effect: highlight; }
+  .content-view:backdrop {
+    background-color: #343b49; }
+
+.osd .scale-popup button.flat {
+  border-style: none;
+  border-radius: 5px; }
+.scale-popup button:hover {
+  background-color: rgba(216, 222, 233, 0.1);
+  border-radius: 5px; }
+

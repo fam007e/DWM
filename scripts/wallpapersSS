@@ -5,7 +5,17 @@ WALLPAPER_DIR="$HOME/Pictures/Wallpapers"
 # Ensure the directory exists
 mkdir -p "$WALLPAPER_DIR"
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 while true; do
-    feh --randomize --bg-fill "$WALLPAPER_DIR"
+    # Pick a random wallpaper file
+    wallpaper=$(find "$WALLPAPER_DIR" -type f \( -name "*.jpg" -o -name "*.png" -o -name "*.jpeg" -o -name "*.webp" \) 2>/dev/null | shuf -n 1)
+    if [ -n "$wallpaper" ]; then
+        feh --bg-fill "$wallpaper"
+        # Extract palette into [theme.dynamic] in themes.toml
+        if [ -x "$SCRIPT_DIR/dwm-wallpaper-palette.py" ]; then
+            python3 "$SCRIPT_DIR/dwm-wallpaper-palette.py" "$wallpaper" &
+        fi
+    fi
     sleep 1800  # Sleep for 30 minutes (1800 seconds)
 done

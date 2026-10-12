@@ -1,0 +1,122 @@
+/*********
+ * Panel *
+ ********/
+.panel {
+  background-color: transparent;
+  transition: all 100ms ease-in-out; }
+  .panel.maximized {
+    background-color: @theme_selected_fg_color; }
+  .panel.translucent {
+    background-color: rgba(46, 52, 64, 0.5); }
+  .panel.color-light.translucent {
+    background-color: rgba(216, 222, 233, 0.85); }
+
+menubar.panel,
+.panel menubar {
+  box-shadow: none;
+  border: none; }
+
+.composited-indicator > revealer,
+.composited-indicator > revealer image,
+.composited-indicator > revealer label,
+.composited-indicator > revealer spinner {
+  color: @theme_fg_color;
+  font-weight: bold;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.5);
+  transition: all 200ms ease-in-out;
+  -gtk-icon-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.5); }
+.composited-indicator > revealer image:first-child + label {
+  margin-left: 5px; }
+
+.panel.color-light .composited-indicator > revealer,
+.panel.color-light .composited-indicator > revealer image,
+.panel.color-light .composited-indicator > revealer label,
+.panel.color-light .composited-indicator > revealer spinner {
+  color: rgba(0, 0, 0, 0.6);
+  text-shadow: 0 1px rgba(255, 255, 255, 0.1);
+  -gtk-icon-shadow: 0 1px rgba(255, 255, 255, 0.1); }
+
+/**************
+* Unity Panel *
+***************/
+UnityPanelWidget,
+.unity-panel {
+  background-color: #d5d5d5;
+  color: #31363D; }
+
+UnityPanelWidget:backdrop,
+.unity-panel:backdrop {
+  color: #1a1d21; }
+
+.unity-panel.menuitem,
+.unity-panel .menuitem {
+  border-width: 0 1px;
+  color: #31363D; }
+
+.unity-panel.menubar,
+.unity-panel .menubar {
+  color: #31363D; }
+
+.unity-panel.menu.menubar,
+.unity-panel .menu .menubar {
+  background-color: #d5d5d5;
+  color: #31363D; }
+
+.unity-panel.menubar:backdrop,
+.unity-panel .menubar *:backdrop {
+  color: #8e95a4; }
+
+.unity-panel.menubar.menuitem,
+.unity-panel.menubar .menuitem {
+  padding: 3px 5px;
+  border-width: 1px;
+  border-style: solid;
+  border: none;
+  background: none;
+  color: #31363D;
+  box-shadow: none; }
+
+.unity-panel.menubar.menuitem:hover,
+.unity-panel.menubar .menuitem:hover {
+  border-radius: 0;
+  background-color: #ebebeb;
+  color: #31363D;
+  box-shadow: none; }
+
+.unity-panel.menubar .menuitem *:hover {
+  color: white;
+  box-shadow: none; }
+
+.unity-panel.menubar .menuitem.separator,
+.unity-panel.menubar.menuitem.separator {
+  border: none;
+  color: #232831; }
+
+/* Force Quit */
+SheetStyleDialog.unity-force-quit {
+  background-color: #3b4252; }
+
+@keyframes playbackmenuitem_spinner {
+  to {
+    -gtk-icon-transform: rotate(1turn); } }
+.menu IdoPlaybackMenuItem.menuitem:active {
+  -gtk-icon-source: -gtk-icontheme("process-working-symbolic");
+  animation: playbackmenuitem_spinner 1s infinite linear;
+  color: @theme_selected_bg_color; }
+
+MsdOsdWindow.background.osd {
+  border-radius: 2px;
+  border: 1px solid #232831; }
+  MsdOsdWindow.background.osd .progressbar {
+    background-color: @theme_selected_bg_color;
+    border: none;
+    border-color: @theme_selected_bg_color;
+    border-radius: 5px; }
+  MsdOsdWindow.background.osd .trough {
+    background-color: rgba(29, 33, 40, 0.93);
+    border: none;
+    border-radius: 5px; }
+
+/***********************
+ * App-Specific Styles *
+ ***********************/

@@ -22,17 +22,10 @@ on:
 jobs:
   notify:
     runs-on: ubuntu-latest
+    if: secrets.DISCORD_WEBHOOK_URL != ''
     permissions:
       contents: read
     steps:
-      - name: Check if Discord webhook URL is set
-        env:
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-        run: |
-          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
-            echo "Error: DISCORD_WEBHOOK_URL secret is not set"
-            exit 1
-          fi
 
       - name: Send notification to Discord for Push
         if: github.event_name == 'push'

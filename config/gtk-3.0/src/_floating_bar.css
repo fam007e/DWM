@@ -1,0 +1,22 @@
+/****************
+ * Floating Bar *
+ ****************/
+.floating-bar {
+  background-color: #434c5e;
+  border-width: 1px;
+  border-style: solid solid none;
+  border-color: #232831;
+  border-radius: 3px 3px 0 0;
+  box-shadow: none; }
+  .floating-bar.bottom.left {
+    border-left-style: none;
+    border-top-left-radius: 0; }
+  .floating-bar.bottom.right {
+    border-right-style: none;
+    border-top-right-radius: 0; }
+  .floating-bar > button {
+    padding: 4px; }
+  .floating-bar:backdrop {
+    background-color: #434c5e;
+    border-color: #262c36; }
+

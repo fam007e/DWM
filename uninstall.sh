@@ -73,8 +73,7 @@ fi
 # That way the answer is still meaningful.
 remove_secrets=false
 if [ -d "$HOME/.config/dwm/secrets" ] || \
-   [ -f "$HOME/.config/dwm_weather.env" ] || \
-   [ -f "$HOME/.config/dwm_football.env" ]; then
+   [ -f "$HOME/.config/dwm_weather.env" ]; then
     if confirm "Remove API secrets (~/.config/dwm/secrets/ and legacy .env files)?"; then
         remove_secrets=true
     else
@@ -90,26 +89,25 @@ if confirm "Remove DWM configurations (~/.config/dwm)?"; then
         find "$HOME/.config/dwm" -mindepth 1 -maxdepth 1 ! -name "secrets" -exec rm -rf {} +
         warn "Kept ~/.config/dwm/secrets in place."
     fi
-    rm -f "$HOME/.config/dwm_weather.env" "$HOME/.config/dwm_football.env"
+    rm -f "$HOME/.config/dwm_weather.env"
     ok "DWM configurations removed."
 elif $remove_secrets; then
     # User wants secrets gone but kept configs
     rm -rf "$HOME/.config/dwm/secrets"
-    rm -f "$HOME/.config/dwm_weather.env" "$HOME/.config/dwm_football.env"
+    rm -f "$HOME/.config/dwm_weather.env"
     ok "Secrets removed."
 fi
 
-if confirm "Remove Polybar, Rofi, and terminal configurations?"; then
-    rm -rf "$HOME/.config/polybar"
+if confirm "Remove Quickshell, Rofi, and terminal configurations?"; then
+    rm -rf "$HOME/.config/quickshell"
     rm -rf "$HOME/.config/rofi"
     rm -rf "$HOME/.config/alacritty"
-    rm -rf "$HOME/.config/kitty"
     rm -rf "$HOME/.config/ghostty"
     ok "App configurations removed."
 fi
 
 # ── 5. Remove Session Environment File ───────────────────────────────────────
-# Written by install.sh — exports DWM_DATA_DIR and DWM_POLYBAR_SCRIPTS into SDDM sessions.
+# Written by install.sh — exports DWM_DATA_DIR into SDDM sessions.
 # Leaving this behind exports stale paths into every future session.
 if [ -f "$HOME/.config/environment.d/dwm.conf" ]; then
     rm -f "$HOME/.config/environment.d/dwm.conf"
@@ -128,9 +126,7 @@ fi
 # ── 7. Clean Caches ───────────────────────────────────────────────────────────
 info "Cleaning caches and build artifacts..."
 # Named cache files from known scripts
-rm -f "$HOME/.cache/football_matches.cache" \
-      "$HOME/.cache/football_matches.log" \
-      "$HOME/.cache/weather.log" \
+rm -f "$HOME/.cache/weather.log" \
       "$HOME/.cache/redshift_state"
 # Picom build cache
 rm -rf "$HOME/.cache/dwm-build"
@@ -138,6 +134,6 @@ ok "Caches cleaned."
 
 echo ""
 ok "Uninstallation complete."
-warn "Packages installed during setup (polybar, jq, pipewire, etc.) were NOT removed."
+warn "Packages installed during setup (quickshell, jq, pipewire, etc.) were NOT removed."
 warn "Wallpapers in ~/Pictures/Wallpapers were NOT removed."
 echo ""

@@ -21,13 +21,13 @@ THEME_FILE="${THEME_DIR:+$THEME_DIR/controlcenter.rasi}"
 
 DWM_DIR="$HOME/.local/share/dwm"
 DWM_REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-POLYBAR_DIR="$HOME/.config/polybar"
+QUICKSHELL_DIR="$HOME/.config/quickshell"
 ROFI_DIR="$HOME/.config/rofi"
 BG_DIR="$HOME/Pictures/Wallpapers"
 
 # ── Terminal detection ───────────────────────────────────
 detect_terminal() {
-    for t in ghostty alacritty kitty st xterm; do
+    for t in alacritty ghostty st xterm; do
         if command -v "$t" &>/dev/null; then
             echo "$t"
             return
@@ -42,7 +42,6 @@ spawn_terminal() {
     case "$TERM_CMD" in
         ghostty)    ghostty -e "$@" &  ;;
         alacritty)  alacritty -e "$@" & ;;
-        kitty)      kitty "$@" &        ;;
         *)          "$TERM_CMD" -e "$@" & ;;
     esac
 }
@@ -167,11 +166,11 @@ run_health_check() {
     _cmd flameshot
     _cmd dex
     _cmd amixer
-    _cmd polybar
+    _cmd quickshell
 
     # ── Terminal Emulators ───────────────────────────────
     local term_ok=0
-    for t in ghostty alacritty kitty st; do
+    for t in alacritty ghostty st; do
         if command -v "$t" &>/dev/null; then
             passed_lines+=("✓  $t")
             pass=$((pass + 1)); term_ok=$((term_ok + 1))
@@ -189,7 +188,7 @@ run_health_check() {
     # ── Running Services ─────────────────────────────────
     _proc picom
     _proc dunst
-    _proc polybar
+    _proc quickshell
     if systemctl is-active --quiet NetworkManager 2>/dev/null; then
         passed_lines+=("✓  NetworkManager  (active)")
         pass=$((pass + 1))
@@ -201,7 +200,7 @@ run_health_check() {
     # ── Session & Config Files ───────────────────────────
     _path /usr/share/xsessions/dwm.desktop
     _path "$HOME/.xinitrc"
-    _path "$POLYBAR_DIR"
+    _path "$QUICKSHELL_DIR"
     _path "$ROFI_DIR"
     _path "$BG_DIR"
 
@@ -245,7 +244,7 @@ run_quick_actions() {
     local items=(
         "  Restart Picom"
         "  Restart Dunst"
-        "  Restart Polybar"
+        "  Restart Quickshell"
         "  Reload Wallpaper"
         "  Toggle Compositor"
         "  Restart NetworkManager"
@@ -270,12 +269,11 @@ run_quick_actions() {
             dunst &
             notify "Dunst restarted"
             ;;
-        *"Restart Polybar"*)
-            if [ -x "$POLYBAR_DIR/launch.sh" ]; then
-                "$POLYBAR_DIR/launch.sh" &
-            else
-                notify "Polybar launch.sh not found" --urgency=critical
-            fi
+        *"Restart Quickshell"*)
+            pkill -f quickshell 2>/dev/null || true
+            sleep 0.3
+            quickshell --path "$QUICKSHELL_DIR/shell.qml" --no-duplicate &
+            notify "Quickshell restarted"
             ;;
         *"Reload Wallpaper"*)
             if [ -d "$BG_DIR" ]; then
@@ -375,7 +373,6 @@ run_appearance() {
         "  Select Theme"
         "  Randomize Wallpaper"
         "  Open Wallpaper Folder"
-        "  Edit Polybar Config"
         "  GTK Theme Settings"
     )
 
@@ -398,15 +395,6 @@ run_appearance() {
         *"Open Wallpaper Folder"*)
             xdg-open "$BG_DIR" 2>/dev/null &
             disown
-            ;;
-        *"Edit Polybar Config"*)
-            local cfg="$POLYBAR_DIR/themes/minimal/config.ini"
-            if [ -f "$cfg" ]; then
-                xdg-open "$cfg" 2>/dev/null &
-                disown
-            else
-                notify "Polybar config not found" --urgency=critical
-            fi
             ;;
         *"GTK Theme Settings"*)
             if command -v nwg-look &>/dev/null; then

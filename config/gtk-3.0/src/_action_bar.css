@@ -1,0 +1,59 @@
+/***************
+ * Action bars *
+ ***************/
+actionbar > revealer > box,
+.action-bar {
+  padding: 6px;
+  border-width: 1px 0 0;
+  border-style: solid;
+  border-color: @borders;
+  background-color: @theme_bg_color; }
+
+.action-bar button {
+  padding: 4px 12px;
+  background-color: #3b4252;
+  color: @theme_fg_color;
+  border: 1px solid @borders;
+  border-radius: 4px;
+  transition: all 200ms ease; }
+  .action-bar button:hover {
+    background-color: @theme_selected_bg_color;
+    color: @theme_selected_fg_color;
+    border-color: @theme_selected_bg_color; }
+  .action-bar button:active, .action-bar button:checked {
+    background-color: shade(@theme_selected_bg_color, 0.8);
+    color: @theme_selected_fg_color;
+    border-color: shade(@theme_selected_bg_color, 0.8); }
+  .action-bar button:disabled {
+    background-color: #3b4252;
+    color: @insensitive_fg_color;
+    border-color: @borders; }
+.action-bar button.suggested-action {
+  background-color: #5e81ac;
+  color: white;
+  border-color: #5e81ac; }
+  .action-bar button.suggested-action:hover {
+    background-color: #81a1c1;
+    border-color: #81a1c1; }
+  .action-bar button.suggested-action:backdrop {
+    background-color: #4c566a;
+    color: rgba(216, 222, 233, 0.7); }
+  .action-bar button.suggested-action:disabled {
+    background-color: #3b4252;
+    color: @insensitive_fg_color;
+    border-color: @borders; }
+
+.action-bar button.destructive-action {
+  background-color: #bf616a;
+  color: white;
+  border-color: #bf616a; }
+  .action-bar button.destructive-action:hover {
+    background-color: #d08770;
+    border-color: #d08770; }
+  .action-bar button.destructive-action:backdrop {
+    background-color: #4c566a;
+    color: rgba(216, 222, 233, 0.7); }
+  .action-bar button.destructive-action:disabled {
+    background-color: #3b4252;
+    color: @insensitive_fg_color;
+    border-color: @borders; }

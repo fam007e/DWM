@@ -1,6 +1,5 @@
 configuration {
     modi:               "window,run,drun,emoji,calc";
-    show-icons:         false;
     icon-theme:         "hicolor";
     matching:           "normal";      /* exact substring, faster and more predictable */
     sorting-method:     "fzf";         /* ranks by match quality */
@@ -9,4 +8,4 @@ configuration {
     drun-show-actions:  false;
     drun-match-fields:  "name,generic,exec,categories";
 }
-@theme "$HOME/.config/rofi/themes/roundednord.rasi"
+@theme "/home/fam007e/.config/rofi/themes/roundednord.rasi"

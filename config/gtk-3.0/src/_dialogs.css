@@ -1,0 +1,69 @@
+/***********
+ * Dialogs *
+ ***********/
+messagedialog .titlebar:not(headerbar) {
+  background-color: @theme_bg_color; }
+messagedialog .titlebar {
+  min-height: 20px;
+  background-image: none;
+  background-color: @theme_bg_color;
+  border-style: none;
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px; }
+messagedialog.csd.background {
+  background-color: @theme_bg_color;
+  color: @theme_fg_color;
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px; }
+
+/* Catch-all for all dialog buttons including Thunar properties */
+dialog button,
+.dialog button,
+.dialog-action-area button,
+.action-area button,
+.button-area button,
+messagedialog.csd .dialog-action-area button {
+  padding: 6px 14px;
+  border-radius: 4px;
+  border: 1px solid @borders;
+  background-color: @theme_bg_color;
+  background-image: none;
+  color: @theme_fg_color;
+  box-shadow: none;
+  margin: 4px; }
+  
+  dialog button:hover,
+  .dialog button:hover,
+  .dialog-action-area button:hover,
+  .action-area button:hover,
+  messagedialog.csd .dialog-action-area button:hover {
+    background-color: @theme_selected_bg_color;
+    color: @theme_selected_fg_color; }
+    
+  dialog button:active,
+  .dialog button:active,
+  .dialog-action-area button:active,
+  .action-area button:active,
+  messagedialog.csd .dialog-action-area button:active {
+    background-color: shade(@theme_selected_bg_color, 0.8);
+    color: @theme_selected_fg_color; }
+
+filechooser .dialog-action-box {
+  border-top: 1px solid @borders; }
+  filechooser .dialog-action-box:backdrop {
+    border-top-color: @unfocused_borders; }
+filechooser #pathbarbox {
+  border-bottom: 1px solid @borders; }
+
+filechooserbutton:drop(active) {
+  box-shadow: none;
+  border-color: transparent; }
+
+/* File Chooser Preview Pane */
+filechooser .preview,
+filechooser .dialog-vbox paned > box,
+filechooser #GtkFileChooserWidget paned > box,
+filechooser stack.view + box.vertical,
+filechooser stack.view ~ box.vertical {
+  background-color: @theme_bg_color;
+  color: @theme_fg_color; }

@@ -1,0 +1,46 @@
+/*********
+ * Links *
+ *********/
+*:link, button:link,
+button:visited {
+  color: #5e81ac; }
+  *:link:visited,
+  button:visited {
+    color: rgba(94, 129, 172, 0.5); }
+    *:selected *:link:visited, *:selected button:visited:link,
+    *:selected button:visited {
+      color: #556a71; }
+  *:link:hover, button:hover:link,
+  button:hover:visited {
+    color: #809bbd; }
+    *:selected *:link:hover, *:selected button:hover:link,
+    *:selected button:hover:visited {
+      color: #38424c; }
+  *:link:active, button:active:link,
+  button:active:visited {
+    color: #5e81ac; }
+    *:selected *:link:active, *:selected button:active:link,
+    *:selected button:active:visited {
+      color: #414f59; }
+  *:link:backdrop:backdrop:hover, button:backdrop:backdrop:hover:link,
+  button:backdrop:backdrop:hover:visited, *:link:backdrop:backdrop:hover:selected, button:backdrop:backdrop:hover:selected:link,
+  button:backdrop:backdrop:hover:selected:visited, *:link:backdrop, button:backdrop:link,
+  button:backdrop:visited {
+    color: @theme_selected_bg_color; }
+  *:link:selected, button:selected:link,
+  button:selected:visited, *:selected *:link, *:selected button:link,
+  *:selected button:visited {
+    color: #414f59; }
+
+button:link,
+button:visited {
+  text-shadow: none; }
+  button:link:hover, button:link:active, button:link:checked,
+  button:visited:hover,
+  button:visited:active,
+  button:visited:checked {
+    text-shadow: none; }
+  button:link > label,
+  button:visited > label {
+    text-decoration-line: underline; }
+

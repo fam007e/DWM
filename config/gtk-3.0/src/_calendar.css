@@ -1,0 +1,37 @@
+/************
+ * Calendar *
+ ***********/
+calendar {
+  color: @theme_fg_color;
+  border: 1px solid #232831; }
+  calendar:selected {
+    border-radius: 3px; }
+  calendar.header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 0; }
+    calendar.header:backdrop {
+      border-color: rgba(0, 0, 0, 0.1); }
+  calendar.button {
+    color: rgba(216, 222, 233, 0.45); }
+    calendar.button:hover {
+      color: @theme_fg_color; }
+    calendar.button:backdrop {
+      color: rgba(142, 149, 164, 0.45); }
+    calendar.button:disabled {
+      color: rgba(142, 149, 164, 0.45); }
+  calendar:indeterminate, calendar:indeterminate:backdrop {
+    color: alpha(currentColor,0.55); }
+  calendar.highlight, calendar.highlight:backdrop {
+    font-size: smaller;
+    color: @theme_fg_color; }
+  calendar:backdrop {
+    color: #b9bfcb;
+    border-color: #262c36; }
+
+/*******************
+ * Calendar events *
+********************/
+.color-light label, .color-light.timed label {
+  color: @theme_selected_fg_color;
+  opacity: 1; }
+

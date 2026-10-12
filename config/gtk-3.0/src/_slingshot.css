@@ -1,0 +1,40 @@
+/*************
+ * Slingshot *
+ ************/
+.button.app {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background-image: none; }
+  .button.app .app:hover {
+    border-radius: 8px;
+    border: none;
+    background-color: alpha(@theme_selected_bg_color, 0.3);
+    color: white; }
+  .button.app .app:focus {
+    /*background-color: transparentize(black, 0.20);*/ }
+
+.search-item {
+  border-radius: 0;
+  border: none;
+  color: @theme_fg_color;
+  background: none; }
+  .search-item:hover, .search-item:focus {
+    border-radius: 0;
+    background-color: alpha(@theme_selected_bg_color, 0.3);
+    color: @theme_selected_fg_color; }
+
+.search-entry-large,
+.search-entry-large:focus {
+  border: none;
+  font-size: 18px;
+  font-weight: 300;
+  background-image: none;
+  background: none;
+  box-shadow: none;
+  border-radius: 0; }
+
+.search-category-header {
+  font-weight: bold;
+  color: @theme_fg_color; }
+

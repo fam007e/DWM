@@ -1,0 +1,843 @@
+/*********
+* Budgie *
+*********/
+.budgie-container {
+  background-color: transparent; }
+  .budgie-container:backdrop {
+    background-color: transparent; }
+  .budgie-container popover list,
+  .budgie-container popover row {
+    border: none;
+    background: none;
+    padding: 0;
+    margin: 0; }
+
+.budgie-popover .container,
+.budgie-popover border,
+.budgie-popover list,
+.budgie-popover row {
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+  text-shadow: none;
+  -gtk-icon-shadow: none;
+  opacity: 1;
+  min-width: 0;
+  min-height: 0; }
+
+.budgie-popover,
+.budgie-popover.background {
+  border-radius: 2px;
+  padding: 0;
+  background: rgba(32, 36, 44, 0.95);
+  background-clip: border-box;
+  box-shadow: 0 2px 3px 1px rgba(0, 0, 0, 0.35);
+  border: 1px solid #232831; }
+  .budgie-popover list:hover,
+  .budgie-popover row:hover,
+  .budgie-popover.background list:hover,
+  .budgie-popover.background row:hover {
+    background: none; }
+  .budgie-popover > frame.container,
+  .budgie-popover.background > frame.container {
+    margin: 0 -1px -1px;
+    padding: 2px 0 0; }
+  .budgie-popover button,
+  .budgie-popover.background button {
+    color: @theme_fg_color;
+    border: none;
+    background: transparent; }
+    .budgie-popover button:hover,
+    .budgie-popover.background button:hover {
+      color: @theme_selected_bg_color; }
+
+.budgie-popover > .container {
+  padding: 2px; }
+
+.budgie-menu {
+  color: @theme_fg_color; }
+  .budgie-menu .container {
+    padding: 0; }
+  .budgie-menu button:hover {
+    -gtk-icon-effect: none; }
+  .budgie-menu entry.search {
+    border: none;
+    background: none;
+    padding: 5px 2px;
+    border-bottom: 1px solid #232831;
+    border-radius: 0;
+    font-size: 120%;
+    box-shadow: none;
+    color: @theme_fg_color; }
+    .budgie-menu entry.search image:dir(ltr) {
+      padding-left: 8px;
+      padding-right: 12px; }
+    .budgie-menu entry.search image:dir(rtl) {
+      padding-left: 12px;
+      padding-right: 8px; }
+  .budgie-menu .categories {
+    border-width: 0;
+    margin-left: 3px;
+    background: transparent; }
+    .budgie-menu .categories:dir(ltr) {
+      border-right: 1px solid #232831; }
+    .budgie-menu .categories:dir(rtl) {
+      border-left: 1px solid #232831; }
+  .budgie-menu .category-button {
+    padding: 7px;
+    border-radius: 2px 0 0 2px; }
+    .budgie-menu .category-button:hover {
+      background-color: rgba(216, 222, 233, 0.05);
+      color: @theme_fg_color; }
+    .budgie-menu .category-button:active {
+      box-shadow: inset 0 2px 2px -2px rgba(0, 0, 0, 0.2); }
+    .budgie-menu .category-button:checked {
+      color: @theme_selected_fg_color;
+      background: linear-gradient(to right, #5e81ac 0%, #5e81ac 100%); }
+      .budgie-menu .category-button:checked:hover {
+        color: rgba(46, 52, 64, 0.6); }
+    .budgie-menu .category-button:checked:disabled {
+      opacity: 0.5; }
+      .budgie-menu .category-button:checked:disabled label {
+        color: rgba(46, 52, 64, 0.7); }
+  .budgie-menu scrollbar {
+    background-color: transparent;
+    border-color: #232831; }
+  .budgie-menu button:not(.category-button) {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    border-radius: 0;
+    box-shadow: none;
+    background: yellow; }
+  .budgie-menu button {
+    border: none;
+    background: transparent; }
+  .budgie-menu undershoot, .budgie-menu overshoot {
+    background: none; }
+  .budgie-menu list {
+    color: rgba(216, 222, 233, 0.7); }
+
+button.budgie-menu-launcher {
+  padding: 0 2px;
+  color: @theme_fg_color;
+  box-shadow: none;
+  background-color: transparent; }
+  button.budgie-menu-launcher:hover {
+    color: @theme_fg_color; }
+  button.budgie-menu-launcher:active, button.budgie-menu-launcher:checked {
+    color: @theme_fg_color; }
+  button.budgie-menu-launcher:backdrop {
+    color: @theme_fg_color;
+    background-color: transparent; }
+    button.budgie-menu-launcher:backdrop:hover {
+      color: @theme_fg_color; }
+    button.budgie-menu-launcher:backdrop:active, button.budgie-menu-launcher:backdrop:checked {
+      color: @theme_selected_bg_color;
+      box-shadow: none;
+      background-color: #3d4454; }
+
+.user-menu .content-box separator {
+  margin-left: 6px;
+  margin-right: 6px;
+  background-color: rgba(216, 222, 233, 0.1); }
+.user-menu button {
+  margin: 5px; }
+.user-menu > box.vertical row.activatable:first-child .indicator-item,
+.user-menu > frame.container > box.vertical row.activatable:first-child .indicator-item {
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.2), inset 0px 1px 0px 0px rgba(255, 255, 255, 0.1);
+  background-color: @theme_selected_bg_color;
+  transition-duration: 0.2s; }
+  .user-menu > box.vertical row.activatable:first-child .indicator-item:dir(ltr),
+  .user-menu > frame.container > box.vertical row.activatable:first-child .indicator-item:dir(ltr) {
+    padding-left: 7px;
+    background-position: left center;
+    background-repeat: no-repeat;
+    background-size: 38px auto; }
+  .user-menu > box.vertical row.activatable:first-child .indicator-item:dir(rtl),
+  .user-menu > frame.container > box.vertical row.activatable:first-child .indicator-item:dir(rtl) {
+    padding-right: 7px;
+    background-position: right center;
+    background-repeat: no-repeat;
+    background-size: 38px auto; }
+  .user-menu > box.vertical row.activatable:first-child .indicator-item label,
+  .user-menu > frame.container > box.vertical row.activatable:first-child .indicator-item label {
+    color: @theme_selected_fg_color; }
+    .user-menu > box.vertical row.activatable:first-child .indicator-item label:dir(ltr),
+    .user-menu > frame.container > box.vertical row.activatable:first-child .indicator-item label:dir(ltr) {
+      padding-left: 5px; }
+    .user-menu > box.vertical row.activatable:first-child .indicator-item label:dir(rtl),
+    .user-menu > frame.container > box.vertical row.activatable:first-child .indicator-item label:dir(rtl) {
+      padding-right: 5px; }
+  .user-menu > box.vertical row.activatable:first-child .indicator-item image,
+  .user-menu > frame.container > box.vertical row.activatable:first-child .indicator-item image {
+    color: @theme_selected_fg_color; }
+    .user-menu > box.vertical row.activatable:first-child .indicator-item image:first-child,
+    .user-menu > frame.container > box.vertical row.activatable:first-child .indicator-item image:first-child {
+      min-width: 24px;
+      min-height: 20px; }
+
+button.raven-trigger {
+  padding-left: 2px;
+  padding-right: 2px;
+  color: @theme_fg_color;
+  box-shadow: none; }
+  button.raven-trigger:hover {
+    color: @theme_fg_color;
+    background-color: transparent; }
+  button.raven-trigger:active, button.raven-trigger:checked {
+    box-shadow: none;
+    background-color: transparent;
+    color: @theme_selected_bg_color; }
+  button.raven-trigger:backdrop {
+    color: @theme_fg_color; }
+    button.raven-trigger:backdrop:hover {
+      color: @theme_fg_color; }
+    button.raven-trigger:backdrop:active, button.raven-trigger:backdrop:checked {
+      box-shadow: none;
+      color: @theme_selected_bg_color;
+      background-color: transparent; }
+
+.places-menu .container {
+  padding: 0; }
+.places-menu .message-bar {
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px; }
+.places-menu .name-button {
+  border: 0;
+  border-radius: 0;
+  padding: 4px 6px; }
+.places-menu .unmount-button {
+  padding: 4px 4px;
+  border: 0;
+  border-radius: 0; }
+.places-menu .places-section-header {
+  padding: 0px;
+  border-bottom: 1px solid rgba(35, 40, 49, 0.95);
+  box-shadow: 0px 1px 1px alpha(@theme_fg_color, 0.03); }
+.places-menu .places-section-header > button {
+  padding: 8px;
+  border: none;
+  border-bottom-left-radius: 0px;
+  border-bottom-right-radius: 0px; }
+.places-menu .places-list {
+  background: rgba(216, 222, 233, 0.04);
+  border-bottom: 1px solid rgba(35, 40, 49, 0.95); }
+.places-menu .unlock-area {
+  border-top: 1px solid rgba(35, 40, 49, 0.85);
+  border-bottom: 1px solid rgba(35, 40, 49, 0.85); }
+.places-menu .unlock-area entry {
+  border-radius: 0;
+  border: 0; }
+.places-menu .unlock-area button {
+  border-radius: 0;
+  border: 0;
+  border-left: 1px solid rgba(35, 40, 49, 0.85); }
+.places-menu .alternative-label {
+  font-size: 15px;
+  padding: 3px; }
+.places-menu .always-expand {
+  background: transparent;
+  border-bottom: none; }
+
+.night-light-indicator .container {
+  padding: 0; }
+.night-light-indicator .view-header {
+  font-size: 14px;
+  padding: 10px;
+  border-bottom: 1px solid mix(@theme_base_color, #000000, 0.35);
+  box-shadow: 0px 1px 1px alpha(@theme_fg_color, 0.04); }
+.night-light-indicator .display-settings-button {
+  border-top-left-radius: 0px;
+  border-top-right-radius: 0px;
+  border: none;
+  padding: 3px;
+  border-top: 1px solid mix(@theme_base_color, #000000, 0.35);
+  box-shadow: inset 0px 1px 1px alpha(@theme_fg_color, 0.04); }
+
+.budgie-panel {
+  color: @theme_fg_color;
+  background-color: rgba(32, 36, 44, 0.95);
+  background-image: none;
+  box-shadow: none;
+  border: none;
+  transition: all 150ms ease-in; }
+  .budgie-panel .alert {
+    color: #bf616a; }
+  .budgie-panel:backdrop {
+    color: @theme_fg_color;
+    background-color: rgba(32, 36, 44, 0.95); }
+  .budgie-panel button {
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-radius: 0; }
+    .budgie-panel button.flat {
+      background: transparent;
+      border: none; }
+      .budgie-panel button.flat:hover, .budgie-panel button.flat:active, .budgie-panel button.flat:checked {
+        background: transparent;
+        color: @theme_selected_bg_color; }
+  .budgie-panel popover list,
+  .budgie-panel popover row {
+    padding: 0;
+    margin: 0; }
+  .budgie-panel label {
+    color: @theme_fg_color;
+    font-weight: 700; }
+  .budgie-panel.transparent {
+    background-color: rgba(32, 36, 44, 0.2); }
+    .top .budgie-panel.transparent {
+      border-bottom-color: transparent; }
+    .bottom .budgie-panel.transparent {
+      border-top-color: transparent; }
+    .left .budgie-panel.transparent {
+      border-right-color: transparent; }
+    .right .budgie-panel.transparent {
+      border-left-color: transparent; }
+    .budgie-panel.transparent:backdrop, .budgie-panel.transparent label, .budgie-panel.transparent button.raven-trigger:backdrop, .budgie-panel.transparent button.budgie-menu-launcher {
+      color: #f9fafb; }
+  .budgie-panel .end-region {
+    border-radius: 0px; }
+    .budgie-panel .end-region separator {
+      background-color: rgba(216, 222, 233, 0.15); }
+    .budgie-panel .end-region label {
+      font-weight: 700;
+      color: @theme_fg_color; }
+
+.budgie-panel #tasklist-button,
+.budgie-panel #tasklist-button:backdrop {
+  outline-color: transparent;
+  transition: all 100ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border-color: rgba(32, 36, 44, 0);
+  border-radius: 0;
+  background-color: transparent;
+  box-shadow: none;
+  background-clip: padding-box; }
+
+.budgie-panel button.flat.launcher {
+  outline-color: transparent;
+  transition: all 100ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border-color: rgba(32, 36, 44, 0);
+  border-radius: 0;
+  padding: 0;
+  background-clip: padding-box;
+  background-color: transparent; }
+  .budgie-panel button.flat.launcher {
+    box-shadow: none; }
+
+.budgie-panel #tasklist-button:hover, .budgie-panel .unpinned button.flat.launcher:hover,
+.budgie-panel .pinned button.flat.launcher.running:hover {
+  box-shadow: none; }
+.budgie-panel #tasklist-button:active, .budgie-panel .unpinned button.flat.launcher:active,
+.budgie-panel .pinned button.flat.launcher.running:active, .budgie-panel #tasklist-button:checked, .budgie-panel .unpinned button.flat.launcher:checked,
+.budgie-panel .pinned button.flat.launcher.running:checked {
+  box-shadow: none; }
+.top .budgie-panel #tasklist-button, .budgie-panel .top #tasklist-button, .top .budgie-panel .unpinned button.flat.launcher, .budgie-panel .unpinned .top button.flat.launcher,
+.top .budgie-panel .pinned button.flat.launcher.running,
+.budgie-panel .pinned .top button.flat.launcher.running {
+  padding-bottom: 2px;
+  border-top: 2px solid transparent; }
+  .top .budgie-panel .pinned button.flat.launcher:not(.running) {
+    border-top: 2px solid transparent; }
+
+  .top .budgie-panel .pinned button.flat.launcher:not(.running):hover {
+    border-top: 2px solid rgba(255, 255, 255, 0.1); }
+
+  .top .budgie-panel .unpinned button.flat.launcher,
+  .top .budgie-panel .pinned button.flat.launcher.running {
+    border-top: 2px solid rgba(255, 255, 255, 0.1); }
+  .top .budgie-panel #tasklist-button:hover, .budgie-panel .top #tasklist-button:hover, .top .budgie-panel .unpinned button.flat.launcher:hover, .budgie-panel .unpinned .top button.flat.launcher:hover,
+  .top .budgie-panel .pinned button.flat.launcher.running:hover,
+  .budgie-panel .pinned .top button.flat.launcher.running:hover {
+    border-top: 2px solid rgba(255, 255, 255, 0.25); }
+  .top .budgie-panel #tasklist-button:active, .budgie-panel .top #tasklist-button:active, .top .budgie-panel .unpinned button.flat.launcher:active, .budgie-panel .unpinned .top button.flat.launcher:active,
+  .top .budgie-panel .pinned button.flat.launcher.running:active,
+  .budgie-panel .pinned .top button.flat.launcher.running:active, .top .budgie-panel #tasklist-button:checked, .budgie-panel .top #tasklist-button:checked, .top .budgie-panel .unpinned button.flat.launcher:checked, .budgie-panel .unpinned .top button.flat.launcher:checked,
+  .top .budgie-panel .pinned button.flat.launcher.running:checked,
+  .budgie-panel .pinned .top button.flat.launcher.running:checked {
+    border-top: 2px solid @theme_selected_bg_color; }
+.bottom .budgie-panel #tasklist-button, .budgie-panel .bottom #tasklist-button, .bottom .budgie-panel .unpinned button.flat.launcher, .budgie-panel .unpinned .bottom button.flat.launcher,
+.bottom .budgie-panel .pinned button.flat.launcher.running,
+.budgie-panel .pinned .bottom button.flat.launcher.running {
+  padding-top: 2px;
+  border-bottom: 2px solid transparent; }
+  .bottom .budgie-panel .pinned button.flat.launcher:not(.running) {
+    border-bottom: 2px solid transparent; }
+
+  .bottom .budgie-panel .pinned button.flat.launcher:not(.running):hover {
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1); }
+
+  .bottom .budgie-panel .unpinned button.flat.launcher,
+  .bottom .budgie-panel .pinned button.flat.launcher.running {
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1); }
+  .bottom .budgie-panel #tasklist-button:hover, .budgie-panel .bottom #tasklist-button:hover, .bottom .budgie-panel .unpinned button.flat.launcher:hover, .budgie-panel .unpinned .bottom button.flat.launcher:hover,
+  .bottom .budgie-panel .pinned button.flat.launcher.running:hover,
+  .budgie-panel .pinned .bottom button.flat.launcher.running:hover {
+    border-bottom: 2px solid rgba(255, 255, 255, 0.25); }
+  .bottom .budgie-panel #tasklist-button:active, .budgie-panel .bottom #tasklist-button:active, .bottom .budgie-panel .unpinned button.flat.launcher:active, .budgie-panel .unpinned .bottom button.flat.launcher:active,
+  .bottom .budgie-panel .pinned button.flat.launcher.running:active,
+  .budgie-panel .pinned .bottom button.flat.launcher.running:active, .bottom .budgie-panel #tasklist-button:checked, .budgie-panel .bottom #tasklist-button:checked, .bottom .budgie-panel .unpinned button.flat.launcher:checked, .budgie-panel .unpinned .bottom button.flat.launcher:checked,
+  .bottom .budgie-panel .pinned button.flat.launcher.running:checked,
+  .budgie-panel .pinned .bottom button.flat.launcher.running:checked {
+    border-bottom: 2px solid @theme_selected_bg_color; }
+.left .budgie-panel #tasklist-button, .budgie-panel .left #tasklist-button, .left .budgie-panel .unpinned button.flat.launcher, .budgie-panel .unpinned .left button.flat.launcher,
+.left .budgie-panel .pinned button.flat.launcher.running,
+.budgie-panel .pinned .left button.flat.launcher.running {
+  padding-right: 2px;
+  border-left: 2px solid transparent; }
+  .left .budgie-panel .pinned button.flat.launcher:not(.running) {
+    border-left: 2px solid transparent; }
+
+  .left .budgie-panel .pinned button.flat.launcher:not(.running):hover {
+    border-left: 2px solid rgba(255, 255, 255, 0.1); }
+
+  .left .budgie-panel .unpinned button.flat.launcher,
+  .left .budgie-panel .pinned button.flat.launcher.running {
+    border-left: 2px solid rgba(255, 255, 255, 0.1); }
+  .left .budgie-panel #tasklist-button:hover, .budgie-panel .left #tasklist-button:hover, .left .budgie-panel .unpinned button.flat.launcher:hover, .budgie-panel .unpinned .left button.flat.launcher:hover,
+  .left .budgie-panel .pinned button.flat.launcher.running:hover,
+  .budgie-panel .pinned .left button.flat.launcher.running:hover {
+    border-left: 2px solid rgba(255, 255, 255, 0.25); }
+  .left .budgie-panel #tasklist-button:active, .budgie-panel .left #tasklist-button:active, .left .budgie-panel .unpinned button.flat.launcher:active, .budgie-panel .unpinned .left button.flat.launcher:active,
+  .left .budgie-panel .pinned button.flat.launcher.running:active,
+  .budgie-panel .pinned .left button.flat.launcher.running:active, .left .budgie-panel #tasklist-button:checked, .budgie-panel .left #tasklist-button:checked, .left .budgie-panel .unpinned button.flat.launcher:checked, .budgie-panel .unpinned .left button.flat.launcher:checked,
+  .left .budgie-panel .pinned button.flat.launcher.running:checked,
+  .budgie-panel .pinned .left button.flat.launcher.running:checked {
+    border-left: 2px solid @theme_selected_bg_color; }
+.right .budgie-panel #tasklist-button, .budgie-panel .right #tasklist-button, .right .budgie-panel .unpinned button.flat.launcher, .budgie-panel .unpinned .right button.flat.launcher,
+.right .budgie-panel .pinned button.flat.launcher.running,
+.budgie-panel .pinned .right button.flat.launcher.running {
+  padding-left: 2px;
+  border-right: 2px solid transparent; }
+  .right .budgie-panel .pinned button.flat.launcher:not(.running) {
+    border-right: 2px solid transparent; }
+
+  .right .budgie-panel .pinned button.flat.launcher:not(.running):hover {
+    border-right: 2px solid rgba(255, 255, 255, 0.1); }
+
+  .right .budgie-panel .unpinned button.flat.launcher,
+  .right .budgie-panel .pinned button.flat.launcher.running {
+    border-right: 2px solid rgba(255, 255, 255, 0.1); }
+  .right .budgie-panel #tasklist-button:hover, .budgie-panel .right #tasklist-button:hover, .right .budgie-panel .unpinned button.flat.launcher:hover, .budgie-panel .unpinned .right button.flat.launcher:hover,
+  .right .budgie-panel .pinned button.flat.launcher.running:hover,
+  .budgie-panel .pinned .right button.flat.launcher.running:hover {
+    border-right: 2px solid rgba(255, 255, 255, 0.25); }
+  .right .budgie-panel #tasklist-button:active, .budgie-panel .right #tasklist-button:active, .right .budgie-panel .unpinned button.flat.launcher:active, .budgie-panel .unpinned .right button.flat.launcher:active,
+  .right .budgie-panel .pinned button.flat.launcher.running:active,
+  .budgie-panel .pinned .right button.flat.launcher.running:active, .right .budgie-panel #tasklist-button:checked, .budgie-panel .right #tasklist-button:checked, .right .budgie-panel .unpinned button.flat.launcher:checked, .budgie-panel .unpinned .right button.flat.launcher:checked,
+  .right .budgie-panel .pinned button.flat.launcher.running:checked,
+  .budgie-panel .pinned .right button.flat.launcher.running:checked {
+    border-right: 2px solid @theme_selected_bg_color; }
+
+.top .budgie-panel {
+  border-bottom: 1px solid rgba(38, 43, 53, 0.92); }
+
+.top .raven-frame {
+  padding: 0;
+  background: none; }
+  .top .raven-frame border {
+    border: none;
+    border-bottom: 1px solid rgba(35, 40, 49, 0.92); }
+
+.top .shadow-block {
+  background-color: transparent;
+  background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.3), transparent); }
+
+.bottom .budgie-panel {
+  border-top: 1px solid rgba(38, 43, 53, 0.92); }
+
+.bottom .raven-frame {
+  padding: 0;
+  background: none; }
+  .bottom .raven-frame border {
+    border: none;
+    border-top: 1px solid rgba(35, 40, 49, 0.92); }
+
+.bottom .shadow-block {
+  background-color: transparent;
+  background-image: linear-gradient(to top, rgba(0, 0, 0, 0.3), transparent); }
+
+.left .budgie-panel {
+  border-right: 1px solid rgba(38, 43, 53, 0.92); }
+
+.left .raven-frame {
+  padding: 0;
+  background: none; }
+  .left .raven-frame border {
+    border: none;
+    border-right: 1px solid rgba(35, 40, 49, 0.92); }
+
+.left .shadow-block {
+  background-color: transparent;
+  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.3), transparent); }
+
+.right .budgie-panel {
+  border-left: 1px solid rgba(38, 43, 53, 0.92); }
+
+.right .raven-frame {
+  padding: 0;
+  background: none; }
+  .right .raven-frame border {
+    border: none;
+    border-left: 1px solid rgba(35, 40, 49, 0.92); }
+
+.right .shadow-block {
+  background-color: transparent;
+  background-image: linear-gradient(to left, rgba(0, 0, 0, 0.3), transparent); }
+
+.raven {
+  padding: 0;
+  color: #bf616a;
+  background: rgba(32, 36, 44, 0.95);
+  transition: 170ms ease-out; }
+  .raven .raven-header {
+    min-height: 32px;
+    color: @theme_fg_color;
+    border: solid rgba(35, 40, 49, 0.95);
+    border-width: 1px 0;
+    background-color: rgba(64, 72, 89, 0.45); }
+    .raven .raven-header * {
+      padding-top: 0;
+      padding-bottom: 0; }
+    .raven .raven-header.top {
+      border-top-style: none;
+      border-color: transparent;
+      margin-top: 3px;
+      min-height: 32px; }
+      .raven .raven-header.top button.image-button:hover {
+        color: #7fb2b1;
+        box-shadow: none; }
+    .raven .raven-header > button.text-button {
+      border-radius: 2px;
+      color: @theme_selected_fg_color;
+      background-color: rgba(184, 79, 89, 0.9);
+      box-shadow: inset 0px 1px 0px 0px rgba(255, 255, 255, 0.1), inset 0px -1px 0px 0px rgba(0, 0, 0, 0.1); }
+      .raven .raven-header > button.text-button:hover {
+        border-radius: 2px;
+        color: @theme_selected_fg_color;
+        background-color: rgba(191, 97, 106, 0.9);
+        box-shadow: inset 0px 1px 0px 0px rgba(255, 255, 255, 0.1), inset 0px -1px 0px 0px rgba(0, 0, 0, 0.1); }
+      .raven .raven-header > button.text-button:active {
+        color: @theme_selected_fg_color;
+        background-color: rgba(198, 115, 123, 0.9);
+        box-shadow: inset 0px 1px 0px 0px rgba(255, 255, 255, 0.1), inset 0px -1px 0px 0px rgba(0, 0, 0, 0.1); }
+    .raven .raven-header.bottom {
+      border-bottom-style: none; }
+    .raven .raven-header button {
+      color: @theme_fg_color;
+      border-radius: 4px;
+      text-shadow: none;
+      box-shadow: none;
+      border: 1px solid #232831;
+      background-color: @theme_selected_fg_color;
+      border-radius: 0; }
+      .raven .raven-header button:hover {
+        color: @theme_selected_bg_color;
+        text-shadow: none;
+        background-color: rgba(59, 66, 82, 0.7);
+        border-radius: 0; }
+      .raven .raven-header button:active, .raven .raven-header button:checked {
+        color: @theme_selected_bg_color;
+        background-color: #2a2f3a; }
+      .raven .raven-header button:disabled {
+        color: #8e95a4; }
+  .raven list {
+    color: @theme_fg_color;
+    background-color: transparent; }
+    .raven list:selected {
+      background-color: alpha(@theme_selected_bg_color, 0.9); }
+    .raven list row,
+    .raven list row.activatable {
+      background-color: transparent; }
+      .raven list row:hover,
+      .raven list row.activatable:hover {
+        background-color: rgba(64, 72, 89, 0.25); }
+      .raven list row:selected,
+      .raven list row.activatable:selected {
+        background-color: @theme_selected_bg_color; }  .raven .raven-background {
+    color: @theme_fg_color;
+    background-color: transparent;
+    border-color: transparent; }
+    .raven .raven-background.middle {
+      border-bottom-style: none; }
+  .raven .powerstrip {
+    background-color: transparent;
+    border-top-color: transparent; }
+  .raven .powerstrip button.image-button {
+    border-radius: 50%;
+    padding: 5px;
+    min-width: 32px;
+    min-height: 32px;
+    margin-bottom: 3px;
+    background: #b48ead;
+    color: @theme_selected_fg_color;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.2), inset 0px 1px 0px 0px rgba(255, 255, 255, 0.1);
+    border: none;
+    font-size: 100%; }
+    .raven .powerstrip button.image-button:hover {
+      background: rgba(180, 142, 173, 0.85);
+      color: @theme_selected_fg_color; }
+    .raven .powerstrip button.image-button:active {
+      background: #b48ead;
+      color: @theme_selected_fg_color; }
+    .raven .powerstrip button.image-button:first-child {
+      background: linear-gradient(to right, #5e81ac 0%, #5e81ac 100%); }
+      .raven .powerstrip button.image-button:first-child:hover {
+        background: @theme_selected_bg_color; }
+      .raven .powerstrip button.image-button:first-child:active {
+        background: @theme_selected_bg_color; }
+    .raven .powerstrip button.image-button:last-child {
+      background: linear-gradient(to right, #bf616a, #bf616a); }
+      .raven .powerstrip button.image-button:last-child:hover {
+        background: rgba(191, 97, 106, 0.85); }
+      .raven .powerstrip button.image-button:last-child:active {
+        background: #bf616a; }
+  .raven .option-subtitle {
+    font-size: 13px; }
+
+calendar.raven-calendar {
+  padding: 6px;
+  color: @theme_fg_color;
+  background: transparent;
+  border-color: transparent; }
+  calendar.raven-calendar:indeterminate {
+    color: alpha(currentColor,0.3); }
+  calendar.raven-calendar:selected {
+    background: transparent;
+    color: #82b4b3;
+    font-weight: bold; }
+  calendar.raven-calendar:backdrop {
+    background-color: transparent; }
+  calendar.raven-calendar.header {
+    color: @theme_fg_color;
+    border: none;
+    border-radius: 0;
+    background-color: transparent; }
+  calendar.raven-calendar button, calendar.raven-calendar button:focus {
+    color: alpha(currentColor,0.5);
+    background-color: transparent; }
+    calendar.raven-calendar button:hover, calendar.raven-calendar button:focus:hover {
+      color: @theme_fg_color;
+      background-color: transparent; }
+
+.raven-mpris {
+  color: @theme_fg_color;
+  background-color: rgba(46, 52, 64, 0.9);
+  border: solid rgba(255, 255, 255, 0.1);
+  border-width: 1px 0;
+  border-bottom-color: rgba(0, 0, 0, 0.1); }
+  .raven-mpris button.image-button {
+    padding: 10px;
+    background-color: #3b4252;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.2), inset 0px 1px 0px 0px rgba(255, 255, 255, 0.1); }
+    .raven-mpris button.image-button:hover {
+      background-color: @theme_selected_bg_color; }
+    .raven-mpris button.image-button:active {
+      background-color: #7fb2b1; }
+    .raven-mpris button.image-button:first-child {
+      margin-right: 4px; }
+    .raven-mpris button.image-button:last-child {
+      margin-left: 4px; }
+    .raven-mpris button.image-button:last-child, .raven-mpris button.image-button:first-child {
+      padding: 4px;
+      margin-top: 6px;
+      margin-bottom: 6px; }
+
+.budgie-notification-window, .budgie-osd-window, .budgie-switcher-window {
+  background: none;
+  border-radius: 1px; }
+  .budgie-notification-window button, .budgie-osd-window button, .budgie-switcher-window button {
+    background-color: @theme_selected_bg_color;
+    color: @theme_selected_fg_color;
+    border: none; }
+    .budgie-notification-window button:hover, .budgie-osd-window button:hover, .budgie-switcher-window button:hover {
+      background-color: #7fb2b1;
+      border: none; }
+    .budgie-notification-window button:active, .budgie-osd-window button:active, .budgie-switcher-window button:active, .budgie-notification-window button:checked, .budgie-osd-window button:checked, .budgie-switcher-window button:checked {
+      background-color: #7fb2b1; }
+
+.budgie-notification.background, .background.budgie-osd, .background.budgie-switcher {
+  border-radius: 1px; }
+.budgie-notification .notification-title, .budgie-osd .notification-title, .budgie-switcher .notification-title {
+  font-size: 110%;
+  color: @theme_fg_color; }
+.budgie-notification .notification-body, .budgie-osd .notification-body, .budgie-switcher .notification-body {
+  color: rgba(216, 222, 233, 0.7); }
+.budgie-notification button, .budgie-osd button, .budgie-switcher button {
+  background-color: transparent;
+  color: @theme_selected_fg_color; }
+  .budgie-notification button:hover, .budgie-osd button:hover, .budgie-switcher button:hover {
+    background-color: transparent;
+    color: #bf616a;
+    box-shadow: none; }
+  .budgie-notification button:active, .budgie-osd button:active, .budgie-switcher button:active, .budgie-notification button:checked, .budgie-osd button:checked, .budgie-switcher button:checked {
+    background-color: transparent;
+    color: #b84f59; }
+
+.drop-shadow, .budgie-session-dialog.background, .background.budgie-polkit-dialog, .background.budgie-run-dialog {
+  color: @theme_fg_color;
+  background-color: rgba(67, 76, 94, 0.95);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  border-radius: 2px; }
+
+.budgie-switcher-window flowbox {
+  color: @theme_fg_color; }
+.budgie-switcher-window flowboxchild {
+  padding: 3px;
+  margin: 3px;
+  color: @theme_fg_color; }
+  .budgie-switcher-window flowboxchild:hover {
+    background-color: transparent; }
+  .budgie-switcher-window flowboxchild:active {
+    color: @theme_fg_color; }
+  .budgie-switcher-window flowboxchild:selected {
+    color: @theme_selected_fg_color;
+    background-color: @theme_selected_bg_color; }
+    .budgie-switcher-window flowboxchild:selected:active {
+      color: @theme_selected_fg_color; }
+    .budgie-switcher-window flowboxchild:selected:hover {
+      background-color: #81a9a8; }
+    .budgie-switcher-window flowboxchild:selected:disabled {
+      color: rgba(46, 52, 64, 0.7);
+      background-color: @theme_selected_bg_color; }
+      .budgie-switcher-window flowboxchild:selected:disabled label {
+        color: rgba(46, 52, 64, 0.7); }
+
+.budgie-session-dialog, .budgie-polkit-dialog, .budgie-run-dialog {
+  color: @theme_fg_color;
+  background-color: rgba(32, 36, 44, 0.95); }
+  .budgie-session-dialog label:backdrop, .budgie-polkit-dialog label:backdrop, .budgie-run-dialog label:backdrop {
+    color: rgba(216, 222, 233, 0.8); }
+  .budgie-session-dialog .dialog-title, .budgie-polkit-dialog .dialog-title, .budgie-run-dialog .dialog-title {
+    font-size: 120%; }
+  .budgie-session-dialog .linked.horizontal > button, .budgie-polkit-dialog .linked.horizontal > button, .budgie-run-dialog .linked.horizontal > button {
+    margin-bottom: 0;
+    min-height: 32px;
+    border-bottom: none;
+    border-color: #232831;
+    border-radius: 0;
+    color: @theme_fg_color;
+    background-color: transparent;
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.06), inset 0 1px 2px rgba(0, 0, 0, 0.2); }
+    .budgie-session-dialog .linked.horizontal > button label, .budgie-polkit-dialog .linked.horizontal > button label, .budgie-run-dialog .linked.horizontal > button label {
+      font-weight: 700; }
+    .budgie-session-dialog .linked.horizontal > button:first-child, .budgie-polkit-dialog .linked.horizontal > button:first-child, .budgie-run-dialog .linked.horizontal > button:first-child {
+      border-left: none;
+      border-bottom-left-radius: 2px; }
+    .budgie-session-dialog .linked.horizontal > button:last-child, .budgie-polkit-dialog .linked.horizontal > button:last-child, .budgie-run-dialog .linked.horizontal > button:last-child {
+      border-right: none;
+      border-bottom-right-radius: 2px;
+      background: transparent; }
+    .budgie-session-dialog .linked.horizontal > button:hover, .budgie-polkit-dialog .linked.horizontal > button:hover, .budgie-run-dialog .linked.horizontal > button:hover {
+      background-color: @theme_selected_bg_color;
+      color: @theme_selected_fg_color; }
+      .budgie-session-dialog .linked.horizontal > button:hover:backdrop label, .budgie-polkit-dialog .linked.horizontal > button:hover:backdrop label, .budgie-run-dialog .linked.horizontal > button:hover:backdrop label {
+        color: @theme_unfocused_fg_color; }
+    .budgie-session-dialog .linked.horizontal > button.suggested-action, .budgie-polkit-dialog .linked.horizontal > button.suggested-action, .budgie-run-dialog .linked.horizontal > button.suggested-action {
+      background-color: @theme_selected_bg_color; }
+      .budgie-session-dialog .linked.horizontal > button.suggested-action:hover, .budgie-polkit-dialog .linked.horizontal > button.suggested-action:hover, .budgie-run-dialog .linked.horizontal > button.suggested-action:hover {
+        background-color: @theme_selected_bg_color; }
+      .budgie-session-dialog .linked.horizontal > button.suggested-action:active, .budgie-polkit-dialog .linked.horizontal > button.suggested-action:active, .budgie-run-dialog .linked.horizontal > button.suggested-action:active, .budgie-session-dialog .linked.horizontal > button.suggested-action:checked, .budgie-polkit-dialog .linked.horizontal > button.suggested-action:checked, .budgie-run-dialog .linked.horizontal > button.suggested-action:checked {
+        background-color: @theme_selected_bg_color; }
+    .budgie-session-dialog .linked.horizontal > button.destructive-action, .budgie-polkit-dialog .linked.horizontal > button.destructive-action, .budgie-run-dialog .linked.horizontal > button.destructive-action {
+      background-color: rgba(169, 68, 78, 0.9); }
+      .budgie-session-dialog .linked.horizontal > button.destructive-action:hover, .budgie-polkit-dialog .linked.horizontal > button.destructive-action:hover, .budgie-run-dialog .linked.horizontal > button.destructive-action:hover {
+        background-color: rgba(184, 79, 89, 0.9); }
+      .budgie-session-dialog .linked.horizontal > button.destructive-action:active, .budgie-polkit-dialog .linked.horizontal > button.destructive-action:active, .budgie-run-dialog .linked.horizontal > button.destructive-action:active, .budgie-session-dialog .linked.horizontal > button.destructive-action:checked, .budgie-polkit-dialog .linked.horizontal > button.destructive-action:checked, .budgie-run-dialog .linked.horizontal > button.destructive-action:checked {
+        background-color: rgba(184, 79, 89, 0.9); }
+  .budgie-session-dialog entry, .budgie-polkit-dialog entry, .budgie-run-dialog entry {
+    background-color: #505359;
+    color: @theme_fg_color; }
+    .budgie-session-dialog entry:focus, .budgie-polkit-dialog entry:focus, .budgie-run-dialog entry:focus {
+      background-color: #505359; }
+    .budgie-session-dialog entry:backdrop, .budgie-polkit-dialog entry:backdrop, .budgie-run-dialog entry:backdrop {
+      background-color: #505359; }
+
+.budgie-polkit-dialog .message {
+  color: rgba(216, 222, 233, 0.7); }
+.budgie-polkit-dialog .failure {
+  color: #bf616a; }
+
+.budgie-run-dialog entry.search, .budgie-run-dialog entry.search:focus {
+  font-size: 120%;
+  padding: 8px 5px;
+  border: none;
+  box-shadow: none; }
+  .budgie-run-dialog entry.search image, .budgie-run-dialog entry.search:focus image {
+    color: @theme_fg_color; }
+    .budgie-run-dialog entry.search image:dir(ltr), .budgie-run-dialog entry.search:focus image:dir(ltr) {
+      padding-left: 8px;
+      padding-right: 12px; }
+    .budgie-run-dialog entry.search image:dir(rtl), .budgie-run-dialog entry.search:focus image:dir(rtl) {
+      padding-left: 12px;
+      padding-right: 8px; }
+.budgie-run-dialog list row:selected .dim-label, .budgie-run-dialog list row:selected label.separator, .budgie-run-dialog list row:selected .titlebar .subtitle, .titlebar .budgie-run-dialog list row:selected .subtitle,
+.budgie-run-dialog list row:selected headerbar .subtitle,
+headerbar .budgie-run-dialog list row:selected .subtitle {
+  opacity: 1; }
+.budgie-run-dialog scrolledwindow {
+  border-top: 1px solid rgba(0, 0, 0, 0); }
+
+.budgie-menubar menu {
+  margin: 4px;
+  padding: 5px;
+  border-radius: 0;
+  background-color: rgba(32, 36, 44, 0.95); }
+  .budgie-menubar menu menuitem:hover {
+    background-color: @theme_selected_bg_color;
+    color: @theme_selected_fg_color; }
+.budgie-menubar arrow {
+  border: none;
+  min-width: 16px;
+  min-height: 16px; }
+  .budgie-menubar arrow.top {
+    -gtk-icon-source: -gtk-icontheme("pan-up-symbolic");
+    border-bottom: 1px solid rgba(72, 79, 92, 0.928); }
+  .budgie-menubar arrow.bottom {
+    -gtk-icon-source: -gtk-icontheme("pan-down-symbolic");
+    border-top: 1px solid rgba(72, 79, 92, 0.928); }
+.budgie-menubar menuitem accelerator {
+  color: rgba(216, 222, 233, 0.35); }
+.budgie-menubar menuitem check, .budgie-menubar menuitem radio {
+  min-height: 16px;
+  min-width: 16px; }
+
+window.background.budgie-settings-window.csd > box.horizontal > stack > scrolledwindow buttonbox.inline-toolbar {
+  border-style: none none solid; }
+
+.workspace-switcher .workspace-layout {
+  border: 0 solid rgba(32, 36, 44, 0.95); }
+  .top .workspace-switcher .workspace-layout:dir(ltr), .bottom .workspace-switcher .workspace-layout:dir(ltr) {
+    border-left-width: 1px; }
+  .top .workspace-switcher .workspace-layout:dir(rtl), .bottom .workspace-switcher .workspace-layout:dir(rtl) {
+    border-right-width: 1px; }
+  .left .workspace-switcher .workspace-layout, .right .workspace-switcher .workspace-layout {
+    border-top-width: 1px; }
+.workspace-switcher .workspace-item, .workspace-switcher .workspace-add-button {
+  border: 0 solid rgba(53, 60, 74, 0.95); }
+  .top .workspace-switcher .workspace-item:dir(ltr), .bottom .workspace-switcher .workspace-item:dir(ltr),
+  .top .workspace-switcher .workspace-add-button:dir(ltr), .bottom .workspace-switcher .workspace-add-button:dir(ltr) {
+    border-right-width: 1px; }
+  .top .workspace-switcher .workspace-item:dir(rtl), .bottom .workspace-switcher .workspace-item:dir(rtl),
+  .top .workspace-switcher .workspace-add-button:dir(rtl), .bottom .workspace-switcher .workspace-add-button:dir(rtl) {
+    border-left-width: 1px; }
+  .left .workspace-switcher .workspace-item, .right .workspace-switcher .workspace-item, .left .workspace-switcher .workspace-add-button, .right .workspace-switcher .workspace-add-button {
+    border-bottom-width: 1px; }
+.workspace-switcher .workspace-item.current-workspace {
+  background-color: rgba(21, 24, 29, 0.95); }
+.workspace-switcher .workspace-add-button {
+  border: none;
+  background: transparent; }
+  .workspace-switcher .workspace-add-button:hover {
+    box-shadow: none; }
+  .workspace-switcher .workspace-add-button:active {
+    background-image: none; }
+  .workspace-switcher .workspace-add-button:active image {
+    margin: 1px 0 -1px; }
+.budgie-panel .workspace-switcher .workspace-icon-button {
+  min-height: 24px;
+  min-width: 24px;
+  padding: 0;
+  border-radius: 2px; }
+

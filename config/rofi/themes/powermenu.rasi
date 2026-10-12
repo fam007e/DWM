@@ -97,8 +97,8 @@ textbox {
     font:                        var(textbox-font);
     background-color:            transparent;
     text-color:                  inherit;
-    vertical-align:              0.8;
-    horizontal-align:            0.8;
+    vertical-align:              0.5;
+    horizontal-align:            0.5;
 }
 
 /*****----- Listview -----*****/

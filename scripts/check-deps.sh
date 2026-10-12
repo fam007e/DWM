@@ -71,7 +71,7 @@ done
 
 # ── Runtime dependencies ────────────────────────────────
 echo "Runtime Dependencies (desktop experience):"
-check_cmd "rofi"
+check_cmd "quickshell"
 if command -v picom &>/dev/null && picom --version | grep -q "fam007e"; then
     printf "  ${GREEN}✓${NC} picom (fam007e fork)\n"
 else
@@ -84,6 +84,8 @@ check_cmd "flameshot"
 check_cmd "dex"
 check_cmd "amixer"
 check_cmd "python3"
+check_pkg "python-gobject"
+check_pkg "packagekit"
 check_cmd "jq"
 check_cmd "curl"
 check_cmd "bc"
@@ -92,22 +94,24 @@ echo ""
 # ── Terminal emulators ──────────────────────────────────
 echo "Terminal Emulators (at least one required):"
 TERM_FOUND=0
-for term in ghostty alacritty kitty st; do
+for term in ghostty alacritty st; do
     if command -v "$term" &>/dev/null; then
         printf "  ${GREEN}✓${NC} %s\n" "$term"
         TERM_FOUND=1
     fi
 done
 if [ $TERM_FOUND -eq 0 ]; then
-    printf "  ${RED}✗${NC} No supported terminal found ${YELLOW}(install ghostty, alacritty, kitty, or st)${NC}\n"
+    printf "  ${RED}✗${NC} No supported terminal found ${YELLOW}(install ghostty, alacritty, or st)${NC}\n"
     MISSING=$((MISSING + 1))
 fi
 echo ""
 
 # ── Optional but recommended ────────────────────────────
 echo "Optional (recommended):"
-check_cmd "polybar"
+check_cmd "zenity"
+check_cmd "qalc"
 check_cmd "xdg-open"
+check_cmd "khal"
 echo ""
 
 # ── Fonts ───────────────────────────────────────────────

@@ -1,0 +1,74 @@
+/**************
+ * GtkInfoBar *
+ **************/
+.info, .warning, .question, .error,
+infobar {
+  text-shadow: none;
+  color: @theme_fg_color;
+  background-color: #434c5e;
+  border-bottom: 1px solid @theme_selected_fg_color;
+  box-shadow: 0 1px 0 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.15); }
+
+.info, .warning, .question, .error {
+  text-shadow: none;
+  color: @theme_selected_fg_color;
+  border: none; }
+  .info .label, .warning .label, .question .label, .error .label {
+    color: @theme_selected_fg_color; }
+    .info .label:backdrop, .warning .label:backdrop, .question .label:backdrop, .error .label:backdrop {
+      color: rgba(46, 52, 64, 0.5); }
+  .info button, .warning button, .question button, .error button {
+    border-radius: 2px;
+    border: none;
+    background: rgba(59, 66, 82, 0.98);
+    color: @theme_fg_color;
+    box-shadow: 0 1px 0 0 rgba(0, 0, 0, 0.2); }
+    .info button .label, .warning button .label, .question button .label, .error button .label {
+      color: @theme_fg_color; }
+    .info button:active, .warning button:active, .question button:active, .error button:active {
+      background: #3b4252;
+      color: @theme_fg_color;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.4); }
+      .info button:active:backdrop, .warning button:active:backdrop, .question button:active:backdrop, .error button:active:backdrop {
+        background: rgba(59, 66, 82, 0.8);
+        color: rgba(216, 222, 233, 0.5);
+        box-shadow: none; }
+    .info button:hover, .warning button:hover, .question button:hover, .error button:hover, .info button:focus, .warning button:focus, .question button:focus, .error button:focus {
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.4); }
+    .info button:disabled, .warning button:disabled, .question button:disabled, .error button:disabled {
+      background: rgba(59, 66, 82, 0.6);
+      color: rgba(216, 222, 233, 0.5);
+      box-shadow: none; }
+      .info button:disabled:backdrop, .warning button:disabled:backdrop, .question button:disabled:backdrop, .error button:disabled:backdrop {
+        background: rgba(59, 66, 82, 0.5);
+        color: rgba(216, 222, 233, 0.5);
+        box-shadow: none; }
+    .info button:backdrop, .warning button:backdrop, .question button:backdrop, .error button:backdrop {
+      background: rgba(59, 66, 82, 0.8);
+      color: rgba(216, 222, 233, 0.5);
+      box-shadow: none; }
+
+.info {
+  background-color: @theme_selected_bg_color; }
+  .info:backdrop {
+    background-color: #afcfce;
+    color: rgba(46, 52, 64, 0.5); }
+
+.warning {
+  background-color: #c3674a; }
+  .warning:backdrop {
+    background-color: #d08770;
+    color: rgba(46, 52, 64, 0.5); }
+
+.question {
+  background-color: #5e81ac; }
+  .question:backdrop {
+    background-color: #809bbd;
+    color: rgba(46, 52, 64, 0.5); }
+
+.error {
+  background-color: #b84f59; }
+  .error:backdrop {
+    background-color: #c6737b;
+    color: rgba(46, 52, 64, 0.5); }
+

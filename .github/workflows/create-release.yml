@@ -4,6 +4,15 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag or version name to release (e.g. v0.4.1)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
 
 jobs:
   release:
@@ -11,41 +20,73 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install dependencies
         run: |
-          sudo apt-get update && sudo apt-get upgrade -y
-          sudo apt-get install -y libconfig-dev libdbus-1-dev libegl-dev libev-dev libgl-dev libepoxy-dev libpcre2-dev libpixman-1-dev libx11-xcb-dev libxcb1-dev libxcb-composite0-dev libxcb-damage0-dev libxcb-dpms0-dev libxcb-glx0-dev libxcb-image0-dev libxcb-present-dev libxcb-randr0-dev libxcb-render0-dev libxcb-render-util0-dev libxcb-shape0-dev libxcb-util-dev libxcb-xfixes0-dev libxext-dev meson ninja-build uthash-dev cmake libxft-dev libimlib2-dev libxinerama-dev libxcb-res0-dev alsa-utils libxrandr-dev
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential libx11-dev libxinerama-dev libxft-dev libimlib2-dev \
+            libx11-xcb-dev libxcb1-dev libxcb-res0-dev libxrender-dev libxrandr-dev \
+            fontconfig pkg-config
 
-
-      - name: Install GitHub CLI
+      - name: Build and Package Release
         run: |
-          sudo apt-get install -y gh
+          TAG="${{ github.ref_name }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.tag }}" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          fi
+          VERSION_CLEAN=$(echo "$TAG" | sed 's/^v//')
+          echo "Building DWM release for $TAG (version: $VERSION_CLEAN)"
 
-      - name: Authenticate GitHub CLI
-        run: |
-          echo "${{ secrets.DWM_TOKEN }}" | gh auth login --with-token
-
-      - name: Build and Release
-        run: |
-          VERSION="${{ github.ref_name }}"
-          VERSION_CLEAN=$(echo $VERSION | sed 's/^v//')
           make clean
-          make release VERSION=$VERSION_CLEAN
+          # Use -O2 for generic portable binary instead of host-specific -march=native
+          make dwm VERSION="$VERSION_CLEAN" OPTIMISATIONS="-O2"
+          make release VERSION="$VERSION_CLEAN"
 
-      - name: Create release
-        id: create_release
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.DWM_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
-          VERSION="${{ github.ref_name }}"
-          VERSION_CLEAN=$(echo $VERSION | sed 's/^v//')
-          changelog=$(git log --oneline --pretty=format:"* %s (%h)" | head -n 20)
-          echo "Changelog: $changelog" > release/changelog.txt
+          TAG="${{ github.ref_name }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.tag }}" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          fi
+          VERSION_CLEAN=$(echo "$TAG" | sed 's/^v//')
 
-          gh release create "$VERSION" release/dwm-$VERSION_CLEAN.tar.gz release/changelog.txt --title "Release $VERSION" --notes "$changelog"
+          # Generate changelog from git history
+          PREV_TAG=$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            CHANGELOG=$(git log --oneline --pretty=format:"* %s (%h)" "${PREV_TAG}..${TAG}" 2>/dev/null || git log -n 20 --oneline --pretty=format:"* %s (%h)")
+          else
+            CHANGELOG=$(git log -n 20 --oneline --pretty=format:"* %s (%h)")
+          fi
 
-      - name: Clean up
-        run: |
-          VERSION="${{ github.ref_name }}"
-          VERSION_CLEAN=$(echo $VERSION | sed 's/^v//')
-          rm -f release/dwm-$VERSION_CLEAN.tar.gz
+          mkdir -p release
+          echo "$CHANGELOG" > release/changelog.txt
+
+          # Locate release archive
+          ARCHIVE="release/dwm-${VERSION_CLEAN}.tar.gz"
+          if [ ! -f "$ARCHIVE" ]; then
+            ARCHIVE=$(ls release/*.tar.gz 2>/dev/null | head -n 1)
+          fi
+
+          if [ -z "$ARCHIVE" ] || [ ! -f "$ARCHIVE" ]; then
+            echo "Error: Release archive not found!"
+            exit 1
+          fi
+
+          # Compute SHA-256 checksum
+          cd release
+          ARCHIVE_NAME=$(basename "$ARCHIVE")
+          sha256sum "$ARCHIVE_NAME" > "${ARCHIVE_NAME}.sha256"
+          cd ..
+
+          echo "Publishing release $TAG..."
+          gh release create "$TAG" \
+            "$ARCHIVE" \
+            "${ARCHIVE}.sha256" \
+            --title "Release $TAG" \
+            --notes "$CHANGELOG"

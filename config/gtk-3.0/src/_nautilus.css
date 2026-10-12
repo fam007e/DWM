@@ -1,0 +1,86 @@
+/************
+ * Nautilus *
+ ************/
+.nautilus-window .frame *:selected, .nautilus-window .frame *:selected:backdrop {
+  background: transparent;
+  color: @theme_selected_bg_color; }
+  .nautilus-window .frame *:selected label, .nautilus-window .frame *:selected:backdrop label {
+    color: @theme_selected_bg_color; }
+.nautilus-window paned > separator {
+  background-image: none; }
+.nautilus-window .sidebar {
+  background-color: transparent; }
+  .nautilus-window .sidebar:backdrop {
+    background-color: transparent; }
+  .nautilus-window .sidebar .list-row button {
+    border: none;
+    background-color: rgba(53, 59, 73, 0.95); }
+    .nautilus-window .sidebar .list-row button:active {
+      background-color: alpha(@theme_selected_bg_color, 0.75); }
+      .nautilus-window .sidebar .list-row button:active:backdrop {
+        background-color: alpha(@theme_unfocused_selected_bg_color, 0.75); }
+  .nautilus-window .sidebar .list-row:selected {
+    background-color: alpha(@theme_selected_bg_color, 0.75); }
+    .nautilus-window .sidebar .list-row:selected:backdrop {
+      background-color: alpha(@theme_unfocused_selected_bg_color, 0.75); }
+    .nautilus-window .sidebar .list-row:selected:hover {
+      background-color: alpha(@theme_selected_bg_color, 0.9); }
+  .nautilus-window .sidebar .list-row:hover {
+    background-color: rgba(59, 66, 82, 0.5); }
+    .nautilus-window .sidebar .list-row:hover:active {
+      background-color: alpha(@theme_selected_bg_color, 0.9); }
+      .nautilus-window .sidebar .list-row:hover:active:backdrop {
+        background-color: alpha(@theme_unfocused_selected_bg_color, 0.9); }
+.nautilus-window.background {
+  background-color: rgba(53, 59, 73, 0.95); }
+  .nautilus-window.background:backdrop {
+    background-color: rgba(53, 59, 73, 0.95); }
+.nautilus-window notebook > stack:only-child {
+  background-color: #3b4252; }
+  .nautilus-window notebook > stack:only-child:backdrop {
+    background-color: #3d4455; }
+.nautilus-window searchbar {
+  border-top: 1px solid rgba(0, 0, 0, 0.12); }
+.nautilus-window .searchbar-container {
+  margin-top: -1px; }
+
+.nautilus-circular-button {
+  border-radius: 20px;
+  -gtk-outline-radius: 20px; }
+
+.disk-space-display {
+  border: 2px solid; }
+  .disk-space-display .unknown {
+    background-color: #888a85;
+    border-color: #555653; }
+  .disk-space-display .used {
+    background-color: #9FB0B9;
+    border-color: #667f8c; }
+  .disk-space-display .free {
+    background-color: #D8D8D8;
+    border-color: #a5a5a5; }
+
+.nautilus-desktop {
+  color: @theme_fg_color; }
+  .nautilus-desktop .nautilus-canvas-item {
+    border-radius: 5px;
+    color: #ffffff;
+    text-shadow: 1px 1px rgba(0, 0, 0, 0.6); }
+    .nautilus-desktop .nautilus-canvas-item:active {
+      color: @theme_fg_color;
+      text-shadow: none; }
+    .nautilus-desktop .nautilus-canvas-item:hover {
+      color: @theme_fg_color;
+      text-shadow: none; }
+    .nautilus-desktop .nautilus-canvas-item:selected {
+      color: @theme_selected_fg_color;
+      text-shadow: none; }
+    .nautilus-desktop .nautilus-canvas-item .dim-label:selected, .nautilus-desktop .nautilus-canvas-item label.separator:selected, .nautilus-desktop .nautilus-canvas-item .titlebar .subtitle:selected, .titlebar .nautilus-desktop .nautilus-canvas-item .subtitle:selected,
+    .nautilus-desktop .nautilus-canvas-item headerbar .subtitle:selected,
+    headerbar .nautilus-desktop .nautilus-canvas-item .subtitle:selected {
+      color: @theme_selected_fg_color; }
+  .nautilus-desktop .nautilus-list .dim-label:selected, .nautilus-desktop .nautilus-list label.separator:selected, .nautilus-desktop .nautilus-list .titlebar .subtitle:selected, .titlebar .nautilus-desktop .nautilus-list .subtitle:selected,
+  .nautilus-desktop .nautilus-list headerbar .subtitle:selected,
+  headerbar .nautilus-desktop .nautilus-list .subtitle:selected {
+    color: @theme_selected_fg_color; }
+

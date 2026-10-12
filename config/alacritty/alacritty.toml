@@ -5,7 +5,8 @@ working_directory = "None"
 
 # Import theme and keybindings
 import = [ 
-  "~/.config/alacritty/nordic.toml",
+  "~/.config/alacritty/active-theme.toml",
+  "~/.config/alacritty/active-theme.toml",
   "~/.config/alacritty/keybinds.toml"
 ]
 
@@ -19,7 +20,7 @@ startup_mode = "Windowed"
 # Window padding
 [window.padding]
 x = 1
-y = 1
+y = 0
 
 # Window dimensions
 [window.dimensions]

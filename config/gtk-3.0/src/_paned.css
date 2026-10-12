@@ -1,0 +1,50 @@
+/*********
+ * Paned *
+ *********/
+paned > separator {
+  min-width: 1px;
+  min-height: 1px;
+  -gtk-icon-source: none;
+  border-style: none;
+  background-color: transparent;
+  background-image: image(#232831);
+  background-size: 1px 1px; }
+  paned > separator:selected {
+    background-image: image(@theme_selected_bg_color); }
+  paned > separator:backdrop {
+    background-image: image(#262c36); }
+  paned > separator.wide {
+    min-width: 5px;
+    min-height: 5px;
+    background-color: #434c5e;
+    background-image: image(#232831), image(#232831);
+    background-size: 1px 1px, 1px 1px; }
+    paned > separator.wide:backdrop {
+      background-color: #434c5e;
+      background-image: image(#262c36), image(#262c36); }
+paned.horizontal > separator {
+  background-repeat: repeat-y; }
+  paned.horizontal > separator:dir(ltr) {
+    margin: 0 -8px 0 0;
+    padding: 0 8px 0 0;
+    background-position: left; }
+  paned.horizontal > separator:dir(rtl) {
+    margin: 0 0 0 -8px;
+    padding: 0 0 0 8px;
+    background-position: right; }
+  paned.horizontal > separator.wide {
+    margin: 0;
+    padding: 0;
+    background-repeat: repeat-y, repeat-y;
+    background-position: left, right; }
+paned.vertical > separator {
+  margin: 0 0 -8px 0;
+  padding: 0 0 8px 0;
+  background-repeat: repeat-x;
+  background-position: top; }
+  paned.vertical > separator.wide {
+    margin: 0;
+    padding: 0;
+    background-repeat: repeat-x, repeat-x;
+    background-position: bottom, top; }
+

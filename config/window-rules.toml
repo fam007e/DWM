@@ -22,7 +22,6 @@
 rules = [
   # ── terminals (isterminal=1 enables window swallowing) ───────────────────
   { class="St",             isterminal=1 },
-  { class="kitty",          isterminal=1 },
   { class="alacritty",      isterminal=1 },
   { class="ghostty",        isterminal=1 },
   { class="warp-terminal",  isterminal=1 },
@@ -32,6 +31,15 @@ rules = [
   { title="Event Tester",   noswallow=1  },
 
   # ── floating ─────────────────────────────────────────────────────────────
+  { title="dwm launcher",             isfloating=1, noswallow=1 },
+  { title="dwm menu",                 isfloating=1, noswallow=1 },
+  { title="dwm network password",     isfloating=1, noswallow=1 },
+  { title="dwm control center utility", isfloating=1, noswallow=1 },
+  { title="dwm system health",        isfloating=1, noswallow=1 },
+  { title="dwm settings",             isfloating=1, noswallow=1 },
+  { title="dwm notification history", isfloating=1, noswallow=1 },
+  { class="dwm-calc",                isfloating=1, noswallow=1 },
+  { class="Zenity",                  isfloating=1, noswallow=1 },
   # { class="Gimp",           isfloating=1 },
   # { class="pavucontrol",    isfloating=1 },
 

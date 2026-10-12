@@ -1,0 +1,175 @@
+/*****************
+ * GtkSpinButton *
+ *****************/
+spinbutton:not(.vertical) {
+  padding: 0; }
+  spinbutton:not(.vertical) entry {
+    min-width: 28px;
+    margin: 0;
+    background: none;
+    background-color: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none; }
+  spinbutton:not(.vertical) button {
+    min-height: 16px;
+    margin: 0;
+    padding-bottom: 0;
+    padding-top: 0;
+    color: #c8ceda;
+    background-image: none;
+    border-style: none none none solid;
+    border-color: rgba(35, 40, 49, 0.3);
+    border-radius: 0;
+    box-shadow: inset 1px 0px 0px 0px rgba(0, 0, 0, 0.07); }
+    spinbutton:not(.vertical) button:dir(rtl) {
+      border-style: none solid none none; }
+    spinbutton:not(.vertical) button:hover {
+      color: @theme_fg_color;
+      background-color: rgba(216, 222, 233, 0.05); }
+    spinbutton:not(.vertical) button:disabled {
+      color: rgba(142, 149, 164, 0.3); }
+    spinbutton:not(.vertical) button:active {
+      background-color: rgba(0, 0, 0, 0.1);
+      box-shadow: inset 0 2px 3px -1px rgba(0, 0, 0, 0.2); }
+    spinbutton:not(.vertical) button:backdrop {
+      color: #868d9c;
+      background-color: transparent;
+      border-color: rgba(38, 44, 54, 0.3);
+      transition: 200ms ease-out; }
+    spinbutton:not(.vertical) button:backdrop:disabled {
+      color: rgba(99, 112, 139, 0.3);
+      background-image: none;
+      border-style: none none none solid;
+      box-shadow: inset 1px 0px 0px 0px rgba(0, 0, 0, 0.07); }
+      spinbutton:not(.vertical) button:backdrop:disabled:dir(rtl) {
+        border-style: none solid none none; }
+    spinbutton:not(.vertical) button:last-child {
+      border-top-right-radius: 2px;
+      border-bottom-right-radius: 2px; }
+.osd spinbutton:not(.vertical) button {
+  border-color: transparent;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0);
+  text-shadow: none;
+  -gtk-icon-shadow: none;
+  color: @theme_fg_color;
+  border-style: none none none solid;
+  border-color: rgba(35, 40, 49, 0.7);
+  border-radius: 0;
+  box-shadow: none;
+  -gtk-icon-shadow: 0 1px black; }
+  .osd spinbutton:not(.vertical) button:dir(rtl) {
+    border-style: none solid none none; }
+  .osd spinbutton:not(.vertical) button:hover {
+    border-color: transparent;
+    background-color: transparent;
+    background-image: none;
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0);
+    text-shadow: none;
+    -gtk-icon-shadow: none;
+    color: @theme_fg_color;
+    border-color: rgba(35, 40, 49, 0.5);
+    background-color: rgba(216, 222, 233, 0.1);
+    -gtk-icon-shadow: 0 1px black;
+    box-shadow: none; }
+  .osd spinbutton:not(.vertical) button:backdrop {
+    border-color: transparent;
+    background-color: transparent;
+    background-image: none;
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0);
+    text-shadow: none;
+    -gtk-icon-shadow: none;
+    color: @theme_fg_color;
+    border-color: rgba(35, 40, 49, 0.5);
+    -gtk-icon-shadow: none;
+    box-shadow: none; }
+  .osd spinbutton:not(.vertical) button:disabled {
+    border-color: transparent;
+    background-color: transparent;
+    background-image: none;
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0);
+    text-shadow: none;
+    -gtk-icon-shadow: none;
+    color: #808690;
+    border-color: rgba(35, 40, 49, 0.5);
+    -gtk-icon-shadow: none;
+    box-shadow: none; }
+  .osd spinbutton:not(.vertical) button:last-child {
+    border-radius: 0 3px 3px 0; }
+  .osd spinbutton:not(.vertical) button:dir(rtl):first-child {
+    border-radius: 3px 0 0 3px; }
+spinbutton.vertical:disabled {
+  color: #8e95a4; }
+spinbutton.vertical:backdrop:disabled {
+  color: #63708b; }
+spinbutton.vertical:drop(active) {
+  border-color: transparent;
+  box-shadow: none; }
+spinbutton.vertical entry {
+  min-height: 32px;
+  min-width: 32px;
+  padding: 0;
+  border-radius: 0; }
+spinbutton.vertical button {
+  min-height: 32px;
+  min-width: 32px;
+  padding: 0;
+  border-width: 1px;
+  border-color: #232831;
+  box-shadow: 0 1px rgba(255, 255, 255, 0.1); }
+spinbutton.vertical button.up {
+  border-radius: 3px 3px 0 0;
+  border-style: solid solid none solid; }
+spinbutton.vertical button.down {
+  border-radius: 0 0 3px 3px;
+  border-style: none solid solid solid; }
+.osd spinbutton.vertical button:first-child {
+  color: @theme_fg_color;
+  border-color: #232831;
+  background-color: rgba(40, 45, 55, 0.93);
+  background-clip: padding-box;
+  text-shadow: 0 1px black;
+  -gtk-icon-shadow: 0 1px black;
+  outline-color: rgba(216, 222, 233, 0.3); }
+  .osd spinbutton.vertical button:first-child:hover {
+    color: white;
+    border-color: #232831;
+    background-image: linear-gradient(to bottom, rgba(65, 74, 91, 0.93), rgba(65, 74, 91, 0.93));
+    background-clip: padding-box;
+    text-shadow: 0 1px black;
+    -gtk-icon-shadow: 0 1px black;
+    outline-color: rgba(216, 222, 233, 0.3); }
+  .osd spinbutton.vertical button:first-child:active {
+    color: white;
+    border-color: #232831;
+    background-image: linear-gradient(to bottom, rgba(52, 59, 73, 0.93), rgba(52, 59, 73, 0.93));
+    background-clip: padding-box;
+    text-shadow: none;
+    -gtk-icon-shadow: none;
+    outline-color: rgba(216, 222, 233, 0.3); }
+  .osd spinbutton.vertical button:first-child:disabled {
+    color: #808690;
+    border-color: #232831;
+    background-image: linear-gradient(to bottom, rgba(58, 63, 73, 0.5), rgba(58, 63, 73, 0.5));
+    background-clip: padding-box;
+    box-shadow: none;
+    text-shadow: none;
+    -gtk-icon-shadow: none; }
+  .osd spinbutton.vertical button:first-child:backdrop {
+    color: @theme_fg_color;
+    border-color: #232831;
+    background-image: linear-gradient(to bottom, rgba(40, 45, 55, 0.93), rgba(40, 45, 55, 0.93));
+    background-clip: padding-box;
+    box-shadow: none;
+    text-shadow: none;
+    -gtk-icon-shadow: none; }
+treeview spinbutton:not(.vertical) {
+  min-height: 0;
+  border-style: none;
+  border-radius: 0; }
+  treeview spinbutton:not(.vertical) entry {
+    min-height: 0;
+    padding: 1px 2px; }
+

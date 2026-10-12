@@ -1,0 +1,7 @@
+/********
+ * Snap *
+ ********/
+SnapMainWindow .take-button,
+SnapSnapWindow .take-button {
+  border-radius: 0; }
+

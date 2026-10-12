@@ -1,0 +1,88 @@
+/************
+ * Popovers *
+ ************/
+GraniteWidgetsPopOver {
+  -GraniteWidgetsPopOver-arrow-width: 21;
+  -GraniteWidgetsPopOver-arrow-height: 10;
+  -GraniteWidgetsPopOver-border-radius: 8px;
+  -GraniteWidgetsPopOver-border-width: 0;
+  -GraniteWidgetsPopOver-shadow-size: 12;
+  border: 1px solid #3b4252;
+  background: #3b4252;
+  color: @theme_fg_color;
+}
+
+GraniteWidgetsPopOver .button {
+  background-image: none;
+  background: none;
+  border: none;
+}
+
+GraniteWidgetsPopOver .button:active,
+GraniteWidgetsPopOver .button:active:hover {
+  color: @theme_selected_bg_color;
+}
+
+GraniteWidgetsPopOver>.frame {
+  border: none;
+}
+
+GraniteWidgetsPopOver .sidebar.view,
+GraniteWidgetsPopOver iconview.sidebar {
+  border: none;
+  background: none;
+}
+
+GraniteWidgetsStaticNotebook .frame {
+  border: none;
+}
+
+.popover_bg {
+  background-color: #3b4252;
+  background-image: none;
+  border: 1px solid #3b4252;
+  color: @theme_fg_color;
+}
+
+/***************
+ * Popovers   *
+ ***************/
+popover.background {
+  padding: 2px;
+  border-radius: 5px;
+  background: @theme_bg_color;
+  box-shadow: 0 4px 6px #232831;
+}
+
+.csd popover.background,
+popover.background {
+  border: 1px solid #232831;
+}
+
+popover.background:backdrop {
+  background-color: #434c5e;
+  box-shadow: none;
+}
+
+popover.background>list,
+popover.background>.view,
+popover.background>iconview,
+popover.background>toolbar {
+  border-style: none;
+  background-color: transparent;
+}
+
+.csd popover.background.touch-selection,
+.csd popover.background.magnifier,
+popover.background.touch-selection,
+popover.background.magnifier {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+popover.background separator {
+  margin: 3px;
+}
+
+popover.background list separator {
+  margin: 0px;
+}

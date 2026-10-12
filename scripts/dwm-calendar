@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+"""
+scripts/dwm-calendar - Khal interface helper for DWM Quickshell Calendar
+"""
+import sys
+import os
+import json
+import subprocess
+import calendar
+from datetime import datetime
+
+def get_khal_date_format():
+    """Detect configured khal date format, default to %d/%m/%Y."""
+    cfg_path = os.path.expanduser("~/.config/khal/config")
+    date_fmt = "%d/%m/%Y"
+    if os.path.exists(cfg_path):
+        try:
+            with open(cfg_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("dateformat"):
+                        parts = line.split("=", 1)
+                        if len(parts) == 2:
+                            val = parts[1].strip()
+                            if val:
+                                date_fmt = val
+        except Exception:
+            pass
+    return date_fmt
+
+def fetch_events(month=None, year=None):
+    now = datetime.now()
+    try:
+        m = int(month) if month else now.month
+        y = int(year) if year else now.year
+    except (ValueError, TypeError):
+        m = now.month
+        y = now.year
+
+    _, last_day = calendar.monthrange(y, m)
+    start_dt = datetime(y, m, 1)
+    end_dt = datetime(y, m, last_day)
+
+    date_fmt = get_khal_date_format()
+    start_str = start_dt.strftime(date_fmt)
+    end_str = end_dt.strftime(date_fmt)
+
+    cmd = ["khal", "list", start_str, end_str, "--json", "all"]
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+    except Exception as e:
+        print(json.dumps([]))
+        return
+
+    events = []
+    for line in proc.stdout.splitlines():
+        line = line.strip()
+        if line.startswith("[") and line.endswith("]"):
+            try:
+                for ev in json.loads(line):
+                    # Normalize dates
+                    start_date = ev.get("start-date", "")
+                    end_date = ev.get("end-date", "")
+                    events.append({
+                        "uid": ev.get("uid", ""),
+                        "title": ev.get("title", "Untitled"),
+                        "calendar": ev.get("calendar", "Default"),
+                        "startDate": start_date,
+                        "startTime": ev.get("start-time", ""),
+                        "endDate": end_date,
+                        "endTime": ev.get("end-time", ""),
+                        "allDay": str(ev.get("all-day", "False")).lower() == "true",
+                        "duration": ev.get("duration", ""),
+                        "description": ev.get("description", ""),
+                        "location": ev.get("location", "")
+                    })
+            except Exception:
+                pass
+
+    print(json.dumps(events))
+
+def launch_interactive():
+    term_cmd = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dwm-terminal")
+    if os.path.exists(term_cmd) and os.access(term_cmd, os.X_OK):
+        subprocess.Popen([term_cmd, "khal", "interactive"])
+    else:
+        subprocess.Popen(["khal", "interactive"])
+
+def main():
+    if len(sys.argv) < 2:
+        fetch_events()
+        return
+
+    action = sys.argv[1]
+    if action == "events":
+        m = sys.argv[2] if len(sys.argv) > 2 else None
+        y = sys.argv[3] if len(sys.argv) > 3 else None
+        fetch_events(m, y)
+    elif action == "interactive":
+        launch_interactive()
+    else:
+        fetch_events()
+
+if __name__ == "__main__":
+    main()

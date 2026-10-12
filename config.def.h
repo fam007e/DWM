@@ -10,7 +10,7 @@ static const int cursorwarp                   = 1;   /* 1 means warp cursor to c
 static const unsigned int snap                = 26;  /* snap pixel */
 static const int swallowfloating              = 1;   /* 1 means swallow floating windows by default */
 
-static const int showbar                      = 1;   /* 1 means show bar - needed for Polybar space calculation */
+static const int showbar                      = 1;   /* 1 means show bar - needed for Quickshell space calculation */
 static const int topbar                       = 1;   /* 0 means bottom bar */
 #define ICONSIZE                              17     /* icon size */
 #define ICONSPACING                           5      /* space between icon and title */
@@ -20,7 +20,7 @@ static const char *fonts[]                    = { "MesloLGS Nerd Font Mono:size=
 
 
 /* tagging */
-static const char *tags[] = { "", "", "", "", "󰕼", "", "", "", "" };
+static const char *tags[] = { "", "󸀀 ", "", "", "󰕼", "", "", "", "" };
 static const char ptagf[] = "[%s %s]";  /* format of a tag label */
 static const char etagf[] = "[%s]";     /* format of an empty tag */
 static const int lcaselbl = 0;          /* 1 means make tag label lowercase */

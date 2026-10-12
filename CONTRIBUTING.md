@@ -14,7 +14,7 @@ First off, thank you for considering contributing to this fork! It's people like
 - Explain why this enhancement would be useful to the majority of users.
 
 ### Pull Requests
-1. Fork the repo and create your branch from `master`.
+1. Fork the repo and create your branch from `main`.
 2. If you've added code that should be tested, add tests.
 3. Ensure the documentation is updated if you change functionality.
 4. Issue that pull request!
