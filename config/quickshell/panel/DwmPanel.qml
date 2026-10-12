@@ -86,6 +86,7 @@ PanelWindow {
             spacing: Theme.panelGap
 
             Item {
+                id: leftSection
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.minimumWidth: 0
@@ -93,7 +94,6 @@ PanelWindow {
                 RowLayout {
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
-                    width: Math.min(implicitWidth, parent.width)
                     height: parent.height
                     spacing: Theme.panelGap
 
@@ -106,6 +106,7 @@ PanelWindow {
                     }
 
                     PanelPill {
+                        id: workspacesPill
                         visible: root.panelSettingsModel.widgetEnabled("workspaces")
                         Layout.preferredWidth: workspaceRow.implicitWidth + 8
                         Layout.preferredHeight: Theme.pillHeight
@@ -132,19 +133,34 @@ PanelWindow {
                     }
 
                     PanelPill {
-                        Layout.preferredWidth: Math.min(activeTitle.implicitWidth + Theme.pillHorizontalPadding * 2, 260)
+                        id: activeTitlePill
+                        readonly property string displayTitle: root.state.activeWindowTitle.replace(/^[|\s]+/, "")
+                        visible: displayTitle.trim().length > 0
+
+                        readonly property real maxAvailableWidth: Math.max(0, leftSection.width
+                            - (logoButton.visible ? logoButton.width + Theme.panelGap : 0)
+                            - (workspacesPill.visible ? workspacesPill.width + Theme.panelGap : 0))
+
+                        Layout.preferredWidth: Math.min(activeTitle.implicitWidth + Theme.pillHorizontalPadding * 2, maxAvailableWidth)
                         Layout.preferredHeight: Theme.pillHeight
                         outlined: true
+                        hovered: activeTitleMouse.containsMouse
 
                         UiText {
                             id: activeTitle
                             anchors.fill: parent
                             anchors.leftMargin: Theme.pillHorizontalPadding
                             anchors.rightMargin: Theme.pillHorizontalPadding
-                            text: root.state.activeWindowTitle
+                            text: activeTitlePill.displayTitle
                             color: Theme.text
                             elide: Text.ElideRight
                             verticalAlignment: Text.AlignVCenter
+                        }
+
+                        MouseArea {
+                            id: activeTitleMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
                         }
                     }
 
@@ -506,6 +522,14 @@ PanelWindow {
         label: root.weatherModel.available
             ? (root.weatherModel.city + ": " + root.weatherModel.temp + "°C, " + root.weatherModel.desc)
             : "Weather (Click to view / refresh)"
+        anchorY: Theme.panelHeight
+    }
+
+    PanelTooltip {
+        visible: activeTitleMouse.containsMouse && activeTitlePill.displayTitle.trim().length > 0
+        anchorWindow: root
+        anchorItem: activeTitlePill
+        label: activeTitlePill.displayTitle
         anchorY: Theme.panelHeight
     }
 }

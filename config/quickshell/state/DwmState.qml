@@ -71,7 +71,8 @@ Scope {
                     return { "windowId": app.slice(0, separator), "appClass": app.slice(separator + 1) };
                 }) : [];
             } else if (key === "title") {
-                root.activeWindowTitle = value.length > 0 ? value : "Desktop";
+                const cleanedTitle = value.replace(/^[|\s]+/, "");
+                root.activeWindowTitle = cleanedTitle.length > 0 ? cleanedTitle : "Desktop";
             } else if (key === "class") {
                 root.activeWindowClass = value.length > 0 ? value : "application-x-executable";
             } else if (key === "status") {

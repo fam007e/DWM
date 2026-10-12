@@ -21,7 +21,7 @@ print_default_names() {
 }
 
 clean_line() {
-	tr '\r\n' '  ' | sed 's/[[:space:]][[:space:]]*/ /g; s/^ //; s/ $//' | cut -c 1-256
+	tr '\r\n' '  ' | sed 's/[[:space:]][[:space:]]*/ /g; s/^ //; s/ $//' | cut -c 1-512
 }
 
 root_property_value() {
@@ -142,7 +142,7 @@ window_title() {
 					print fallback
 				}
 			}
-		' | clean_line
+		' | sed 's/^[[:space:]]*|[[:space:]]*//' | clean_line
 }
 
 window_class() {
