@@ -1,2 +1,38 @@
-# Ignore object files
+# Ignore object files and build binaries
 *.o
+*.orig
+*.rej
+dwm
+config.h
+
+# Symlink to temporary external repo
+dwmbychristitustech
+
+# mdBook build artifacts
+book/
+docs/book/
+
+# Python cache & virtual environments
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+
+# Environment secrets and credentials
+.env
+.env.*
+*.env
+secrets/
+
+# Tooling and release artifacts
+compile_commands.json
+release/
+*.log
+
+# Editor and system files
+.DS_Store
+*.swp
+*.swo
+*~
