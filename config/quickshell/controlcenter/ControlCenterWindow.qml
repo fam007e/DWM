@@ -22,6 +22,49 @@ ClickAwayPopup {
         : 240
     readonly property var powerPresets: root.powerModel.timeoutPresets
 
+    property int selectedIndex: 0
+
+    function itemCountForPage() {
+        const page = controlCenterModel.page;
+        if (page === "overview") return 10;
+        if (page === "widgets") return 5;
+        if (page === "actions") return controlCenterModel.actions.length;
+        if (page === "appearance") return controlCenterModel.themeRows.length;
+        if (page === "power") return 2;
+        return 0;
+    }
+
+    function activateSelectedItem() {
+        const page = controlCenterModel.page;
+        const idx = selectedIndex;
+        if (page === "overview") {
+            switch (idx) {
+                case 0: openApplications(); break;
+                case 1: openSessionPower(); break;
+                case 2: controlCenterModel.openWidgets(); break;
+                case 3: controlCenterModel.openActions(); break;
+                case 4: controlCenterModel.openAppearance(); break;
+                case 5: controlCenterModel.openPower(); break;
+                case 6: openSettings(); break;
+                case 7: openSystemHealth(); break;
+                case 8: openKeybinds(); break;
+                case 9: openSystemInfo(); break;
+            }
+        } else if (page === "widgets") {
+            const widgets = ["Volume", "Bluetooth", "Network", "Power", "Workspaces"];
+            if (idx >= 0 && idx < widgets.length) controlCenterModel.toggleWidget(widgets[idx]);
+        } else if (page === "actions") {
+            const actions = controlCenterModel.actions;
+            if (idx >= 0 && idx < actions.length) controlCenterModel.runAction(actions[idx].id);
+        } else if (page === "appearance") {
+            const themes = controlCenterModel.themeRows;
+            if (idx >= 0 && idx < themes.length) controlCenterModel.setTheme(themes[idx].name);
+        } else if (page === "power") {
+            if (idx === 0) powerModel.setDpms(!powerModel.dpmsEnabled, "controlcenter");
+            else if (idx === 1) powerModel.setLock(!powerModel.lockEnabled, "controlcenter");
+        }
+    }
+
     function pageTitle() {
         if (controlCenterModel.page === "widgets") return "Bar Widgets";
         if (controlCenterModel.page === "actions") return "Quick Actions";
@@ -112,6 +155,7 @@ ClickAwayPopup {
 
     onVisibleChanged: {
         if (visible) {
+            root.selectedIndex = 0;
             root.powerMenuModel.close("controlcenter");
             Qt.callLater(function() {
                 controlCard.forceActiveFocus();
@@ -125,6 +169,7 @@ ClickAwayPopup {
         target: root.controlCenterModel
 
         function onPageChanged() {
+            root.selectedIndex = 0;
             menuFlick.contentY = 0;
             Qt.callLater(function() {
                 controlCard.forceActiveFocus();
@@ -193,7 +238,32 @@ ClickAwayPopup {
 
         Keys.onPressed: function(event) {
             if (event.key === Qt.Key_Escape) {
-                root.controlCenterModel.close();
+                if (root.controlCenterModel.page !== "overview") {
+                    root.controlCenterModel.openOverview();
+                } else {
+                    root.controlCenterModel.close();
+                }
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Down) {
+                const count = root.itemCountForPage();
+                if (count > 0) {
+                    root.selectedIndex = Math.min(count - 1, root.selectedIndex + 1);
+                }
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Up) {
+                const count = root.itemCountForPage();
+                if (count > 0) {
+                    root.selectedIndex = Math.max(0, root.selectedIndex - 1);
+                }
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter
+                    || event.key === Qt.Key_Space || event.key === Qt.Key_Right) {
+                root.activateSelectedItem();
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Left || event.key === Qt.Key_Backspace) {
+                if (root.controlCenterModel.page !== "overview") {
+                    root.controlCenterModel.openOverview();
+                }
                 event.accepted = true;
             }
         }
@@ -241,12 +311,14 @@ ClickAwayPopup {
                         Layout.fillWidth: true
                         implicitHeight: root.compactRowHeight
                         label: "Applications"
+                        selected: root.selectedIndex === 0
                         onActivated: root.openApplications()
                     }
                     MenuRow {
                         Layout.fillWidth: true
                         implicitHeight: root.compactRowHeight
                         label: "Power"
+                        selected: root.selectedIndex === 1
                         navigates: true
                         onActivated: root.openSessionPower()
                     }
@@ -260,6 +332,7 @@ ClickAwayPopup {
                         Layout.fillWidth: true
                         implicitHeight: root.compactRowHeight
                         label: "Bar Widgets"
+                        selected: root.selectedIndex === 2
                         navigates: true
                         onActivated: root.controlCenterModel.openWidgets()
                     }
@@ -267,6 +340,7 @@ ClickAwayPopup {
                         Layout.fillWidth: true
                         implicitHeight: root.compactRowHeight
                         label: "Quick Actions"
+                        selected: root.selectedIndex === 3
                         navigates: true
                         onActivated: root.controlCenterModel.openActions()
                     }
@@ -274,6 +348,7 @@ ClickAwayPopup {
                         Layout.fillWidth: true
                         implicitHeight: root.compactRowHeight
                         label: "Appearance"
+                        selected: root.selectedIndex === 4
                         navigates: true
                         onActivated: root.controlCenterModel.openAppearance()
                     }
@@ -281,6 +356,7 @@ ClickAwayPopup {
                         Layout.fillWidth: true
                         implicitHeight: root.compactRowHeight
                         label: "Power Settings"
+                        selected: root.selectedIndex === 5
                         navigates: true
                         onActivated: root.controlCenterModel.openPower()
                     }
@@ -294,24 +370,28 @@ ClickAwayPopup {
                         Layout.fillWidth: true
                         implicitHeight: root.compactRowHeight
                         label: "Settings"
+                        selected: root.selectedIndex === 6
                         onActivated: root.openSettings()
                     }
                     MenuRow {
                         Layout.fillWidth: true
                         implicitHeight: root.compactRowHeight
                         label: "System Health"
+                        selected: root.selectedIndex === 7
                         onActivated: root.openSystemHealth()
                     }
                     MenuRow {
                         Layout.fillWidth: true
                         implicitHeight: root.compactRowHeight
                         label: "Keybinds"
+                        selected: root.selectedIndex === 8
                         onActivated: root.openKeybinds()
                     }
                     MenuRow {
                         Layout.fillWidth: true
                         implicitHeight: root.compactRowHeight
                         label: "System Info"
+                        selected: root.selectedIndex === 9
                         onActivated: root.openSystemInfo()
                     }
                 }
@@ -325,11 +405,13 @@ ClickAwayPopup {
                         model: ["Volume", "Bluetooth", "Network", "Power", "Workspaces"]
 
                         delegate: MenuRow {
+                            required property int index
                             required property string modelData
 
                             Layout.fillWidth: true
                             implicitHeight: root.compactRowHeight
                             label: modelData
+                            selected: root.selectedIndex === index
                             detail: root.controlCenterModel.widgetEnabled(modelData) ? "On" : "Off"
                             active: root.controlCenterModel.widgetEnabled(modelData)
                             enabled: !root.controlCenterModel.panelSettingsModel
@@ -349,11 +431,13 @@ ClickAwayPopup {
                         model: root.controlCenterModel.actions
 
                         delegate: MenuRow {
+                            required property int index
                             required property var modelData
 
                             Layout.fillWidth: true
                             implicitHeight: root.compactRowHeight
                             label: modelData.label
+                            selected: root.selectedIndex === index
                             enabled: !root.controlCenterModel.busy
                             onActivated: root.controlCenterModel.runAction(modelData.id)
                         }
@@ -369,11 +453,13 @@ ClickAwayPopup {
                         model: root.controlCenterModel.themeRows
 
                         delegate: MenuRow {
+                            required property int index
                             required property var modelData
 
                             Layout.fillWidth: true
                             implicitHeight: root.compactRowHeight
                             label: modelData.name
+                            selected: root.selectedIndex === index
                             detail: modelData.status === "active" ? "Active" : ""
                             active: modelData.status === "active"
                             enabled: !root.controlCenterModel.busy
@@ -391,6 +477,7 @@ ClickAwayPopup {
                         Layout.fillWidth: true
                         implicitHeight: root.compactRowHeight
                         label: "Screen Timeout"
+                        selected: root.selectedIndex === 0
                         detail: root.powerModel.dpmsEnabled
                             ? root.formatDuration(root.powerModel.dpmsTimeout) : "Off"
                         active: root.powerModel.dpmsEnabled
@@ -428,6 +515,7 @@ ClickAwayPopup {
                         Layout.fillWidth: true
                         implicitHeight: root.compactRowHeight
                         label: "Auto Lock"
+                        selected: root.selectedIndex === 1
                         detail: !root.powerModel.lockAvailable ? "Unknown" : root.powerModel.lockEnabled
                             ? root.formatDuration(root.powerModel.lockTimeout) : "Off"
                         active: root.powerModel.lockEnabled

@@ -16,6 +16,19 @@ PopupWindow {
 
     color: Theme.transparent
     grabFocus: true
+
+    onVisibleChanged: {
+        if (visible) {
+            Qt.callLater(function() {
+                if (popupHost.children.length > 0 && popupHost.children[0].forceActiveFocus) {
+                    popupHost.children[0].forceActiveFocus();
+                } else {
+                    popupHost.forceActiveFocus();
+                }
+            });
+        }
+    }
+
     implicitWidth: targetWindow ? targetWindow.width : 0
     // Keep the transparent click-away surface below the panel so compositors
     // cannot blur the bar through this popup. Content coordinates stay panel-relative.
@@ -55,9 +68,13 @@ PopupWindow {
             width: root.popupWidth
             height: root.popupHeight
             opacity: 1.0
+            focus: true
 
-            MouseArea {
-                anchors.fill: parent
+            Keys.onPressed: function(event) {
+                if (event.key === Qt.Key_Escape) {
+                    root.dismissed();
+                    event.accepted = true;
+                }
             }
         }
     }

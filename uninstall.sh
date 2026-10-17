@@ -107,7 +107,7 @@ if confirm "Remove Quickshell, Rofi, and terminal configurations?"; then
 fi
 
 # ── 5. Remove Session Environment File ───────────────────────────────────────
-# Written by install.sh — exports DWM_DATA_DIR into SDDM sessions.
+# Written by install.sh — exports DWM_DATA_DIR into the user session.
 # Leaving this behind exports stale paths into every future session.
 if [ -f "$HOME/.config/environment.d/dwm.conf" ]; then
     rm -f "$HOME/.config/environment.d/dwm.conf"

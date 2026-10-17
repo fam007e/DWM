@@ -10,6 +10,8 @@ ClickAwayPopup {
     required property var bluetoothModel
     required property var panelWindow
 
+    property int selectedIndex: 0
+
     readonly property int cardWidth: Theme.scaledSize(360)
     readonly property int cardHeight: Theme.scaledSize(420)
 
@@ -23,15 +25,60 @@ ClickAwayPopup {
     popupY: Theme.panelHeight
     onDismissed: bluetoothModel.close()
 
-    onVisibleChanged: if (!visible) root.bluetoothModel.close()
+    onVisibleChanged: {
+        if (visible) {
+            selectedIndex = 0;
+            Qt.callLater(function() {
+                surface.forceActiveFocus();
+            });
+        } else {
+            root.bluetoothModel.close();
+        }
+    }
 
     ShellSurface {
+        id: surface
+
         anchors.fill: parent
         focus: true
 
         Keys.onPressed: function(event) {
+            const devCount = root.bluetoothModel.devices.length;
+
             if (event.key === Qt.Key_Escape) {
                 root.bluetoothModel.close();
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Down) {
+                if (devCount > 0) {
+                    root.selectedIndex = Math.min(devCount - 1, root.selectedIndex + 1);
+                    deviceListView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
+                }
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Up) {
+                if (devCount > 0) {
+                    root.selectedIndex = Math.max(0, root.selectedIndex - 1);
+                    deviceListView.positionViewAtIndex(root.selectedIndex, ListView.Contain);
+                }
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+                if (devCount > 0 && root.selectedIndex >= 0 && root.selectedIndex < devCount) {
+                    const dev = root.bluetoothModel.devices[root.selectedIndex];
+                    const actionName = dev.connected ? "bluetooth-disconnect"
+                        : (dev.paired ? "bluetooth-connect" : "bluetooth-pair");
+                    root.bluetoothModel.action(actionName, [dev.address]);
+                } else if (root.bluetoothModel.available && root.bluetoothModel.actionsAvailable) {
+                    root.bluetoothModel.action("bluetooth-power", [root.bluetoothModel.powered ? "off" : "on"]);
+                }
+                event.accepted = true;
+            } else if (event.key === Qt.Key_S) {
+                if (root.bluetoothModel.powered && root.bluetoothModel.actionsAvailable && !root.bluetoothModel.busy) {
+                    root.bluetoothModel.refresh(true);
+                }
+                event.accepted = true;
+            } else if (event.key === Qt.Key_P || event.key === Qt.Key_T) {
+                if (root.bluetoothModel.available && root.bluetoothModel.actionsAvailable) {
+                    root.bluetoothModel.action("bluetooth-power", [root.bluetoothModel.powered ? "off" : "on"]);
+                }
                 event.accepted = true;
             }
         }
@@ -42,8 +89,9 @@ ClickAwayPopup {
 
             PanelHero {
                 Layout.fillWidth: true
-                iconText: "󰂯"
-                iconColor: root.bluetoothModel.powered ? Theme.popupText : Theme.menuMutedText
+                iconText: root.bluetoothModel.icon
+                iconColor: !root.bluetoothModel.powered ? Theme.menuMutedText
+                    : (root.bluetoothModel.connected ? Theme.accent : Theme.popupText)
                 title: "Bluetooth"
                 subtitle: root.bluetoothModel.statusText
 
@@ -77,6 +125,8 @@ ClickAwayPopup {
             SectionLabel { label: "Devices" }
 
             ListView {
+                id: deviceListView
+
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
@@ -86,13 +136,26 @@ ClickAwayPopup {
                 delegate: Rectangle {
                     id: deviceRow
 
+                    required property int index
                     required property var modelData
+
+                    readonly property bool isSelected: index === root.selectedIndex
+
                     width: ListView.view.width
                     height: Theme.scaledSize(58)
                     radius: Theme.smallRadius
-                    color: deviceMouse.containsMouse ? Theme.controlHoverFill : Theme.controlNormalFill
-                    border.color: deviceMouse.containsMouse ? Theme.controlHoverBorder : Theme.controlNormalBorder
-                    border.width: Theme.controlBorderWidth
+                    color: isSelected ? Theme.controlFocusFill
+                        : (deviceMouse.containsMouse ? Theme.controlHoverFill : Theme.controlNormalFill)
+                    border.color: isSelected ? Theme.controlFocusBorder
+                        : (deviceMouse.containsMouse ? Theme.controlHoverBorder : Theme.controlNormalBorder)
+                    border.width: isSelected ? Theme.controlFocusBorderWidth : Theme.controlBorderWidth
+
+                    MouseArea {
+                        id: deviceMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: root.selectedIndex = deviceRow.index
+                    }
 
                     RowLayout {
                         anchors.fill: parent
@@ -122,13 +185,6 @@ ClickAwayPopup {
                             enabled: root.bluetoothModel.actionsAvailable && !root.bluetoothModel.busy
                             onActivated: root.bluetoothModel.action(deviceRow.modelData.connected ? "bluetooth-disconnect" : (deviceRow.modelData.paired ? "bluetooth-connect" : "bluetooth-pair"), [deviceRow.modelData.address])
                         }
-                    }
-
-                    MouseArea {
-                        id: deviceMouse
-                        anchors.fill: parent
-                        acceptedButtons: Qt.NoButton
-                        hoverEnabled: true
                     }
                 }
             }

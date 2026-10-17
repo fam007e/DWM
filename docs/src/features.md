@@ -13,7 +13,33 @@ The top panel (`DwmPanel.qml`) integrates directly with the X11 EWMH desktop pro
 - **Client Title Bar:** Displays the active client's title with sanitization to guard against control-character and X11 injection.
 - **Running Applications Area:** Displays taskbar icons for currently active clients on the active monitor.
 - **System Tray:** Full system tray support for background indicators and services.
-- **Audio & Connectivity:** Volume slider with mute toggle, battery percentage, network connection status, and Bluetooth controls.
+- **Audio & Connectivity:** Volume slider with mute toggle, battery percentage, network connection status, and Bluetooth controls with live status indicators.
+
+### 🖱️ Mouse & ⌨️ Keyboard Interactivity Across Widgets
+All bar widget popups support full bidirectional interaction by both keyboard and mouse:
+- **Automatic X11 Input Focus:** When any popup is opened (via hotkey or clicking a panel pill), DWM automatically grants X11 input focus to the popup. Keystrokes, navigation arrows, Enter/Space, and <kbd>Esc</kbd> are routed directly to the popup.
+- **Escape to Close:** Pressing <kbd>Esc</kbd> on any popup dismisses it and cleanly returns focus to the active client.
+- **Bluetooth Widget:**
+  - **Status Glyphs:** Displays `󰂱` (`nf-md-bluetooth_connect`) when connected, `󰂲` (`nf-md-bluetooth_off`) when disabled/off, and `󰂯` (`nf-md-bluetooth`) when idle.
+  - **Mouse:** Left-click toggles popup; Right-click immediately toggles adapter power on/off.
+  - **Keyboard:** <kbd>↓</kbd> / <kbd>↑</kbd> to select devices, <kbd>Enter</kbd> / <kbd>Space</kbd> to Connect / Disconnect / Pair, <kbd>s</kbd> to scan, <kbd>p</kbd> to toggle power.
+- **Network / WiFi Widget:**
+  - **Mouse:** Left-click toggles popup; Right-click triggers an immediate network scan.
+  - **Keyboard:** <kbd>↓</kbd> / <kbd>↑</kbd> to select network, <kbd>Enter</kbd> to connect, <kbd>w</kbd> to toggle WiFi, <kbd>r</kbd> to rescan.
+- **Audio & Media Controls:**
+  - **Mouse:** Mouse wheel over the volume pill adjusts volume up/down; Right-click toggles mute; Left-click opens popup.
+  - **Keyboard:** <kbd>↑</kbd> / <kbd>→</kbd> volume up, <kbd>↓</kbd> / <kbd>←</kbd> volume down, <kbd>m</kbd> mute toggle, <kbd>Space</kbd> play/pause, <kbd>n</kbd> / <kbd>p</kbd> next/previous track.
+- **Control Center:**
+  - **Mouse:** Left-click DWM emblem to open.
+  - **Keyboard:** <kbd>↓</kbd> / <kbd>↑</kbd> navigate items, <kbd>Enter</kbd> / <kbd>→</kbd> activate/enter subpage, <kbd>←</kbd> go back to overview.
+- **Weather Widget:**
+  - **Mouse:** Left-click opens dashboard; Right-click forces wttr.in/OpenWeatherMap refresh.
+  - **Keyboard:** <kbd>r</kbd> forces refresh.
+- **Calendar & Agenda:**
+  - **Mouse:** Left-click opens agenda; Right-click toggles 12h/24h format.
+  - **Keyboard:** <kbd>←</kbd> / <kbd>→</kbd> days, <kbd>↑</kbd> / <kbd>↓</kbd> weeks, <kbd>PageUp</kbd> / <kbd>PageDown</kbd> months, <kbd>t</kbd> today, <kbd>Enter</kbd> open interactive khal.
+- **Power Menu:**
+  - **Keyboard:** <kbd>↑</kbd> / <kbd>↓</kbd> navigate session options (Lock, Suspend, Restart, Shutdown, Logout), <kbd>Enter</kbd> / <kbd>Space</kbd> confirm.
 
 ---
 

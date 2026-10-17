@@ -232,9 +232,14 @@ PanelWindow {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        root.popupRequested(root, "weather");
-                        root.weatherModel.toggle();
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                    onClicked: (mouse) => {
+                        if (mouse.button === Qt.RightButton) {
+                            root.weatherModel.refresh(true);
+                        } else {
+                            root.popupRequested(root, "weather");
+                            root.weatherModel.toggle();
+                        }
                     }
                 }
             }
@@ -336,9 +341,10 @@ PanelWindow {
                             spacing: Theme.compactSpacing
 
                             IconText {
-                                text: "󰂯"
-                                color: Theme.textStrong
-                                font.pixelSize: Theme.scaledFontSize(14 * 0.9, 8)
+                                text: root.bluetoothModel.icon
+                                color: !root.bluetoothModel.powered ? Theme.menuMutedText
+                                    : (root.bluetoothModel.connected ? Theme.accent : Theme.textStrong)
+                                font.pixelSize: Theme.scaledFontSize(14 * 1.35, 8)
                             }
                         }
 
@@ -347,9 +353,16 @@ PanelWindow {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                root.popupRequested(root, "bluetooth");
-                                root.bluetoothModel.toggle();
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+                            onClicked: (mouse) => {
+                                if (mouse.button === Qt.RightButton) {
+                                    if (root.bluetoothModel.available && root.bluetoothModel.actionsAvailable) {
+                                        root.bluetoothModel.action("bluetooth-power", [root.bluetoothModel.powered ? "off" : "on"]);
+                                    }
+                                } else {
+                                    root.popupRequested(root, "bluetooth");
+                                    root.bluetoothModel.toggle();
+                                }
                             }
                         }
                     }
@@ -379,9 +392,14 @@ PanelWindow {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                root.popupRequested(root, "network");
-                                root.networkModel.toggle();
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+                            onClicked: (mouse) => {
+                                if (mouse.button === Qt.RightButton) {
+                                    root.networkModel.refresh(true);
+                                } else {
+                                    root.popupRequested(root, "network");
+                                    root.networkModel.toggle();
+                                }
                             }
                         }
                     }
@@ -417,9 +435,14 @@ PanelWindow {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                root.popupRequested(root, "controls");
-                                root.controlsModel.toggle();
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+                            onClicked: (mouse) => {
+                                if (mouse.button === Qt.RightButton) {
+                                    root.controlsModel.volumeToggleMute();
+                                } else {
+                                    root.popupRequested(root, "controls");
+                                    root.controlsModel.toggle();
+                                }
                             }
                             onWheel: function(wheel) {
                                 if (wheel.angleDelta.y > 0) {

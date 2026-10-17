@@ -130,10 +130,9 @@ else
     warn ".xinitrc already exists — skipped. Manually check $REPO_DIR/scripts/.xinitrc for changes."
 fi
 
-# ── Session Environment (SDDM-compatible) ─────────────────────────────────────
+# ── Session Environment ───────────────────────────────────────────────────────
 # systemd reads ~/.config/environment.d/*.conf and exports vars into the user session.
-# This ensures DWM_DATA_DIR is available to Quickshell and helper scripts
-# regardless of whether you use startx or SDDM.
+# This ensures DWM_DATA_DIR is available to Quickshell and helper scripts.
 info "Writing session environment vars..."
 mkdir -p "$HOME/.config/environment.d"
 cat > "$HOME/.config/environment.d/dwm.conf" <<EOF
@@ -182,5 +181,5 @@ SUDO_KEEPALIVE_PID=""
 echo ""
 ok "Installation Complete!"
 info "Paths are dynamic. You can safely delete or move the clone folder now."
-info "Restart DWM or re-login via SDDM to apply session environment vars."
+info "Restart DWM or re-login to apply session environment vars."
 echo ""

@@ -301,6 +301,58 @@ ShellRoot {
     }
 
     IpcHandler {
+        target: "bluetooth"
+
+        function close(): void {
+            bluetoothModel.close();
+        }
+
+        function open(): void {
+            root.selectPanelPopup(root.activePanelWindow, "bluetooth");
+            bluetoothModel.open();
+        }
+
+        function refresh(): void {
+            bluetoothModel.refresh();
+        }
+
+        function status(): string {
+            return bluetoothModel.statusText;
+        }
+
+        function toggle(): void {
+            if (bluetoothModel.visible) {
+                bluetoothModel.close();
+            } else {
+                root.selectPanelPopup(root.activePanelWindow, "bluetooth");
+                bluetoothModel.open();
+            }
+        }
+    }
+
+    IpcHandler {
+        target: "calendar"
+
+        function close(): void {
+            clock.closeCalendar();
+        }
+
+        function open(): void {
+            root.selectPanelPopup(root.activePanelWindow, "calendar");
+            clock.openCalendar();
+        }
+
+        function toggle(): void {
+            if (clock.calendarVisible) {
+                clock.closeCalendar();
+            } else {
+                root.selectPanelPopup(root.activePanelWindow, "calendar");
+                clock.toggleCalendar();
+            }
+        }
+    }
+
+    IpcHandler {
         target: "launcher"
 
         function applicationConsumers(): int {
@@ -364,11 +416,17 @@ ShellRoot {
         }
 
         function open(): void {
+            root.selectPanelPopup(root.activePanelWindow, "power");
             powerMenuModel.open();
         }
 
         function toggle(): void {
-            powerMenuModel.toggle();
+            if (powerMenuModel.visible) {
+                powerMenuModel.close("panel");
+            } else {
+                root.selectPanelPopup(root.activePanelWindow, "power");
+                powerMenuModel.open();
+            }
         }
     }
 
@@ -380,6 +438,7 @@ ShellRoot {
         }
 
         function open(): void {
+            root.selectPanelPopup(root.activePanelWindow, "weather");
             weatherModel.open();
         }
 
@@ -388,7 +447,12 @@ ShellRoot {
         }
 
         function toggle(): void {
-            weatherModel.toggle();
+            if (weatherModel.visible) {
+                weatherModel.close();
+            } else {
+                root.selectPanelPopup(root.activePanelWindow, "weather");
+                weatherModel.open();
+            }
         }
     }
 
@@ -400,6 +464,7 @@ ShellRoot {
         }
 
         function open(): void {
+            root.selectPanelPopup(root.activePanelWindow, "network");
             networkModel.open();
         }
 
@@ -412,7 +477,12 @@ ShellRoot {
         }
 
         function toggle(): void {
-            networkModel.toggle();
+            if (networkModel.visible) {
+                networkModel.close();
+            } else {
+                root.selectPanelPopup(root.activePanelWindow, "network");
+                networkModel.open();
+            }
         }
     }
 
@@ -428,6 +498,7 @@ ShellRoot {
         }
 
         function open(): void {
+            root.selectPanelPopup(root.activePanelWindow, "controls");
             controlsModel.open();
         }
 
@@ -456,7 +527,12 @@ ShellRoot {
         }
 
         function toggle(): void {
-            controlsModel.toggle();
+            if (controlsModel.visible) {
+                controlsModel.close();
+            } else {
+                root.selectPanelPopup(root.activePanelWindow, "controls");
+                controlsModel.open();
+            }
         }
 
         function volumeDown(): void {
@@ -552,6 +628,7 @@ ShellRoot {
         }
 
         function open(): void {
+            root.selectPanelPopup(root.activePanelWindow, "controlcenter");
             controlCenterModel.open();
         }
 
@@ -564,7 +641,12 @@ ShellRoot {
         }
 
         function toggle(): void {
-            controlCenterModel.toggle();
+            if (controlCenterModel.visible) {
+                controlCenterModel.close();
+            } else {
+                root.selectPanelPopup(root.activePanelWindow, "controlcenter");
+                controlCenterModel.open();
+            }
         }
     }
 

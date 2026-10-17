@@ -13,12 +13,9 @@ xset -dpms
 export XDG_CURRENT_DESKTOP=dwm
 export XDG_SESSION_TYPE=x11
 
-# Export display env to systemd/dbus in parallel (both are IPC round-trips)
-if command -v systemctl >/dev/null 2>&1; then
-    systemctl --user import-environment DISPLAY XAUTHORITY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE &
-fi
-dbus-update-activation-environment --systemd DISPLAY XAUTHORITY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE 2>/dev/null &
-wait
+# Export display env to dbus activation environment and systemd user manager.
+# --systemd handles both in one call (updates dbus daemon + systemd SetEnvironment).
+dbus-update-activation-environment --systemd DISPLAY XAUTHORITY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE 2>/dev/null
 
 # Restart xdg-desktop-portal so it inherits the correct environment variables (crucial for flameshot/portals)
 if command -v systemctl >/dev/null 2>&1; then

@@ -47,6 +47,9 @@ ClickAwayPopup {
     onVisibleChanged: {
         if (visible) {
             calendarModel.goToToday();
+            Qt.callLater(function() {
+                calendarCard.forceActiveFocus();
+            });
         }
     }
 
@@ -56,6 +59,58 @@ ClickAwayPopup {
         anchors.fill: parent
         implicitHeight: contentColumn.implicitHeight + Theme.cardPadding * 2
         margin: 6
+        focus: true
+
+        Keys.onPressed: function(event) {
+            const daysInMonth = new Date(root.calendarModel.viewYear, root.calendarModel.viewMonth + 1, 0).getDate();
+            if (event.key === Qt.Key_Escape) {
+                root.clockModel.closeCalendar();
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Left) {
+                if (root.calendarModel.selectedDay > 1) {
+                    root.calendarModel.selectDay(root.calendarModel.selectedDay - 1);
+                } else {
+                    root.calendarModel.previousMonth();
+                    const prevDays = new Date(root.calendarModel.viewYear, root.calendarModel.viewMonth + 1, 0).getDate();
+                    root.calendarModel.selectDay(prevDays);
+                }
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Right) {
+                if (root.calendarModel.selectedDay < daysInMonth) {
+                    root.calendarModel.selectDay(root.calendarModel.selectedDay + 1);
+                } else {
+                    root.calendarModel.nextMonth();
+                    root.calendarModel.selectDay(1);
+                }
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Up) {
+                if (root.calendarModel.selectedDay > 7) {
+                    root.calendarModel.selectDay(root.calendarModel.selectedDay - 7);
+                }
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Down) {
+                if (root.calendarModel.selectedDay + 7 <= daysInMonth) {
+                    root.calendarModel.selectDay(root.calendarModel.selectedDay + 7);
+                }
+                event.accepted = true;
+            } else if (event.key === Qt.Key_PageUp || event.key === Qt.Key_BracketLeft) {
+                root.calendarModel.previousMonth();
+                event.accepted = true;
+            } else if (event.key === Qt.Key_PageDown || event.key === Qt.Key_BracketRight) {
+                root.calendarModel.nextMonth();
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Home || event.key === Qt.Key_T) {
+                root.calendarModel.goToToday();
+                event.accepted = true;
+            } else if (event.key === Qt.Key_R) {
+                root.calendarModel.fetchEvents();
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                root.clockModel.closeCalendar();
+                root.calendarModel.launchInteractive();
+                event.accepted = true;
+            }
+        }
 
         ColumnLayout {
             id: contentColumn

@@ -18,6 +18,13 @@ ClickAwayPopup {
     popupX: panelWindow ? Math.max(edgeMargin, (panelWindow.width / 2) - (cardWidth / 2) + 60) : edgeMargin
     popupY: Theme.panelHeight
     onDismissed: weatherModel.close()
+    onVisibleChanged: {
+        if (visible) {
+            Qt.callLater(function() {
+                weatherCard.forceActiveFocus();
+            });
+        }
+    }
 
     ShellSurface {
         id: weatherCard
@@ -25,6 +32,17 @@ ClickAwayPopup {
         anchors.fill: parent
         implicitHeight: contentColumn.implicitHeight + Theme.cardPadding * 2
         margin: 6
+        focus: true
+
+        Keys.onPressed: function(event) {
+            if (event.key === Qt.Key_Escape) {
+                root.weatherModel.close();
+                event.accepted = true;
+            } else if (event.key === Qt.Key_R) {
+                root.weatherModel.refresh();
+                event.accepted = true;
+            }
+        }
 
         ColumnLayout {
             id: contentColumn

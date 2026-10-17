@@ -1547,6 +1547,13 @@ keybinds() {
 			printf "%s\t%s\n", label, desc
 		}
 	' "$(config_file hotkeys.toml)"
+
+	printf "%s\t%s\n" "Super + [1-9]" "View tag 1-9"
+	printf "%s\t%s\n" "Super + Shift + [1-9]" "Move focused window to tag 1-9"
+	printf "%s\t%s\n" "Super + Ctrl + [1-9]" "Toggle tag 1-9 view"
+	printf "%s\t%s\n" "Super + Left Click" "Move floating window"
+	printf "%s\t%s\n" "Super + Right Click" "Resize floating window"
+	printf "%s\t%s\n" "Super + Middle Click" "Toggle window floating"
 }
 
 picom_action() {

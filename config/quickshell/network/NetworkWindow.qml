@@ -27,6 +27,9 @@ ClickAwayPopup {
 
     onVisibleChanged: {
         if (visible) {
+            if (root.networkModel.selectedWifiIndex < 0 && root.networkModel.wifiNetworks.length > 0) {
+                root.networkModel.selectWifi(0);
+            }
             Qt.callLater(function() {
                 content.forceActiveFocus();
             });
@@ -45,6 +48,36 @@ ClickAwayPopup {
                     root.networkModel.cancelWifiPasswordPrompt();
                 } else {
                     root.networkModel.close();
+                }
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Down) {
+                const wifiCount = root.networkModel.wifiNetworks.length;
+                if (wifiCount > 0) {
+                    const current = root.networkModel.selectedWifiIndex;
+                    const next = current < 0 ? 0 : Math.min(wifiCount - 1, current + 1);
+                    root.networkModel.selectWifi(next);
+                    wifiListView.positionViewAtIndex(next, ListView.Contain);
+                }
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Up) {
+                const wifiCount = root.networkModel.wifiNetworks.length;
+                if (wifiCount > 0) {
+                    const current = root.networkModel.selectedWifiIndex;
+                    const prev = current < 0 ? 0 : Math.max(0, current - 1);
+                    root.networkModel.selectWifi(prev);
+                    wifiListView.positionViewAtIndex(prev, ListView.Contain);
+                }
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+                if (root.networkModel.selectedWifiIndex >= 0 && root.networkModel.selectedWifiIndex < root.networkModel.wifiNetworks.length) {
+                    root.networkModel.connectSelectedWifi("panel");
+                } else if (!root.networkModel.busy) {
+                    root.networkModel.refresh(true);
+                }
+                event.accepted = true;
+            } else if (event.key === Qt.Key_S) {
+                if (!root.networkModel.busy) {
+                    root.networkModel.refresh(true);
                 }
                 event.accepted = true;
             }
@@ -119,6 +152,8 @@ ClickAwayPopup {
             }
 
             ListView {
+                id: wifiListView
+
                 Layout.fillWidth: true
                 Layout.preferredHeight: Math.min(220, Math.max(64, contentHeight))
                 clip: true

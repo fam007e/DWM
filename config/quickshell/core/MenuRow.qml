@@ -7,14 +7,18 @@ Rectangle {
     required property string label
     property string detail: ""
     property bool active: false
+    property bool selected: false
     property bool navigates: false
 
     signal activated
 
     implicitHeight: Theme.controlRowHeight
     radius: Theme.controlRadius
-    color: root.active ? Theme.menuSelectedBackground
+    color: root.selected ? Theme.controlFocusFill
+        : root.active ? Theme.menuSelectedBackground
         : rowMouse.containsMouse ? Theme.menuHoverBackground : Theme.transparent
+    border.color: root.selected ? Theme.controlFocusBorder : Theme.transparent
+    border.width: root.selected ? Theme.controlFocusBorderWidth : 0
 
     UiText {
         anchors.left: parent.left
@@ -23,7 +27,8 @@ Rectangle {
         anchors.rightMargin: Theme.spacingLg
         anchors.verticalCenter: parent.verticalCenter
         text: root.label
-        color: root.active ? Theme.menuSelectedText
+        color: root.selected ? Theme.controlFocusText
+            : root.active ? Theme.menuSelectedText
             : rowMouse.containsMouse ? Theme.menuHoverText : Theme.menuText
         elide: Text.ElideRight
     }
@@ -35,7 +40,8 @@ Rectangle {
         anchors.rightMargin: Theme.controlPaddingX
         anchors.verticalCenter: parent.verticalCenter
         text: root.detail.length > 0 ? root.detail : root.navigates ? ">" : ""
-        color: root.active ? Theme.menuSelectedText : rowMouse.containsMouse ? Theme.menuHoverText : Theme.menuMutedText
+        color: root.selected ? Theme.controlFocusText
+            : root.active ? Theme.menuSelectedText : rowMouse.containsMouse ? Theme.menuHoverText : Theme.menuMutedText
     }
 
     MouseArea {

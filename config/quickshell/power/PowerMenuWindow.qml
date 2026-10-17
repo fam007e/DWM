@@ -20,6 +20,8 @@ ClickAwayPopup {
         ? "Another surface is awaiting confirmation for a session action"
         : powerMenuModel.messageFor(actionOrigin)
 
+    property int selectedIndex: 0
+
     visible: panelWindow !== null && panelWindow.screen !== null && powerMenuModel.visible
     targetWindow: panelWindow
     popupWidth: cardWidth
@@ -32,6 +34,7 @@ ClickAwayPopup {
 
     onVisibleChanged: {
         if (visible) {
+            selectedIndex = 0;
             Qt.callLater(function() {
                 powerCard.forceActiveFocus();
             });
@@ -54,6 +57,31 @@ ClickAwayPopup {
                     root.powerMenuModel.cancelConfirmation(root.actionOrigin);
                 } else {
                     root.powerMenuModel.close(root.actionOrigin);
+                }
+                event.accepted = true;
+            } else if (!root.ownsConfirmation && event.key === Qt.Key_Down) {
+                const count = root.powerMenuModel.sessionActions.length;
+                if (count > 0) {
+                    root.selectedIndex = Math.min(count - 1, root.selectedIndex + 1);
+                }
+                event.accepted = true;
+            } else if (!root.ownsConfirmation && event.key === Qt.Key_Up) {
+                const count = root.powerMenuModel.sessionActions.length;
+                if (count > 0) {
+                    root.selectedIndex = Math.max(0, root.selectedIndex - 1);
+                }
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+                if (root.ownsConfirmation) {
+                    if (!root.powerMenuModel.busy) {
+                        root.powerMenuModel.confirmAction(root.actionOrigin);
+                    }
+                } else {
+                    const count = root.powerMenuModel.sessionActions.length;
+                    if (root.selectedIndex >= 0 && root.selectedIndex < count) {
+                        const act = root.powerMenuModel.sessionActions[root.selectedIndex];
+                        root.powerMenuModel.requestAction(act, root.actionOrigin);
+                    }
                 }
                 event.accepted = true;
             }
@@ -98,10 +126,12 @@ ClickAwayPopup {
                     model: root.powerMenuModel.sessionActions
 
                     delegate: MenuRow {
+                        required property int index
                         required property var modelData
 
                         Layout.fillWidth: true
                         label: modelData.label
+                        selected: index === root.selectedIndex
                         navigates: modelData.confirm
                         // Unavailable actions remain selectable so the model can
                         // explain the reason without adding text to every row.

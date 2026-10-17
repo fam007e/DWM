@@ -67,14 +67,18 @@
 #define HEIGHT(X)               ((X)->h + 2 * (X)->bw)
 #define TAGMASK                 ((1u << LENGTH(tags)) - 1)
 #define NTAGS                   ((int)LENGTH(tags))
+#define NET_WM_STATE_MAX        64 /* atoms read from one _NET_WM_STATE property */
 
 /* enums */
 /* the four resize cursors must stay first: resizemouse() indexes them by corner */
 enum { CurResizeBR, CurResizeBL, CurResizeTR, CurResizeTL, CurNormal, CurMove, CurLast }; /* cursor */
 enum { SchemeNorm, SchemeSel }; /* color schemes */
 enum { NetSupported, NetWMName, NetWMState, NetWMCheck,
-       NetWMFullscreen, NetActiveWindow, NetWMWindowType,
-       NetWMWindowTypeDialog, NetWMWindowTypeDock, NetClientList, NetDesktopNames, NetDesktopViewport,
+       NetWMFullscreen, NetWMAbove, NetWMStaysOnTop, NetActiveWindow, NetWMWindowType,
+       NetWMWindowTypeDialog, NetWMWindowTypeDock, NetWMWindowTypeTooltip,
+       NetWMWindowTypeNotification, NetWMWindowTypeMenu, NetWMWindowTypePopupMenu,
+       NetWMWindowTypeDropdownMenu, NetWMWindowTypeCombo, NetWMWindowTypeDnd,
+       NetClientList, NetDesktopNames, NetDesktopViewport,
        NetNumberOfDesktops, NetCurrentDesktop, NetWMDesktop, NetDwmMonitorDesktops, NetDwmSelectedMonitor,
        NetWMStrut, NetWMStrutPartial, NetLast }; /* EWMH atoms */
 enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast }; /* default atoms */
@@ -94,6 +98,7 @@ typedef struct {
 
 typedef struct Monitor Monitor;
 typedef struct Client Client;
+typedef struct OverrideWindow OverrideWindow;
 struct Client {
 	char name[256];
 	float mina, maxa;
@@ -104,7 +109,12 @@ struct Client {
 	int bw, oldbw;
 	unsigned int tags;
 	int isfixed, isfloating, isurgent, neverfocus, oldstate, isfullscreen, isterminal, noswallow;
+	int alwaysontop;          /* from window-rules.toml: kept above tiled and floating clients */
+	int ewmhabove;            /* _NET_WM_STATE_ABOVE / _STAYS_ON_TOP set by the client */
 	int issteam;
+	int rulefullscreenapplied; /* a fullscreen rule was consumed for this client */
+	int ignoresizehints;       /* rule: ignore the client's ICCCM size hints */
+	int iswindowedfullscreen;  /* monitor-sized geometry without _NET_WM_STATE_FULLSCREEN */
 	int fakefullscreen;
 	pid_t pid;
 	Client *next;
@@ -112,6 +122,15 @@ struct Client {
 	Client *swallowing;
 	Monitor *mon;
 	Window win;
+};
+
+/* An override-redirect window (menu, tooltip, popup): never managed, only stacked */
+struct OverrideWindow {
+	Window win;
+	int raise;        /* popup-like window: keep above the bar and the tiled area */
+	int bar;          /* popup of the external bar: stays below fullscreen clients */
+	int alwaysontop;  /* a window rule asks for it to stay above fullscreen clients */
+	OverrideWindow *next;
 };
 
 typedef struct {
@@ -155,15 +174,23 @@ typedef struct {
 	const char *title;
 	unsigned int tags;
 	int isfloating;
+	int alwaysontop;
 	int isterminal;
 	int noswallow;
 	int monitor;
+	int fullscreen;       /* open in real fullscreen (client is told) */
+	int fakefullscreen;   /* open "windowed" fullscreen (client is not told) */
+	int ignoresizehints;
 } Rule;
+
+enum { RuleFullscreenNone, RuleFullscreenReal, RuleFullscreenWindowed };
 
 typedef void (*Func)(const Arg *);
 
 /* function declarations */
-static void applyrules(Client *c);
+static int applyrules(Client *c);
+static int applytitlerules(Client *c);
+static void applyfullscreenrule(Client *c, int mode);
 static int applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact);
 static void arrange(Monitor *m);
 static void arrangemon(Monitor *m);
@@ -178,6 +205,11 @@ static void checkotherwm(void);
 static void cleanup(void);
 static void cleanupmon(Monitor *mon);
 static void clientmessage(XEvent *e);
+static int atomlistcontains(const Atom *atoms, unsigned long nitems, Atom atom);
+static unsigned long getatomproplist(Client *c, Atom prop, Atom *atoms, unsigned long maxitems, int *truncated);
+static unsigned long getwinatomproplist(Window win, Atom prop, Atom *atoms, unsigned long maxitems, int *truncated);
+static void setatomprop(Client *c, Atom prop, Atom atom, int enabled);
+static void ewmh_set_fullscreen_state(Client *c, int fullscreen);
 static void configure(Client *c);
 static void configurenotify(XEvent *e);
 static void configurerequest(XEvent *e);
@@ -191,6 +223,7 @@ static void expand_var_to(const char *src, const TomlDoc *doc, char *dst, size_t
 static void expose(XEvent *e);
 static void focus(Client *c);
 static void focusin(XEvent *e);
+static int focusfullscreenforoverride(Window win);
 static void focusmon(const Arg *arg);
 static void focusstack(const Arg *arg);
 static void fullscreen(const Arg *arg);
@@ -217,6 +250,7 @@ static int isdescprocess(pid_t p, pid_t c);
 static int isuniquegeom(XineramaScreenInfo *unique, size_t n, XineramaScreenInfo *info);
 #endif
 static int isvisiblefullscreen(Client *c);
+static int istransientforbar(Window win);
 static void keypress(XEvent *e);
 static void killclient(const Arg *arg);
 static void load_hotkeys_toml(const char *user_path, const char *default_path);
@@ -227,6 +261,7 @@ static Func lookup_func(const char *name);
 static void manage(Window w, XWindowAttributes *wa);
 static void managealtbar(Window win, XWindowAttributes *wa);
 static void managetray(Window win, XWindowAttributes *wa);
+static void mapnotify(XEvent *e);
 static void mappingnotify(XEvent *e);
 static void maprequest(XEvent *e);
 static int monitorhasfullscreen(Monitor *m);
@@ -253,15 +288,23 @@ static void remaptags(void);
 static void resize(Client *c, int x, int y, int w, int h, int interact);
 static void resizeclient(Client *c, int x, int y, int w, int h);
 static void resizemouse(const Arg *arg);
+static void raisealwaysontopclients(Client *c);
+static void raisefullscreenclients(Client *c);
+static int resizetiledmouse(const Arg *arg);
 static void restack(Monitor *m);
+static void restackprioritywindows(void);
 static void run(void);
+static pid_t runautoscript(const char *script);
 static void runautostart(void);
+static void runautostop(void);
 static void scan(void);
 static void scanaltbars(void);
 static void scantray(void);
 static int sendevent(Client *c, Atom proto);
 static void sendmon(Client *c, Monitor *m);
 static void setcfact(const Arg *arg);
+static void shrinkfloating(Client *c);
+static void sigquit_handler(int sig);
 static void setclientdesktop(Client *c);
 static void setclientstate(Client *c, long state);
 static void setdesktopnames(void);
@@ -291,6 +334,9 @@ static void toggletag(const Arg *arg);
 static void toggleview(const Arg *arg);
 static void *toml_alloc(size_t sz);
 static const TomlDoc *toml_load(const char *what, const char *user_path, const char *default_path);
+static void trackoverridewindow(Window win);
+static void untrackoverridewindow(Window win);
+static void updateoverridewindow(Window win);
 static void unfocus(Client *c, int revert);
 static void unmanage(Client *c, int destroyed);
 static void unmanagealtbar(Window w);
@@ -323,6 +369,7 @@ static void zoom(const Arg *arg);
 
 /* variables */
 static const char autostartsh[] = "scripts/autostart.sh";
+static const char autostopsh[] = "scripts/autostop.sh";
 static const char broken[] = "broken";
 static const char dwmdir[] = "dwm";
 static const char localshare[] = ".local/share";
@@ -342,13 +389,18 @@ static void (*handler[LASTEvent]) (XEvent *) = {
 	[FocusIn] = focusin,
 	[KeyPress] = keypress,
 	[MappingNotify] = mappingnotify,
+	[MapNotify] = mapnotify,
 	[MapRequest] = maprequest,
 	[MotionNotify] = motionnotify,
 	[PropertyNotify] = propertynotify,
 	[UnmapNotify] = unmapnotify
 };
-static Atom wmatom[WMLast], netatom[NetLast];
-static int running = 1;
+static Atom kdewindowtypeoverride, wmatom[WMLast], netatom[NetLast];
+static volatile sig_atomic_t running = 1;
+static OverrideWindow *overridewindows;
+static Window *clientlistcache;
+static unsigned long clientlistcachelen;
+static int clientlistcachevalid;
 static Cur *cursor[CurLast];
 static Clr **scheme;
 static Display *dpy;
@@ -426,7 +478,7 @@ struct Pertag {
 struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };
 
 /* function implementations */
-void
+int
 applyrules(Client *c)
 {
 	const char *class, *instance;
@@ -434,9 +486,11 @@ applyrules(Client *c)
 	const Rule *r;
 	Monitor *m;
 	XClassHint ch = { NULL, NULL };
+	int fullscreen = RuleFullscreenNone;
 
 	/* rule matching */
 	c->isfloating = 0;
+	c->alwaysontop = 0;
 	c->tags = 0;
 	XGetClassHint(dpy, c->win, &ch);
 	class    = ch.res_class ? ch.res_class : broken;
@@ -451,9 +505,15 @@ applyrules(Client *c)
 		&& (!r->class || strstr(class, r->class))
 		&& (!r->instance || strstr(instance, r->instance)))
 		{
+			fullscreen = r->fakefullscreen ? RuleFullscreenWindowed
+				: (r->fullscreen ? RuleFullscreenReal : RuleFullscreenNone);
+			c->ignoresizehints = r->ignoresizehints;
 			c->isterminal = r->isterminal;
 			c->noswallow  = r->noswallow;
 			c->isfloating = r->isfloating;
+			c->alwaysontop = r->alwaysontop;
+			if (c->alwaysontop)
+				c->isfloating = 1;
 			c->tags |= r->tags;
 			for (m = mons; m && m->num != r->monitor; m = m->next);
 			if (m)
@@ -476,6 +536,81 @@ applyrules(Client *c)
 		c->tags &= montags;
 	else
 		c->tags = montags & -montags;
+	return fullscreen;
+}
+
+/* Re-evaluate the rules after a title change (browsers and games often set
+ * the title late). Only rules that name a title are applied again; returns
+ * non-zero if the client's state changed and the layout must be redone. */
+int
+applytitlerules(Client *c)
+{
+	const char *class, *instance;
+	unsigned int i;
+	const Rule *r;
+	int changed = 0, titlefullscreen = RuleFullscreenNone, ignoresizehints = 0;
+	XClassHint ch = { NULL, NULL };
+
+	XGetClassHint(dpy, c->win, &ch);
+	class    = ch.res_class ? ch.res_class : broken;
+	instance = ch.res_name  ? ch.res_name  : broken;
+
+	for (i = 0; i < (unsigned int)rt_nrules; i++) {
+		r = &rt_rules[i];
+		if ((!r->title || strstr(c->name, r->title))
+		&& (!r->class || strstr(class, r->class))
+		&& (!r->instance || strstr(instance, r->instance))) {
+			ignoresizehints = r->ignoresizehints;
+			/* a later class-only rule overrides an earlier title rule, as in applyrules() */
+			titlefullscreen = !r->title ? RuleFullscreenNone
+				: (r->fakefullscreen ? RuleFullscreenWindowed
+				: (r->fullscreen ? RuleFullscreenReal : RuleFullscreenNone));
+			if (!r->title)
+				continue;
+			c->isterminal = r->isterminal;
+			c->noswallow = r->noswallow;
+			if (r->isfloating && !c->isfloating) {
+				c->isfloating = 1;
+				changed = 1;
+			}
+			if (r->alwaysontop && !c->alwaysontop) {
+				c->alwaysontop = 1;
+				c->isfloating = 1;
+				changed = 1;
+			}
+		}
+	}
+	if (ch.res_class)
+		XFree(ch.res_class);
+	if (ch.res_name)
+		XFree(ch.res_name);
+
+	if (c->ignoresizehints != ignoresizehints) {
+		c->ignoresizehints = ignoresizehints;
+		updatesizehints(c);
+		changed = 1;
+	}
+	/* the opening preference is consumed once, even across later title changes */
+	if (titlefullscreen && !c->rulefullscreenapplied) {
+		applyfullscreenrule(c, titlefullscreen);
+		changed = 1;
+	}
+	return changed;
+}
+
+/* Both modes share geometry and stacking; only the real mode informs the client */
+void
+applyfullscreenrule(Client *c, int mode)
+{
+	c->rulefullscreenapplied = 1;
+	c->iswindowedfullscreen = mode == RuleFullscreenWindowed;
+	/* also resynchronise the property after swallowing or an inherited fake mode */
+	ewmh_set_fullscreen_state(c, !c->iswindowedfullscreen);
+	if (c->fakefullscreen == 1)
+		c->fakefullscreen = 2;
+	setfullscreen(c, 1);
+	arrange(c->mon);
+	updatefullscreenmonitors();
 }
 
 int
@@ -510,7 +645,8 @@ applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact)
 		*h = bh;
 	if (*w < bh)
 		*w = bh;
-	if (resizehints || c->isfloating || !c->mon->lt[c->mon->sellt]->arrange) {
+	if (!c->ignoresizehints
+	&& (resizehints || c->isfloating || !c->mon->lt[c->mon->sellt]->arrange)) {
 		/* see last two sentences in ICCCM 4.1.2.3 */
 		baseismin = c->basew == c->minw && c->baseh == c->minh;
 		if (!baseismin) { /* temporarily remove base dimensions */
@@ -654,6 +790,7 @@ void
 cleanup(void)
 {
 	Monitor *m;
+	OverrideWindow *ow;
 	Layout foo = { NULL };
 	size_t i;
 
@@ -665,6 +802,11 @@ cleanup(void)
 	XUngrabKey(dpy, AnyKey, AnyModifier, root);
 	while (mons)
 		cleanupmon(mons);
+	while (overridewindows) {
+		ow = overridewindows;
+		overridewindows = overridewindows->next;
+		free(ow);
+	}
 	for (i = 0; i < CurLast; i++)
 		drw_cur_free(drw, cursor[i]);
 	for (i = 0; i < 2; i++)
@@ -680,6 +822,7 @@ cleanup(void)
 	if (sigpipe[0] >= 0) {
 		close(sigpipe[0]);
 		close(sigpipe[1]);
+		sigpipe[0] = sigpipe[1] = -1; /* signal handlers still run during runautostop() */
 	}
 }
 
@@ -695,6 +838,7 @@ cleanupmon(Monitor *mon)
 		m->next = mon->next;
 	}
 	/* Quickshell manages its own windows; nothing to destroy here */
+	free(mon->pertag);
 	free(mon);
 }
 
@@ -704,17 +848,56 @@ clientmessage(XEvent *e)
 	XClientMessageEvent *cme = &e->xclient;
 	Client *c = wintoclient(cme->window);
 	Monitor *m;
+	Atom state;
 	unsigned long desktop;
+	int i, enabled, updateabove = 0;
 
+	/* pagers and taskbars switch desktops with a message to the root window */
+	if (cme->message_type == netatom[NetCurrentDesktop]) {
+		if (cme->data.l[0] >= 0 && cme->data.l[0] < NTAGS) {
+			Arg arg = { .ui = 1u << cme->data.l[0] };
+			view(&arg);
+		}
+		return;
+	}
 	if (!c)
 		return;
 	if (cme->message_type == netatom[NetWMState]) {
 		if ((Atom)cme->data.l[1] == netatom[NetWMFullscreen]
 		|| (Atom)cme->data.l[2] == netatom[NetWMFullscreen]) {
-			if (c->fakefullscreen == 2 && c->isfullscreen)
-				c->fakefullscreen = 3;
-			setfullscreen(c, (cme->data.l[0] == 1 /* _NET_WM_STATE_ADD    */
-				|| (cme->data.l[0] == 2 /* _NET_WM_STATE_TOGGLE */ && !c->isfullscreen)));
+			if (c->iswindowedfullscreen) {
+				/* a windowed-fullscreen rule stays windowed: never advertise the state */
+				ewmh_set_fullscreen_state(c, 0);
+			} else {
+				if (c->fakefullscreen == 2 && c->isfullscreen)
+					c->fakefullscreen = 3;
+				setfullscreen(c, (cme->data.l[0] == 1 /* _NET_WM_STATE_ADD    */
+					|| (cme->data.l[0] == 2 /* _NET_WM_STATE_TOGGLE */ && !c->isfullscreen)));
+			}
+		}
+		for (i = 1; i <= 2; i++) {
+			Atom states[NET_WM_STATE_MAX];
+			unsigned long nstates;
+
+			state = (Atom)cme->data.l[i];
+			if (state != netatom[NetWMAbove] && state != netatom[NetWMStaysOnTop])
+				continue;
+			if (cme->data.l[0] < 0 || cme->data.l[0] > 2)
+				continue;
+			nstates = getatomproplist(c, netatom[NetWMState], states, LENGTH(states), NULL);
+			enabled = cme->data.l[0] == 1 /* _NET_WM_STATE_ADD */
+				|| (cme->data.l[0] == 2 /* _NET_WM_STATE_TOGGLE */
+					&& !atomlistcontains(states, nstates, state));
+			setatomprop(c, netatom[NetWMState], state, enabled);
+			updateabove = 1;
+		}
+		if (updateabove) {
+			Atom states[NET_WM_STATE_MAX];
+			unsigned long nstates = getatomproplist(c, netatom[NetWMState], states, LENGTH(states), NULL);
+
+			c->ewmhabove = atomlistcontains(states, nstates, netatom[NetWMAbove])
+				|| atomlistcontains(states, nstates, netatom[NetWMStaysOnTop]);
+			restack(c->mon);
 		}
 	} else if (cme->message_type == netatom[NetActiveWindow]) {
 		if (c != selmon->sel && !c->isurgent)
@@ -779,7 +962,9 @@ configurenotify(XEvent *e)
 		sw = ev->width;
 		sh = ev->height;
 		if (updategeom() || dirty) {
+			selectedmonitorcachevalid = 0; /* monitor indices may have changed */
 			scanaltbars();
+			updateclientlist();
 			for (m = mons; m; m = m->next) {
 				for (c = m->clients; c; c = c->next)
 					if (c->isfullscreen && c->fakefullscreen != 1)
@@ -789,6 +974,7 @@ configurenotify(XEvent *e)
 			}
 			arrange(NULL);
 			focus(NULL);
+			updatecurrentdesktop();
 		}
 	} else if (!wintoclient(ev->window)) {
 		XWindowAttributes wa;
@@ -822,6 +1008,12 @@ configurerequest(XEvent *e)
 	XWindowChanges wc;
 
 	if ((c = wintoclient(ev->window))) {
+		if (c->iswindowedfullscreen) {
+			/* a windowed game may ask for its old size back: refuse, re-send the geometry */
+			configure(c);
+			XSync(dpy, False);
+			return;
+		}
 		if (ev->value_mask & CWBorderWidth)
 			c->bw = ev->border_width;
 		else if (c->isfloating || !selmon->lt[selmon->sellt]->arrange) {
@@ -911,6 +1103,7 @@ destroynotify(XEvent *e)
 	Monitor *m;
 	XDestroyWindowEvent *ev = &e->xdestroywindow;
 
+	untrackoverridewindow(ev->window);
 	if ((c = wintoclient(ev->window)))
 		unmanage(c, 1);
 	else if ((c = swallowingclient(ev->window)))
@@ -1049,7 +1242,15 @@ void
 focusin(XEvent *e)
 {
 	XFocusChangeEvent *ev = &e->xfocus;
+	OverrideWindow *ow;
 
+	/* a menu or popup that took the focus keeps it, as before they were tracked;
+	 * only a bar popup over a fullscreen client hands the focus back to it */
+	for (ow = overridewindows; ow && ow->win != ev->window; ow = ow->next);
+	if (ow) {
+		focusfullscreenforoverride(ev->window);
+		return;
+	}
 	if (selmon->sel && ev->window != selmon->sel->win)
 		setfocus(selmon->sel);
 }
@@ -1116,6 +1317,89 @@ Atom
 getatomprop(Client *c, Atom prop)
 {
 	return c ? getwinatomprop(c->win, prop) : None;
+}
+
+int
+atomlistcontains(const Atom *atoms, unsigned long nitems, Atom atom)
+{
+	unsigned long i;
+
+	for (i = 0; i < nitems; i++)
+		if (atoms[i] == atom)
+			return 1;
+	return 0;
+}
+
+/* Read an ATOM[] property (e.g. _NET_WM_STATE). Returns the number of atoms
+ * stored in atoms[]; *truncated is set if the property held more than maxitems. */
+unsigned long
+getwinatomproplist(Window win, Atom prop, Atom *atoms, unsigned long maxitems, int *truncated)
+{
+	int format;
+	unsigned long extra, nitems = 0;
+	unsigned char *data = NULL;
+	Atom actual;
+
+	if (truncated)
+		*truncated = 0;
+	if (XGetWindowProperty(dpy, win, prop, 0L, (long)maxitems, False, XA_ATOM,
+		&actual, &format, &nitems, &extra, &data) != Success)
+		return 0;
+	if (actual != XA_ATOM || format != 32) {
+		if (data)
+			XFree(data);
+		return 0;
+	}
+	if (nitems > maxitems)
+		nitems = maxitems;
+	if (nitems)
+		memcpy(atoms, data, nitems * sizeof(*atoms));
+	if (truncated)
+		*truncated = extra != 0;
+	if (data)
+		XFree(data);
+	return nitems;
+}
+
+unsigned long
+getatomproplist(Client *c, Atom prop, Atom *atoms, unsigned long maxitems, int *truncated)
+{
+	return getwinatomproplist(c->win, prop, atoms, maxitems, truncated);
+}
+
+/* Add or remove one atom in an ATOM[] property without touching the others */
+void
+setatomprop(Client *c, Atom prop, Atom atom, int enabled)
+{
+	Atom atoms[NET_WM_STATE_MAX];
+	unsigned long i, nitems, out;
+	int truncated;
+
+	nitems = getatomproplist(c, prop, atoms, LENGTH(atoms), &truncated);
+	if (truncated)
+		return; /* never rewrite a list we could not read completely */
+	if (enabled) {
+		if (atomlistcontains(atoms, nitems, atom) || nitems == LENGTH(atoms))
+			return;
+		atoms[nitems++] = atom;
+	} else {
+		for (i = 0, out = 0; i < nitems; i++)
+			if (atoms[i] != atom)
+				atoms[out++] = atoms[i];
+		if (out == nitems)
+			return;
+		nitems = out;
+	}
+	XChangeProperty(dpy, c->win, prop, XA_ATOM, 32, PropModeReplace,
+		(unsigned char *)atoms, (int)nitems);
+}
+
+/* A windowed-fullscreen client has fullscreen geometry but must not be told so */
+void
+ewmh_set_fullscreen_state(Client *c, int fullscreen)
+{
+	setatomprop(c, netatom[NetWMState], netatom[NetWMFullscreen],
+		fullscreen && !c->iswindowedfullscreen);
 }
 
 pid_t
@@ -1313,6 +1597,7 @@ manage(Window w, XWindowAttributes *wa)
 	Client *c, *t = NULL, *term = NULL;
 	Window trans = None;
 	XWindowChanges wc;
+	int rulefullscreen = RuleFullscreenNone;
 
 	c = ecalloc(1, sizeof(Client));
 	c->win = w;
@@ -1329,9 +1614,10 @@ manage(Window w, XWindowAttributes *wa)
 	if (XGetTransientForHint(dpy, w, &trans) && (t = wintoclient(trans))) {
 		c->mon = t->mon;
 		c->tags = t->tags;
+		c->rulefullscreenapplied = 1; /* transients follow their parent, not the rules */
 	} else {
 		c->mon = selmon;
-		applyrules(c);
+		rulefullscreen = applyrules(c);
 		term = termforwin(c);
 	}
 
@@ -1355,12 +1641,14 @@ manage(Window w, XWindowAttributes *wa)
 		XRaiseWindow(dpy, c->win);
 	attachbottom(c);
 	attachstack(c);
-	XChangeProperty(dpy, root, netatom[NetClientList], XA_WINDOW, 32, PropModeAppend,
-		(unsigned char *) &(c->win), 1);
+	updateclientlist();
 	XMoveResizeWindow(dpy, c->win, c->x + 2 * sw, c->y, c->w, c->h); /* some windows require this */
 	setclientstate(c, NormalState);
 	setclientdesktop(c);
 	if (term && swallow(term, c)) {
+		/* the new window now lives in the terminal's client */
+		if (rulefullscreen)
+			applyfullscreenrule(term, rulefullscreen);
 		focus(NULL);
 		return;
 	}
@@ -1369,6 +1657,8 @@ manage(Window w, XWindowAttributes *wa)
 	c->mon->sel = c;
 	arrange(c->mon);
 	XMapWindow(dpy, c->win);
+	if (rulefullscreen)
+		applyfullscreenrule(c, rulefullscreen);
 	focus(NULL);
 }
 
@@ -1481,6 +1771,14 @@ scanaltbars(void)
 		return;
 	}
 
+	/* A bar that is gone must not keep its reserved strip: clear every
+	 * monitor, the bars that still exist are found again below. */
+	for (m = mons; m; m = m->next) {
+		m->barwin = 0;
+		m->bh = 0;
+		updatebarpos(m);
+	}
+
 	for (i = 0; i < num; i++) {
 		if (!XGetWindowAttributes(dpy, wins[i], &wa)
 		|| wa.override_redirect || wa.map_state != IsViewable
@@ -1502,6 +1800,12 @@ scanaltbars(void)
 			updateclientlist();
 		}
 	}
+	/* monitors that lost their bar get their space back */
+	for (j = 0, m = mons; m && j < nmons; m = m->next, j++)
+		if (knownbars[j] && !m->barwin) {
+			arrange(m);
+			updateclientlist();
+		}
 	free(knownbars);
 	XFree(wins);
 }
@@ -1521,8 +1825,7 @@ managetray(Window win, XWindowAttributes *wa)
 	XSelectInput(dpy, win, EnterWindowMask|FocusChangeMask|PropertyChangeMask|StructureNotifyMask);
 	XMoveResizeWindow(dpy, win, wa->x, wa->y, wa->width, wa->height);
 	XMapWindow(dpy, win);
-	XChangeProperty(dpy, root, netatom[NetClientList], XA_WINDOW, 32, PropModeAppend,
-			(unsigned char *) &win, 1);
+	updateclientlist();
 }
 
 void
@@ -1892,8 +2195,18 @@ propertynotify(XEvent *e)
 	Client *c;
 	Window trans;
 	XPropertyEvent *ev = &e->xproperty;
+	OverrideWindow *ow;
 	int wasfloating;
 
+	for (ow = overridewindows; ow && ow->win != ev->window; ow = ow->next);
+	if (ow && (ev->atom == netatom[NetWMState]
+		|| ev->atom == netatom[NetWMWindowType]
+		|| ev->atom == XA_WM_CLASS || ev->atom == XA_WM_NAME
+		|| ev->atom == netatom[NetWMName]
+		|| ev->atom == XA_WM_TRANSIENT_FOR)) {
+		updateoverridewindow(ev->window);
+		restackprioritywindows();
+	}
 	if (ev->state == PropertyDelete)
 		return; /* ignore */
 
@@ -1929,9 +2242,13 @@ propertynotify(XEvent *e)
 		updatewmhints(c);
 		break;
 	}
-	if (ev->atom == XA_WM_NAME || ev->atom == netatom[NetWMName])
+	if (ev->atom == XA_WM_NAME || ev->atom == netatom[NetWMName]) {
 		updatetitle(c);
-	else if (ev->atom == netatom[NetWMWindowType]) {
+		if (applytitlerules(c)) {
+			arrange(c->mon);
+			restackprioritywindows();
+		}
+	} else if (ev->atom == netatom[NetWMWindowType]) {
 		wasfloating = c->isfloating;
 		updatewindowtype(c);
 		if (c->isfloating != wasfloating)
@@ -2018,6 +2335,10 @@ resizemouse(const Arg *arg)
 		return;
 	if (c->isfullscreen && c->fakefullscreen != 1) /* no support resizing fullscreen windows by mouse */
 		return;
+	/* a tiled client in the tile layout: drag its split instead of floating it */
+	if (!c->isfloating && selmon->lt[selmon->sellt]->arrange == tile
+	&& resizetiledmouse(arg))
+		return;
 	restack(selmon);
 	nx = ocx = c->x;
 	ny = ocy = c->y;
@@ -2072,6 +2393,89 @@ resizemouse(const Arg *arg)
 	}
 }
 
+/* Resize a tiled client by changing the tile layout's split factors (mfact for
+ * the master/stack split, cfact for the height inside a column). Returns 0
+ * when the grabbed edge has nothing to adjust, so resizemouse() can fall back
+ * to its floating resize. */
+int
+resizetiledmouse(const Arg *arg)
+{
+	int group_clients, index, n, i, opx, opy, px, py, horizcorner, vertcorner;
+	int horizontal_split;
+	float initial_cfact, group_facts;
+	unsigned int dui;
+	Window dummy;
+	Client *c, *it;
+	XEvent ev;
+	Time lasttime = 0;
+
+	(void)arg;
+	if (!(c = selmon->sel))
+		return 0;
+
+	for (n = 0, index = -1, it = nexttiled(selmon->clients); it; it = nexttiled(it->next), n++)
+		if (it == c)
+			index = n;
+	if (index < 0)
+		return 0;
+	if (!XQueryPointer(dpy, c->win, &dummy, &dummy, &opx, &opy, &px, &py, &dui))
+		return 0;
+
+	horizcorner = px < c->w / 2;
+	vertcorner = py < c->h / 2;
+	horizontal_split = n > selmon->nmaster && selmon->nmaster > 0
+		&& ((index < selmon->nmaster && !horizcorner)
+			|| (index >= selmon->nmaster && horizcorner));
+	initial_cfact = c->cfact;
+	group_facts = 0.0f;
+	group_clients = 0;
+	for (i = 0, it = nexttiled(selmon->clients); it; it = nexttiled(it->next), i++)
+		if ((index < selmon->nmaster && i < selmon->nmaster)
+		|| (index >= selmon->nmaster && i >= selmon->nmaster)) {
+			group_facts += it->cfact;
+			group_clients++;
+		}
+	if (!horizontal_split && group_clients < 2)
+		return 0;
+
+	if (XGrabPointer(dpy, root, False, MOUSEMASK, GrabModeAsync, GrabModeAsync,
+		None, cursor[horizcorner | (vertcorner << 1)]->cursor, CurrentTime) != GrabSuccess)
+		return 0;
+	do {
+		XMaskEvent(dpy, MOUSEMASK|ExposureMask|SubstructureRedirectMask, &ev);
+		switch (ev.type) {
+		case ConfigureRequest:
+		case Expose:
+		case MapRequest:
+			handler[ev.type](&ev);
+			break;
+		case MotionNotify:
+			if ((ev.xmotion.time - lasttime) <= (1000 / refresh_rate))
+				continue;
+			lasttime = ev.xmotion.time;
+			if (horizontal_split) {
+				float f = (float)(ev.xmotion.x - selmon->wx) / (float)selmon->ww;
+				if (f >= 0.05f && f <= 0.95f)
+					selmon->mfact = selmon->pertag->mfacts[selmon->pertag->curtag] = f;
+			}
+			if (group_facts > 0.0f) {
+				float delta = ((float)(ev.xmotion.y - opy) / (float)selmon->wh) * group_facts;
+				float f = initial_cfact + (vertcorner ? -delta : delta);
+				if (f < 0.25f)
+					f = 0.25f;
+				else if (f > 4.0f)
+					f = 4.0f;
+				c->cfact = f;
+			}
+			arrange(selmon);
+			break;
+		}
+	} while (ev.type != ButtonRelease);
+	XUngrabPointer(dpy, CurrentTime);
+	while (XCheckMaskEvent(dpy, EnterWindowMask, &ev));
+	return 1;
+}
+
 void
 restack(Monitor *m)
 {
@@ -2080,15 +2484,24 @@ restack(Monitor *m)
 	XWindowChanges wc;
 	unsigned int mask;
 
-	if (!m->sel)
+	if (!m->sel) {
+		restackprioritywindows();
 		return;
+	}
 	if (m->sel->isfloating || !m->lt[m->sellt]->arrange)
 		XRaiseWindow(dpy, m->sel->win);
 	if (m->lt[m->sellt]->arrange) {
-		/* stack the tiled clients just below the bar, in focus order; without
-		 * a bar window start from the bottom of the stack instead */
+		/* stack the clients just below the bar, in focus order; without a bar
+		 * window start from the bottom of the stack instead. Visible floating
+		 * clients go first so they stay above the tiled ones. */
 		wc.stack_mode = Below;
 		wc.sibling = m->barwin;
+		for (c = m->stack; c; c = c->snext)
+			if (c->isfloating && !isvisiblefullscreen(c) && ISVISIBLE(c)) {
+				mask = wc.sibling ? CWSibling|CWStackMode : CWStackMode;
+				XConfigureWindow(dpy, c->win, mask, &wc);
+				wc.sibling = c->win;
+			}
 		for (c = m->stack; c; c = c->snext)
 			if (!c->isfloating && ISVISIBLE(c)) {
 				mask = wc.sibling ? CWSibling|CWStackMode : CWStackMode;
@@ -2096,6 +2509,7 @@ restack(Monitor *m)
 				wc.sibling = c->win;
 			}
 	}
+	restackprioritywindows();
 	XSync(dpy, False);
 	while (XCheckMaskEvent(dpy, EnterWindowMask, &ev));
 }
@@ -2161,10 +2575,19 @@ run(void)
 		}
 
 		int need_reload = 0;
-		if (sigpipe[0] >= 0 && FD_ISSET(sigpipe[0], &rfds)) { /* SIGUSR1 */
-			while (read(sigpipe[0], drain, sizeof drain) > 0);
-			need_reload = 1;
+		if (sigpipe[0] >= 0 && FD_ISSET(sigpipe[0], &rfds)) {
+			ssize_t nr, k;
+
+			while ((nr = read(sigpipe[0], drain, sizeof drain)) > 0)
+				for (k = 0; k < nr; k++) {
+					if (drain[k] == 'r') /* SIGUSR1 */
+						need_reload = 1;
+					else if (drain[k] == 'q') /* SIGTERM and friends */
+						running = 0;
+				}
 		}
+		if (!running)
+			break;
 		if (inotify_fd >= 0 && FD_ISSET(inotify_fd, &rfds)) {
 			if (inotify_dispatch())
 				need_reload = 1;
@@ -2188,32 +2611,91 @@ getdatadir(char *buf, size_t size)
 	return 0;
 }
 
-void
-runautostart(void)
+pid_t
+runautoscript(const char *script)
 {
 	char cand[3][PATH_MAX];
 	const char *home = getenv("HOME");
 	char datadir[PATH_MAX];
+	pid_t pid;
 	int i, n = 0;
 
 	/* candidate scripts, in order of precedence */
 	if (getdatadir(datadir, sizeof datadir))
-		snprintf(cand[n++], PATH_MAX, "%s/%s", datadir, autostartsh);
+		snprintf(cand[n++], PATH_MAX, "%s/%s", datadir, script);
 	if (home)
-		snprintf(cand[n++], PATH_MAX, "%s/.%s/%s", home, dwmdir, autostartsh);
-	snprintf(cand[n++], PATH_MAX, "%s/%s", DWM_PATH, autostartsh);
+		snprintf(cand[n++], PATH_MAX, "%s/.%s/%s", home, dwmdir, script);
+	snprintf(cand[n++], PATH_MAX, "%s/%s", DWM_PATH, script);
 
 	for (i = 0; i < n; i++) {
 		if (access(cand[i], X_OK) != 0)
 			continue;
-		/* the parent returns immediately: dwm is not blocked by autostart */
-		if (fork() == 0) {
+		if ((pid = fork()) == 0) {
+			sigset_t mask;
+
 			setsid();
+			/* runautostop() blocks SIGCHLD while it waits: do not leak that mask */
+			sigemptyset(&mask);
+			sigprocmask(SIG_SETMASK, &mask, NULL);
 			execl(cand[i], cand[i], (char *)NULL);
 			_exit(127);
 		}
-		return;
+		if (pid < 0) {
+			perror("dwm: cannot launch session script");
+			return 0;
+		}
+		return pid; /* the caller decides whether to wait for it */
 	}
+	return 0;
+}
+
+void
+runautostart(void)
+{
+	/* returns immediately: dwm is not blocked by autostart */
+	runautoscript(autostartsh);
+}
+
+/* Run scripts/autostop.sh (if there is one) after the X connection is closed
+ * and wait up to 5 s for it, so that helpers started by autostart.sh can be
+ * stopped cleanly. */
+void
+runautostop(void)
+{
+	const int timeout_ms = 5000, interval_ms = 50;
+	struct timespec ts = { 0, interval_ms * 1000000L };
+	int elapsed_ms = 0, status, restore_mask = 0;
+	sigset_t mask, oldmask;
+	pid_t pid, result;
+
+	/* sigchld() reaps every child; block it so waitpid() can see this one */
+	sigemptyset(&mask);
+	sigaddset(&mask, SIGCHLD);
+	if (sigprocmask(SIG_BLOCK, &mask, &oldmask) == 0)
+		restore_mask = 1;
+
+	if ((pid = runautoscript(autostopsh)) > 0) {
+		while (elapsed_ms < timeout_ms) {
+			result = waitpid(pid, &status, WNOHANG);
+			if (result == pid) {
+				if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+					fprintf(stderr, "dwm: autostop failed with status %d\n",
+						WIFEXITED(status) ? WEXITSTATUS(status) : -1);
+				break;
+			}
+			if (result < 0 && errno != EINTR)
+				break; /* ECHILD: already reaped */
+			nanosleep(&ts, NULL);
+			elapsed_ms += interval_ms;
+		}
+		if (elapsed_ms >= timeout_ms) {
+			fprintf(stderr, "dwm: autostop timed out after %d ms\n", timeout_ms);
+			if (kill(-pid, SIGTERM) < 0 && errno == ESRCH)
+				kill(pid, SIGTERM);
+		}
+	}
+	if (restore_mask)
+		sigprocmask(SIG_SETMASK, &oldmask, NULL);
 }
 
 void
@@ -2225,8 +2707,14 @@ scan(void)
 
 	if (XQueryTree(dpy, root, &d1, &d2, &wins, &num)) {
 		for (i = 0; i < num; i++) {
-			if (!XGetWindowAttributes(dpy, wins[i], &wa)
-			|| wa.override_redirect || XGetTransientForHint(dpy, wins[i], &d1))
+			if (!XGetWindowAttributes(dpy, wins[i], &wa))
+				continue;
+			if (wa.override_redirect) {
+				if (wa.map_state == IsViewable)
+					trackoverridewindow(wins[i]);
+				continue;
+			}
+			if (XGetTransientForHint(dpy, wins[i], &d1))
 				continue;
 			if (isaltbar(wins[i]))
 				managealtbar(wins[i], &wa);
@@ -2377,7 +2865,11 @@ void
 setfullscreen(Client *c, int fullscreen)
 {
 	XEvent ev;
-	int savestate = 0, restorestate = 0;
+	int actualfullscreenchanged, savestate = 0, restorestate = 0;
+	int wasactualfullscreen = c->isfullscreen && c->fakefullscreen != 1;
+
+	if (c->iswindowedfullscreen && !fullscreen)
+		c->fakefullscreen = 0; /* leave windowed mode without entering legacy fake mode */
 
 	if ((c->fakefullscreen == 0 && fullscreen && !c->isfullscreen) // normal fullscreen
 			|| (c->fakefullscreen == 2 && fullscreen)) // fake fullscreen --> actual fullscreen
@@ -2398,12 +2890,14 @@ setfullscreen(Client *c, int fullscreen)
 	} else if (c->fakefullscreen == 3) // client exiting actual fullscreen
 		c->fakefullscreen = 1;
 
-	if (fullscreen != c->isfullscreen) { // only send property change if necessary
-		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
-			PropModeReplace, (unsigned char*)(fullscreen ? &netatom[NetWMFullscreen] : 0), fullscreen ? 1 : 0);
-	}
+	if (fullscreen != c->isfullscreen || c->iswindowedfullscreen) // only send property change if necessary
+		ewmh_set_fullscreen_state(c, fullscreen); /* keeps the other _NET_WM_STATE atoms */
 
 	c->isfullscreen = fullscreen;
+	if (!fullscreen)
+		c->iswindowedfullscreen = 0;
+	actualfullscreenchanged = wasactualfullscreen
+		!= (c->isfullscreen && c->fakefullscreen != 1);
 
 	/* Some clients, e.g. firefox, will send a client message informing the window manager
 	 * that it is going into fullscreen after receiving the above signal. This has the side
@@ -2438,6 +2932,11 @@ setfullscreen(Client *c, int fullscreen)
 	 */
 	if (!c->isfullscreen)
 		while (XCheckMaskEvent(dpy, EnterWindowMask, &ev));
+	if (actualfullscreenchanged) {
+		/* Quickshell hides its bar from this property; it was only refreshed on tag changes */
+		updatefullscreenmonitors();
+		restackprioritywindows();
+	}
 }
 
 /* Toggle a distraction-free view: monocle layout with the bar hidden. The
@@ -2464,6 +2963,9 @@ fullscreen(const Arg *arg)
 void
 setlayout(const Arg *arg)
 {
+	Client *c;
+	int wasarranged = selmon->lt[selmon->sellt]->arrange != NULL;
+
 	if (!arg || !arg->v || arg->v != selmon->lt[selmon->sellt]) {
 		selmon->pertag->sellts[selmon->pertag->curtag] ^= 1;
 		selmon->sellt = selmon->pertag->sellts[selmon->pertag->curtag];
@@ -2471,6 +2973,13 @@ setlayout(const Arg *arg)
 	if (arg && arg->v)
 		selmon->pertag->ltidxs[selmon->pertag->curtag][selmon->sellt] = (Layout *)arg->v;
 	selmon->lt[selmon->sellt] = selmon->pertag->ltidxs[selmon->pertag->curtag][selmon->sellt];
+
+	/* tiled -> floating layout: shrink the tiled clients so the change is visible */
+	if (wasarranged && !selmon->lt[selmon->sellt]->arrange)
+		for (c = selmon->clients; c; c = c->next)
+			if (ISVISIBLE(c) && !c->isfloating && !c->isfixed
+			&& (!c->isfullscreen || c->fakefullscreen == 1))
+				shrinkfloating(c);
 	arrange(selmon);
 }
 
@@ -2519,10 +3028,29 @@ static void
 sigusr1_handler(int sig)
 {
 	int saved_errno = errno;
+	ssize_t r = 0;
 
 	(void)sig;
 	if (sigpipe[1] >= 0)
-		(void)write(sigpipe[1], "r", 1); /* wakes up select() in run() */
+		r = write(sigpipe[1], "r", 1); /* wakes up select() in run() */
+	(void)r;
+	errno = saved_errno;
+}
+
+/* SIGTERM, SIGHUP, SIGINT, SIGUSR2: leave run() so that cleanup() and
+ * autostop.sh run. The byte in the pipe wakes select() even if the signal
+ * arrives just before it. */
+static void
+sigquit_handler(int sig)
+{
+	int saved_errno = errno;
+	ssize_t r = 0;
+
+	(void)sig;
+	running = 0;
+	if (sigpipe[1] >= 0)
+		r = write(sigpipe[1], "q", 1);
+	(void)r;
 	errno = saved_errno;
 }
 
@@ -2992,6 +3520,10 @@ load_rules_toml(const char *user_path, const char *default_path)
 	for (i = 0; i < n; i++) {
 		const TomlValue *vtag  = toml_table_get(doc, "rules", i, "tags");
 		const TomlValue *vfl   = toml_table_get(doc, "rules", i, "isfloating");
+		const TomlValue *vaot  = toml_table_get(doc, "rules", i, "alwaysontop");
+		const TomlValue *vfull = toml_table_get(doc, "rules", i, "fullscreen");
+		const TomlValue *vfake = toml_table_get(doc, "rules", i, "fakefullscreen");
+		const TomlValue *vigsh = toml_table_get(doc, "rules", i, "ignoresizehints");
 		const TomlValue *vterm = toml_table_get(doc, "rules", i, "isterminal");
 		const TomlValue *vno   = toml_table_get(doc, "rules", i, "noswallow");
 		const TomlValue *vmon  = toml_table_get(doc, "rules", i, "monitor");
@@ -3016,6 +3548,10 @@ load_rules_toml(const char *user_path, const char *default_path)
 		r->tags       = (vtag && vtag->type == TOML_INT && vtag->i >= 1 && vtag->i <= NTAGS)
 						? 1u << (vtag->i - 1) : 0;
 		r->isfloating = (vfl   && vfl->type   == TOML_INT) ? (int)vfl->i   : 0;
+		r->alwaysontop = (vaot && vaot->type  == TOML_INT) ? (int)vaot->i  : 0;
+		r->fullscreen = (vfull && vfull->type == TOML_INT && vfull->i != 0);
+		r->fakefullscreen = (vfake && vfake->type == TOML_INT && vfake->i != 0);
+		r->ignoresizehints = (vigsh && vigsh->type == TOML_INT && vigsh->i != 0);
 		r->isterminal = (vterm && vterm->type == TOML_INT) ? (int)vterm->i : 0;
 		r->noswallow  = (vno   && vno->type   == TOML_INT) ? (int)vno->i   : 0;
 		r->monitor    = (vmon  && vmon->type  == TOML_INT) ? (int)vmon->i  : -1;
@@ -3023,6 +3559,13 @@ load_rules_toml(const char *user_path, const char *default_path)
 	}
 	rt_rules  = rt_rules_buf;
 	rt_nrules = nk;
+	if (dpy) { /* the rules may change how popups that are already open are stacked */
+		OverrideWindow *ow;
+
+		for (ow = overridewindows; ow; ow = ow->next)
+			updateoverridewindow(ow->win);
+		restackprioritywindows();
+	}
 	fprintf(stderr, "dwm: loaded %d window rules from config\n", nk);
 }
 
@@ -3102,6 +3645,17 @@ setup_inotify(void)
 	} else
 		sigpipe[0] = sigpipe[1] = -1;
 
+	{
+		struct sigaction qa;
+		qa.sa_handler = sigquit_handler;
+		sigemptyset(&qa.sa_mask);
+		qa.sa_flags = SA_RESTART;
+		sigaction(SIGTERM, &qa, NULL);
+		sigaction(SIGHUP, &qa, NULL);
+		sigaction(SIGINT, &qa, NULL);
+		sigaction(SIGUSR2, &qa, NULL);
+	}
+
 	if ((inotify_fd = inotify_init1(IN_CLOEXEC | IN_NONBLOCK)) < 0) {
 		perror("dwm: inotify_init1");
 		return;
@@ -3151,9 +3705,19 @@ setup(void)
 	netatom[NetWMState] = XInternAtom(dpy, "_NET_WM_STATE", False);
 	netatom[NetWMCheck] = XInternAtom(dpy, "_NET_SUPPORTING_WM_CHECK", False);
 	netatom[NetWMFullscreen] = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
+	netatom[NetWMAbove] = XInternAtom(dpy, "_NET_WM_STATE_ABOVE", False);
+	netatom[NetWMStaysOnTop] = XInternAtom(dpy, "_NET_WM_STATE_STAYS_ON_TOP", False);
 	netatom[NetWMWindowType] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", False);
 	netatom[NetWMWindowTypeDialog] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DIALOG", False);
 	netatom[NetWMWindowTypeDock] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DOCK", False);
+	netatom[NetWMWindowTypeTooltip] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_TOOLTIP", False);
+	netatom[NetWMWindowTypeNotification] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_NOTIFICATION", False);
+	netatom[NetWMWindowTypeMenu] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_MENU", False);
+	netatom[NetWMWindowTypePopupMenu] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_POPUP_MENU", False);
+	netatom[NetWMWindowTypeDropdownMenu] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DROPDOWN_MENU", False);
+	netatom[NetWMWindowTypeCombo] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_COMBO", False);
+	netatom[NetWMWindowTypeDnd] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DND", False);
+	kdewindowtypeoverride = XInternAtom(dpy, "_KDE_NET_WM_WINDOW_TYPE_OVERRIDE", False);
 	netatom[NetClientList] = XInternAtom(dpy, "_NET_CLIENT_LIST", False);
 	netatom[NetDesktopViewport] = XInternAtom(dpy, "_NET_DESKTOP_VIEWPORT", False);
 	netatom[NetNumberOfDesktops] = XInternAtom(dpy, "_NET_NUMBER_OF_DESKTOPS", False);
@@ -3276,9 +3840,21 @@ swallow(Client *p, Client *c)
 	Window w = p->win;
 	p->win = c->win;
 	c->win = w;
-
-	XChangeProperty(dpy, c->win, netatom[NetClientList], XA_WINDOW, 32, PropModeReplace,
-		(unsigned char *) &(p->win), 1);
+	{
+		/* per-window state travels with the window, not with the client record */
+		int tmp = p->ewmhabove;
+		p->ewmhabove = c->ewmhabove;
+		c->ewmhabove = tmp;
+		tmp = p->ignoresizehints;
+		p->ignoresizehints = c->ignoresizehints;
+		c->ignoresizehints = tmp;
+		tmp = p->rulefullscreenapplied;
+		p->rulefullscreenapplied = c->rulefullscreenapplied;
+		c->rulefullscreenapplied = tmp;
+		/* the child takes over the visible geometry; the record keeps the parent's mode for unswallow */
+		c->iswindowedfullscreen = p->iswindowedfullscreen;
+		updatesizehints(p);
+	}
 
 	updatetitle(p);
 	XMoveResizeWindow(dpy, p->win, p->x, p->y, p->w, p->h);
@@ -3365,6 +3941,7 @@ tagmon(const Arg *arg)
 		c->isfullscreen = 0;
 		sendmon(c, dirtomon(arg->i));
 		c->isfullscreen = 1;
+		updatefullscreenmonitors();
 		if (c->fakefullscreen != 1) {
 			resizeclient(c, c->mon->mx, c->mon->my, c->mon->mw, c->mon->mh);
 			XRaiseWindow(dpy, c->win);
@@ -3481,7 +4058,10 @@ togglefakefullscreen(const Arg *arg)
 	if (!c)
 		return;
 
-	if (c->fakefullscreen != 1 && c->isfullscreen) { // exit fullscreen --> fake fullscreen
+	if (c->iswindowedfullscreen) {
+		setfullscreen(c, 0);
+		arrange(c->mon);
+	} else if (c->fakefullscreen != 1 && c->isfullscreen) { // exit fullscreen --> fake fullscreen
 		c->fakefullscreen = 2;
 		setfullscreen(c, 0);
 	} else if (c->fakefullscreen == 1) {
@@ -3493,17 +4073,44 @@ togglefakefullscreen(const Arg *arg)
 	}
 }
 
+/* Shrink a client to 85% around its centre so that it visibly pops out of the tile */
+void
+shrinkfloating(Client *c)
+{
+	int x, y, w, h;
+
+	x = c->x;
+	y = c->y;
+	w = MAX(1, c->w * 85 / 100);
+	h = MAX(1, c->h * 85 / 100);
+	applysizehints(c, &x, &y, &w, &h, 0);
+	x = c->x + (c->w - w) / 2;
+	y = c->y + (c->h - h) / 2;
+	x = MAX(c->mon->wx, MIN(x, c->mon->wx + c->mon->ww - w - 2 * c->bw));
+	y = MAX(c->mon->wy, MIN(y, c->mon->wy + c->mon->wh - h - 2 * c->bw));
+	resizeclient(c, x, y, w, h);
+}
+
 void
 togglefloating(const Arg *arg)
 {
-	if (!selmon->sel)
+	Client *c = selmon->sel;
+	int wasfloating;
+
+	if (!c)
 		return;
-	if (selmon->sel->isfullscreen && selmon->sel->fakefullscreen != 1) /* no support for fullscreen windows */
+	if (c->isfullscreen && c->fakefullscreen != 1) /* no support for fullscreen windows */
 		return;
-	selmon->sel->isfloating = !selmon->sel->isfloating || selmon->sel->isfixed;
-	if (selmon->sel->isfloating)
-		resize(selmon->sel, selmon->sel->x, selmon->sel->y,
-			selmon->sel->w, selmon->sel->h, 0);
+	wasfloating = c->isfloating;
+	c->isfloating = !wasfloating || c->isfixed;
+	if (c->isfloating) {
+		if (arg && !wasfloating && !c->isfixed && c->mon->lt[c->mon->sellt]->arrange) {
+			/* an explicit toggle pops the client out of the tile; the mouse
+			 * handlers pass NULL and keep the geometry the drag produced */
+			shrinkfloating(c);
+		} else
+			resize(c, c->x, c->y, c->w, c->h, 0);
+	}
 	arrange(selmon);
 }
 
@@ -3659,7 +4266,13 @@ unmapnotify(XEvent *e)
 	Client *c;
 	Monitor *m;
 	XUnmapEvent *ev = &e->xunmap;
+	Window focused;
+	int revert, hadfocus = 0;
 
+	if (XGetInputFocus(dpy, &focused, &revert) && focused == ev->window)
+		hadfocus = 1;
+
+	untrackoverridewindow(ev->window);
 	if ((c = wintoclient(ev->window))) {
 		if (ev->send_event)
 			setclientstate(c, WithdrawnState);
@@ -3669,12 +4282,220 @@ unmapnotify(XEvent *e)
 		unmanagealtbar(ev->window);
 	else if (m && m->traywin == ev->window)
 		unmanagetray(ev->window);
+
+	if (hadfocus && selmon && selmon->sel)
+		focus(selmon->sel);
+}
+
+void
+raisefullscreenclients(Client *c)
+{
+	if (!c)
+		return;
+	raisefullscreenclients(c->snext); /* oldest first: the most recently focused ends up on top */
+	if (isvisiblefullscreen(c))
+		XRaiseWindow(dpy, c->win);
+}
+
+void
+raisealwaysontopclients(Client *c)
+{
+	if (!c)
+		return;
+	raisealwaysontopclients(c->snext);
+	if ((c->alwaysontop || c->ewmhabove) && ISVISIBLE(c))
+		XRaiseWindow(dpy, c->win);
+}
+
+/* Raise order is the priority contract (each step ends up above the previous):
+ *  1. always-on-top clients
+ *  2. bars and trays (not on a monitor with a fullscreen client)
+ *  3. popups of the bar itself
+ *  4. real fullscreen clients: they cover the whole shell
+ *  5. every other popup (app menus, tooltips, notifications, rofi, dmenu):
+ *     they must stay usable on top of a fullscreen client
+ *  6. unmanaged windows a rule marks always-on-top */
+void
+restackprioritywindows(void)
+{
+	int revert;
+	Monitor *m;
+	OverrideWindow *ow;
+	Window focused;
+
+	for (m = mons; m; m = m->next)
+		raisealwaysontopclients(m->stack);
+	for (m = mons; m; m = m->next)
+		if (!monitorhasfullscreen(m)) {
+			if (m->barwin)
+				XRaiseWindow(dpy, m->barwin);
+			if (m->traywin)
+				XRaiseWindow(dpy, m->traywin);
+		}
+	for (ow = overridewindows; ow; ow = ow->next)
+		if (ow->raise && ow->bar)
+			XRaiseWindow(dpy, ow->win);
+	for (m = mons; m; m = m->next)
+		raisefullscreenclients(m->stack);
+	for (ow = overridewindows; ow; ow = ow->next)
+		if (ow->raise && !ow->bar)
+			XRaiseWindow(dpy, ow->win);
+	for (ow = overridewindows; ow; ow = ow->next)
+		if (ow->alwaysontop)
+			XRaiseWindow(dpy, ow->win);
+	if (XGetInputFocus(dpy, &focused, &revert))
+		focusfullscreenforoverride(focused);
+}
+
+/* A popup of the bar that holds the focus while its monitor shows a fullscreen
+ * client gives the focus back to that client. Returns 1 if it did. */
+int
+focusfullscreenforoverride(Window win)
+{
+	Client *c;
+	Monitor *m;
+	OverrideWindow *ow;
+	Window trans;
+
+	for (ow = overridewindows; ow && ow->win != win; ow = ow->next);
+	if (!ow || !ow->raise || !XGetTransientForHint(dpy, win, &trans))
+		return 0;
+	for (m = mons; m && m->barwin != trans; m = m->next);
+	if (!m || !monitorhasfullscreen(m))
+		return 0;
+	for (c = m->stack; c && !isvisiblefullscreen(c); c = c->snext);
+	if (!c)
+		return 0;
+	focus(c);
+	return 1;
+}
+
+/* 1 if win is a popup of the external bar (WM_TRANSIENT_FOR a bar window) */
+int
+istransientforbar(Window win)
+{
+	Window trans;
+	XWindowAttributes wa;
+
+	return XGetTransientForHint(dpy, win, &trans)
+		&& XGetWindowAttributes(dpy, trans, &wa)
+		&& !wa.override_redirect
+		&& isaltbar(trans);
+}
+
+void
+mapnotify(XEvent *e)
+{
+	XMapEvent *ev = &e->xmap;
+
+	trackoverridewindow(ev->window);
+	restackprioritywindows();
+	if (istransientforbar(ev->window)) {
+		XWMHints *wmh = XGetWMHints(dpy, ev->window);
+		if (!wmh || ((wmh->flags & InputHint) && wmh->input))
+			XSetInputFocus(dpy, ev->window, RevertToPointerRoot, CurrentTime);
+		if (wmh)
+			XFree(wmh);
+	}
+}
+
+void
+trackoverridewindow(Window win)
+{
+	OverrideWindow *ow, **tail;
+	XWindowAttributes wa;
+
+	if (!XGetWindowAttributes(dpy, win, &wa)
+	|| !wa.override_redirect || wa.map_state != IsViewable)
+		return;
+	for (ow = overridewindows; ow && ow->win != win; ow = ow->next);
+	if (!ow) {
+		ow = ecalloc(1, sizeof(*ow));
+		ow->win = win;
+		for (tail = &overridewindows; *tail; tail = &(*tail)->next);
+		*tail = ow;
+		XSelectInput(dpy, win, wa.your_event_mask | FocusChangeMask | PropertyChangeMask);
+	}
+	updateoverridewindow(win);
+}
+
+void
+untrackoverridewindow(Window win)
+{
+	OverrideWindow **ow, *removed;
+
+	for (ow = &overridewindows; *ow && (*ow)->win != win; ow = &(*ow)->next);
+	if (*ow) {
+		removed = *ow;
+		*ow = removed->next;
+		free(removed);
+	}
+}
+
+/* Decide how a tracked override-redirect window is stacked: popup types and
+ * ABOVE windows are raised, rules can additionally pin it above fullscreen */
+void
+updateoverridewindow(Window win)
+{
+	Atom states[NET_WM_STATE_MAX], types[NET_WM_STATE_MAX];
+	OverrideWindow *ow;
+	unsigned long nstates, ntypes;
+	XClassHint ch = { NULL, NULL };
+	char title[256];
+	const char *class, *instance;
+	int i;
+
+	for (ow = overridewindows; ow && ow->win != win; ow = ow->next);
+	if (!ow)
+		return;
+	XGetClassHint(dpy, win, &ch);
+	class    = ch.res_class ? ch.res_class : broken;
+	instance = ch.res_name  ? ch.res_name  : broken;
+	title[0] = '\0';
+	if (!gettextprop(win, netatom[NetWMName], title, sizeof title))
+		gettextprop(win, XA_WM_NAME, title, sizeof title);
+	ow->alwaysontop = 0;
+	/* override-redirect windows stay unmanaged: only the stacking rules apply */
+	for (i = 0; i < rt_nrules; i++) {
+		const Rule *r = &rt_rules[i];
+
+		if ((!r->title || strstr(title, r->title))
+		&& (!r->class || strstr(class, r->class))
+		&& (!r->instance || strstr(instance, r->instance)))
+			ow->alwaysontop = r->alwaysontop;
+	}
+	if (ch.res_class)
+		XFree(ch.res_class);
+	if (ch.res_name)
+		XFree(ch.res_name);
+	nstates = getwinatomproplist(win, netatom[NetWMState], states, LENGTH(states), NULL);
+	ntypes  = getwinatomproplist(win, netatom[NetWMWindowType], types, LENGTH(types), NULL);
+	ow->bar = istransientforbar(win);
+	/* an override-redirect window without any type is a menu or launcher
+	 * (dmenu, rofi, old toolkits): treat it as a popup too */
+	ow->raise = ntypes == 0
+		|| atomlistcontains(states, nstates, netatom[NetWMAbove])
+		|| atomlistcontains(states, nstates, netatom[NetWMStaysOnTop])
+		|| atomlistcontains(types, ntypes, netatom[NetWMWindowTypeTooltip])
+		|| atomlistcontains(types, ntypes, netatom[NetWMWindowTypeNotification])
+		|| atomlistcontains(types, ntypes, netatom[NetWMWindowTypeMenu])
+		|| atomlistcontains(types, ntypes, netatom[NetWMWindowTypePopupMenu])
+		|| atomlistcontains(types, ntypes, netatom[NetWMWindowTypeDropdownMenu])
+		|| atomlistcontains(types, ntypes, netatom[NetWMWindowTypeCombo])
+		|| atomlistcontains(types, ntypes, netatom[NetWMWindowTypeDnd])
+		|| atomlistcontains(types, ntypes, kdewindowtypeoverride)
+		|| ow->bar;
 }
 
 void
 unswallow(Client *c)
 {
 	c->win = c->swallowing->win;
+	c->ewmhabove = c->swallowing->ewmhabove;
+	c->iswindowedfullscreen = c->swallowing->iswindowedfullscreen;
+	c->rulefullscreenapplied = c->swallowing->rulefullscreenapplied;
+	c->ignoresizehints = c->swallowing->ignoresizehints;
+	updatesizehints(c);
 
 	free(c->swallowing);
 	c->swallowing = NULL;
@@ -3728,18 +4549,33 @@ updateclientlist(void)
 	clients = ecalloc(count ? count : 1, sizeof(Window));
 	for (m = mons; m; m = m->next) {
 		if (m->barwin && XGetWindowAttributes(dpy, m->barwin, &wa) &&
-		    !wa.override_redirect)
+			!wa.override_redirect)
 			clients[index++] = m->barwin;
 		if (m->traywin)
 			clients[index++] = m->traywin;
 		for (c = m->clients; c; c = c->next)
 			clients[index++] = c->win;
 	}
+	count = index;
 
-	XChangeProperty(dpy, root, netatom[NetClientList],
-		XA_WINDOW, 32, PropModeReplace,
-		(unsigned char *)clients, index);
-	free(clients);
+	/* nothing changed: skip the property write (every writer must go through
+	 * here, or the cache would no longer match the property) */
+	if (clientlistcachevalid && count == clientlistcachelen
+	&& (!count || !memcmp(clients, clientlistcache, count * sizeof(Window)))) {
+		free(clients);
+		return;
+	}
+
+	if (count)
+		XChangeProperty(dpy, root, netatom[NetClientList], XA_WINDOW, 32,
+			PropModeReplace, (unsigned char *)clients, (int)count);
+	else
+		XDeleteProperty(dpy, root, netatom[NetClientList]);
+	free(clientlistcache);
+	clientlistcache = clients;
+	clientlistcachelen = count;
+	clientlistcachevalid = 1;
+	updatefullscreenmonitors();
 }
 
 int
@@ -3988,7 +4824,7 @@ updatesizehints(Client *c)
 		c->maxa = (float)size.max_aspect.x / size.max_aspect.y;
 	} else
 		c->maxa = c->mina = 0.0;
-	c->isfixed = (c->maxw && c->maxh && c->maxw == c->minw && c->maxh == c->minh);
+	c->isfixed = !c->ignoresizehints && (c->maxw && c->maxh && c->maxw == c->minw && c->maxh == c->minh);
 }
 
 void
@@ -4003,11 +4839,16 @@ updatetitle(Client *c)
 void
 updatewindowtype(Client *c)
 {
-	Atom state = getatomprop(c, netatom[NetWMState]);
+	Atom states[NET_WM_STATE_MAX];
 	Atom wtype = getatomprop(c, netatom[NetWMWindowType]);
+	unsigned long nstates;
 
-	if (state == netatom[NetWMFullscreen])
+	/* _NET_WM_STATE is a list: FULLSCREEN need not be its first entry */
+	nstates = getatomproplist(c, netatom[NetWMState], states, LENGTH(states), NULL);
+	if (atomlistcontains(states, nstates, netatom[NetWMFullscreen]))
 		setfullscreen(c, 1);
+	c->ewmhabove = atomlistcontains(states, nstates, netatom[NetWMAbove])
+		|| atomlistcontains(states, nstates, netatom[NetWMStaysOnTop]);
 	if (wtype == netatom[NetWMWindowTypeDialog])
 		c->isfloating = 1;
 }
@@ -4332,5 +5173,6 @@ main(int argc, char *argv[])
 	run();
 	cleanup();
 	XCloseDisplay(dpy);
+	runautostop();
 	return EXIT_SUCCESS;
 }

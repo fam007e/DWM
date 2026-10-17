@@ -29,6 +29,9 @@ Scope {
     readonly property bool available: statusText !== "BT unavailable"
     readonly property bool powered: available && statusText !== "BT off"
     readonly property bool actionsAvailable: operationState === "delegated"
+    readonly property int connectedCount: devices ? devices.filter(function(device) { return device.connected; }).length : 0
+    readonly property bool connected: powered && connectedCount > 0
+    readonly property string icon: !powered ? "\udb80\udcb2" : (connected ? "\udb80\udcb1" : "\udb80\udcaf")
     readonly property bool active: true
 
     function open() {

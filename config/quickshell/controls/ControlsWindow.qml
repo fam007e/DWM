@@ -49,6 +49,27 @@ ClickAwayPopup {
             if (event.key === Qt.Key_Escape) {
                 root.controlsModel.close();
                 event.accepted = true;
+            } else if (event.key === Qt.Key_Up || event.key === Qt.Key_Right) {
+                root.controlsModel.volumeUp();
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Down || event.key === Qt.Key_Left) {
+                root.controlsModel.volumeDown();
+                event.accepted = true;
+            } else if (event.key === Qt.Key_M) {
+                root.controlsModel.volumeToggleMute();
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Space) {
+                root.controlsModel.mediaPlayPause();
+                event.accepted = true;
+            } else if (event.key === Qt.Key_N) {
+                root.controlsModel.mediaNext();
+                event.accepted = true;
+            } else if (event.key === Qt.Key_P || event.key === Qt.Key_B) {
+                root.controlsModel.mediaPrevious();
+                event.accepted = true;
+            } else if (event.key === Qt.Key_R) {
+                root.controlsModel.refresh();
+                event.accepted = true;
             }
         }
 

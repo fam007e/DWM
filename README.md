@@ -99,13 +99,20 @@ The default modifier key is **SUPER** (Windows Key).
 
 | Keybind | Action |
 |---------|--------|
-| <kbd>SUPER</kbd> + <kbd>Return</kbd> | Launch Alacritty |
+| <kbd>SUPER</kbd> + <kbd>Return</kbd> | Launch Terminal (Alacritty) |
+| <kbd>SUPER</kbd> + <kbd>B</kbd> | Launch Browser (LibreWolf) |
 | <kbd>SUPER</kbd> + <kbd>R</kbd> | App Launcher (Quickshell) |
 | <kbd>SUPER</kbd> + <kbd>F1</kbd> | Command Menu (Quickshell) |
+| <kbd>SUPER</kbd> + <kbd>SHIFT</kbd> + <kbd>C</kbd> / <kbd>?</kbd> | **Control Center** |
+| <kbd>SUPER</kbd> + <kbd>ALT</kbd> + <kbd>B</kbd> / <kbd>U</kbd> | **Bluetooth Menu** |
+| <kbd>SUPER</kbd> + <kbd>W</kbd> | **WiFi / Network Menu** |
+| <kbd>SUPER</kbd> + <kbd>ALT</kbd> + <kbd>V</kbd> | **Audio & Media Controls** |
+| <kbd>SUPER</kbd> + <kbd>ALT</kbd> + <kbd>W</kbd> | **Weather Dashboard** |
+| <kbd>SUPER</kbd> + <kbd>ALT</kbd> + <kbd>C</kbd> | **Calendar & Agenda** |
+| <kbd>SUPER</kbd> + <kbd>ALT</kbd> + <kbd>P</kbd> / <kbd>CTRL</kbd> + <kbd>Q</kbd> | **Power / Session Menu** |
 | <kbd>SUPER</kbd> + <kbd>Q</kbd> | Close focused window |
 | <kbd>SUPER</kbd> + <kbd>/</kbd> | **Keybindings Help (Live)** |
 | <kbd>SUPER</kbd> + <kbd>SHIFT</kbd> + <kbd>N</kbd> | **Toggle Warm Mode (Native C)** |
-| <kbd>SUPER</kbd> + <kbd>U</kbd> / <kbd>W</kbd> | Bluetooth / WiFi Menu |
 | <kbd>SUPER</kbd> + <kbd>1-9</kbd> | Switch to tag (workspace) |
 | <kbd>SUPER</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd> | Screenshot (Area) |
 | <kbd>SUPER</kbd> + <kbd>Shift</kbd> + <kbd>E</kbd> | Quit DWM |
