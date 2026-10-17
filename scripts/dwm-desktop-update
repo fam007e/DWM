@@ -781,7 +781,7 @@ def check_bounded(force=False):
         value = recover_status(state)
         if value["state"] in ACTIVE or value["state"] == "interrupted":
             return value
-        if not force and 0 <= time.time() - value["checkedAt"] < 300:
+        if not force and 0 <= time.time() - value["checkedAt"] < 300 and value.get("restart") == "none" and value.get("state") != "restart-required":
             return value
         value.pop("statusInvalid", None)
         save_status(state, value, state="checking", detail="Checking desktop files and upstream main...", canUpdate=False, percent=-1)
@@ -809,6 +809,20 @@ def check_bounded(force=False):
             reason = unsupported_system_drift(manifest)
             if reason:
                 return save_status(state, value, state="blocked", canUpdate=False, checkedAt=int(time.time()), detail=reason)
+            session_ready = False
+            if value.get("restart") == "session":
+                if running_dwm_matches(Path(manifest["layout"]["prefix"]) / "bin/dwm") is True:
+                    try:
+                        current_shells = quickshell_processes()
+                        previous_shells = {tuple(identity) for identity in value.get("activationShells", [])}
+                        if current_shells and not (current_shells & previous_shells):
+                            run(["quickshell", "ipc", "--path", config / "quickshell/shell.qml", "call", "tray", "count"], timeout=5)
+                            session_ready = True
+                    except (OSError, RuntimeError, subprocess.SubprocessError):
+                        session_ready = False
+                if session_ready:
+                    value["restart"] = "none"
+                    value.pop("activationShells", None)
             upstream = run(["git", "ls-remote", "--exit-code", SOURCE, "refs/heads/main"], timeout=30).split()
             if len(upstream) != 2 or not re.fullmatch(r"[0-9a-f]{40}", upstream[0]):
                 raise RuntimeError("Upstream returned an invalid desktop revision")
@@ -826,20 +840,9 @@ def check_bounded(force=False):
                 return save_status(state, value, state="blocked", detail=reason, checkedAt=int(time.time()))
             available = upstream[0] != value["installed"]
             repair = bool(value["changes"] or value["packages"])
-            if not available and not repair and value["restart"] == "session":
-                if running_dwm_matches(Path(manifest["layout"]["prefix"]) / "bin/dwm") is not True:
-                    return save_status(state, value, state="restart-required", percent=100, checkedAt=int(time.time()),
-                                       detail="Installed and verified. Log out and back in to activate the updated desktop.")
-                try:
-                    current_shells = quickshell_processes()
-                    previous_shells = {tuple(identity) for identity in value.get("activationShells", [])}
-                    if not current_shells or current_shells & previous_shells:
-                        raise RuntimeError("The previous Quickshell instance is still active")
-                    run(["quickshell", "ipc", "--path", config / "quickshell/shell.qml", "call", "tray", "count"], timeout=5)
-                except (OSError, RuntimeError, subprocess.SubprocessError):
-                    return save_status(state, value, state="restart-required", percent=100, checkedAt=int(time.time()),
-                                       detail="Installed and verified. Log out and back in to activate the updated desktop.")
-                value["restart"] = "none"
+            if value.get("restart") == "session" and not available and not repair:
+                return save_status(state, value, state="restart-required", percent=100, checkedAt=int(time.time()),
+                                   detail="Installed and verified. Log out and back in to activate the updated desktop.")
             return save_status(state, value, state="available" if available else "drift" if repair else "current",
                                detail="A desktop update is available" if available else "Managed desktop files need syncing" if repair else "Your desktop is up to date",
                                canUpdate=available or repair, checkedAt=int(time.time()))
