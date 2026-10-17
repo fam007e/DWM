@@ -677,8 +677,11 @@ def checkout_reason(path, runner=None):
         return "This installation uses a Git worktree. Update it with the source installer."
     if runner(["git", "-C", path, "branch", "--show-current"]) != "main":
         return "Local source is on a development branch. Switch to a clean main checkout before updating."
-    if (runner(["git", "-C", path, "status", "--porcelain", "--untracked-files=all"])
-            or runner(["git", "-C", path, "ls-files", "--others", "--ignored", "--exclude-standard", "--", "config", "scripts"])):
+    if runner(["git", "-C", path, "status", "--porcelain", "--untracked-files=all"]):
+        return "Local source has changes. Save or resolve them before updating."
+    ignored = [line for line in runner(["git", "-C", path, "ls-files", "--others", "--ignored", "--exclude-standard", "--", "config", "scripts"]).splitlines()
+               if "__pycache__" not in line and not line.endswith(".pyc")]
+    if ignored:
         return "Local source has changes. Save or resolve them before updating."
     return ""
 
