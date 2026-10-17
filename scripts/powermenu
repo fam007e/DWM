@@ -69,12 +69,12 @@ case "${chosen}" in
 		run_cmd --reboot
         ;;
     "${lock}")
-		if [[ -x '/usr/bin/betterlockscreen' ]]; then
-			betterlockscreen -l
-		elif [[ -x '/usr/bin/i3lock' ]]; then
+		if command -v dwm-lock >/dev/null 2>&1; then
+			dwm-lock
+		elif command -v slock >/dev/null 2>&1; then
+			slock
+		elif command -v i3lock >/dev/null 2>&1; then
 			i3lock
-		elif [[ -x '/usr/local/bin/slock' ]]; then
-		    slock
 		fi
         ;;
     "${suspend}")

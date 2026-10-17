@@ -222,7 +222,7 @@ main() {
 	if [[ $format == human ]]; then
 		printf '\nOptional desktop\n'
 	fi
-	for cmd in quickshell picom feh maim xdg-open notify-send amixer brightnessctl light-locker gsettings xprop; do
+	for cmd in quickshell picom feh maim xdg-open notify-send amixer brightnessctl slock gsettings xprop; do
 		check_optional_cmd "$cmd"
 	done
 	check_herdr

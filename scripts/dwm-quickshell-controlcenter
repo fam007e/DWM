@@ -272,49 +272,16 @@ write_power_config() {
 }
 
 configured_light_locker_running() {
-	# Commas separate procps environment alternatives; no DISPLAY is no evidence.
-	case ${DISPLAY:-} in '' | *,*) return 1 ;; esac
 	command -v pgrep >/dev/null 2>&1 || return 1
-	run_bounded 3 pgrep -u "$(id -u)" -x light-locker --env "DISPLAY=$DISPLAY" >/dev/null 2>&1
+	run_bounded 3 pgrep -u "$(id -u)" -x slock >/dev/null 2>&1
 }
 
 start_configured_light_locker() {
-	command -v light-locker >/dev/null 2>&1 || return 0
-	case ${DISPLAY:-} in '' | *,*) return 1 ;; esac
-
-	if configured_light_locker_running; then
-		return 0
-	fi
-
-	light-locker >/dev/null 2>&1 &
-	command -v pgrep >/dev/null 2>&1 || return 0
-	power_attempt=0
-	while [ "$power_attempt" -lt 20 ]; do
-		if configured_light_locker_running; then
-			return 0
-		fi
-		power_attempt=$((power_attempt + 1))
-		sleep 0.05
-	done
-	return 1
+	return 0
 }
 
 stop_configured_light_locker() {
-	command -v pgrep >/dev/null 2>&1 || return 0
-	command -v pkill >/dev/null 2>&1 || return 0
-
-	if configured_light_locker_running; then
-		run_bounded 3 pkill -u "$(id -u)" -x light-locker --env "DISPLAY=$DISPLAY" || return 1
-		power_attempt=0
-		while [ "$power_attempt" -lt 40 ]; do
-			if ! configured_light_locker_running; then
-				return 0
-			fi
-			power_attempt=$((power_attempt + 1))
-			sleep 0.05
-		done
-		return 1
-	fi
+	return 0
 }
 
 power_apply_dpms_settings() {
@@ -342,27 +309,7 @@ power_apply_lock_settings() {
 		power_status=1
 	fi
 
-	if [ "$power_lock_enabled" = 1 ]; then
-		if command -v light-locker >/dev/null 2>&1 &&
-			command -v gsettings >/dev/null 2>&1 &&
-			run_bounded 15 gsettings set apps.light-locker lock-after-screensaver "$power_lock_after" &&
-			run_bounded 15 gsettings set apps.light-locker lock-on-suspend true; then
-			start_configured_light_locker || power_status=1
-		else
-			power_status=1
-		fi
-	elif { [ "${power_config_managed:-0}" = 1 ] || [ "${power_lock_managed:-0}" = 1 ]; } &&
-		command -v gsettings >/dev/null 2>&1; then
-		if ! run_bounded 15 gsettings set apps.light-locker lock-after-screensaver 0 ||
-			! run_bounded 15 gsettings set apps.light-locker lock-on-suspend false; then
-			power_status=1
-		fi
-	fi
 
-	if [ "$power_lock_enabled" = 0 ] &&
-		{ [ "${power_config_managed:-0}" = 1 ] || [ "${power_lock_managed:-0}" = 1 ]; }; then
-		stop_configured_light_locker || power_status=1
-	fi
 
 	return "$power_status"
 }
@@ -426,31 +373,17 @@ power_status() {
 	fi
 
 	power_lock_available=0
-	power_live_lock_after=$power_lock_after
-	power_live_lock_on_suspend=unknown
-	if [ "$power_xset_available" = 1 ] && command -v light-locker >/dev/null 2>&1 &&
-		command -v gsettings >/dev/null 2>&1 &&
-		power_gsettings_value=$(run_bounded 3 gsettings get apps.light-locker lock-after-screensaver 2>/dev/null) &&
-		power_gsettings_suspend=$(run_bounded 3 gsettings get apps.light-locker lock-on-suspend 2>/dev/null); then
-		power_value=$(printf '%s\n' "$power_gsettings_value" |
-			awk 'NR == 1 && NF == 2 && $1 == "uint32" { value = $2 } END { if (NR == 1) print value }')
-		if is_uint "$power_value" && [ "${#power_value}" -le 10 ] && [ "$power_value" -le 4294967295 ]; then
-			power_live_lock_after=$power_value
-		else
-			power_lock_malformed=1
-		fi
-		case $power_gsettings_suspend in
-		true | false) power_live_lock_on_suspend=$power_gsettings_suspend ;;
-		*) power_lock_malformed=1 ;;
-		esac
-		if [ "$power_lock_timeout_valid" = 1 ] && [ "$power_lock_malformed" = 0 ]; then
+	power_live_lock_after=0
+	power_live_lock_on_suspend=true
+	if [ "$power_xset_available" = 1 ] && command -v slock >/dev/null 2>&1; then
+		if [ "$power_lock_timeout_valid" = 1 ]; then
 			power_lock_available=1
 		fi
 	fi
 
 	power_live_lock_enabled=$power_lock_enabled
 	if [ "$power_xset_available" = 1 ] && [ "$power_lock_available" = 1 ]; then
-		if [ "$power_live_lock_after" -gt 0 ] && [ "$power_live_lock_timeout" -gt 0 ]; then
+		if [ "$power_live_lock_timeout" -gt 0 ]; then
 			power_live_lock_enabled=1
 		else
 			power_live_lock_enabled=0
@@ -528,21 +461,6 @@ restore_power_live_lock() {
 			run_bounded 15 xset s noblank >/dev/null 2>&1 || restore_status=1
 		fi
 	fi
-	if [ "$power_before_lock_available" = 1 ]; then
-		run_bounded 15 gsettings set apps.light-locker lock-after-screensaver \
-			"$power_before_lock_after" >/dev/null 2>&1 || restore_status=1
-		case $power_before_lock_on_suspend in
-		true | false)
-			run_bounded 15 gsettings set apps.light-locker lock-on-suspend \
-				"$power_before_lock_on_suspend" >/dev/null 2>&1 || restore_status=1
-			;;
-		esac
-	fi
-	if [ "$power_before_lock_running" = 1 ]; then
-		start_configured_light_locker >/dev/null 2>&1 || restore_status=1
-	else
-		stop_configured_light_locker >/dev/null 2>&1 || restore_status=1
-	fi
 	verify_captured_power_live_lock || restore_status=1
 	return "$restore_status"
 }
@@ -561,15 +479,6 @@ verify_captured_power_live_lock() {
 		[ "$(power_status_value "$restored_status" lock_timeout)" = "$power_before_lock_timeout" ] || return 1
 	fi
 	[ "$(power_status_value "$restored_status" lock_available)" = "$power_before_lock_available" ] || return 1
-	if [ "$power_before_lock_available" = 1 ]; then
-		[ "$(power_status_value "$restored_status" lock_after)" = "$power_before_lock_after" ] || return 1
-		case $power_before_lock_on_suspend in
-		true | false)
-			[ "$(power_status_value "$restored_status" lock_on_suspend)" = "$power_before_lock_on_suspend" ] || return 1
-			;;
-		esac
-	fi
-	[ "$(power_status_value "$restored_status" lock_running)" = "$power_before_lock_running" ] || return 1
 }
 
 verify_power_live_dpms() {
@@ -593,14 +502,8 @@ verify_power_live_lock() {
 	[ "$(power_status_value "$verified_status" lock_enabled)" = "$expected_enabled" ] || return 1
 	if [ "$expected_enabled" = 1 ]; then
 		[ "$(power_status_value "$verified_status" lock_timeout)" = "$expected_timeout" ] || return 1
-		[ "$(power_status_value "$verified_status" lock_after)" = "$expected_after" ] || return 1
-		[ "$(power_status_value "$verified_status" lock_on_suspend)" = true ] || return 1
-		[ "$(power_status_value "$verified_status" lock_running)" = 1 ] || return 1
 	else
 		[ "$(power_status_value "$verified_status" lock_timeout)" = 0 ] || return 1
-		[ "$(power_status_value "$verified_status" lock_after)" = 0 ] || return 1
-		[ "$(power_status_value "$verified_status" lock_on_suspend)" = false ] || return 1
-		[ "$(power_status_value "$verified_status" lock_running)" = 0 ] || return 1
 	fi
 }
 
@@ -810,7 +713,7 @@ power_snapshot_suspend() {
 }
 
 power_lock_record() {
-	printf 'power-lock\t%s\t%s\t%s\t%s\tuser-session\tlight-locker automatic locking\n' \
+	printf 'power-lock\t%s\t%s\t%s\t%s\tuser-session\tslock screen locking\n' \
 		"$(if [ "$(power_row_value lock_malformed)" = 1 ]; then printf partial; elif [ "$(power_row_value lock_available)" = 1 ]; then printf available; else printf unavailable; fi)" \
 		"$([ "$(power_row_value lock_enabled)" = 1 ] && printf yes || printf no)" \
 		"$(power_row_value lock_timeout)" \
@@ -936,33 +839,7 @@ power_watch_sources() {
 		power_dbus_watch_pid=
 		return 1
 	}
-	if command -v gsettings >/dev/null 2>&1; then
-		power_settings_probe_status=0
-		# The probe wrapper must finish its own child escalation inside the
-		# one-second watcher cleanup grace period.
-		timeout --signal=TERM --kill-after=0.5 3 \
-			gsettings get apps.light-locker lock-after-screensaver >/dev/null 2>&1 &
-		power_settings_probe_pid=$!
-		power_settings_probe_identity=$(power_watch_capture_identity "$power_settings_probe_pid") || {
-			kill -TERM "$power_settings_probe_pid" 2>/dev/null || :
-			wait "$power_settings_probe_pid" 2>/dev/null || :
-			power_settings_probe_pid=
-			return 1
-		}
-		wait "$power_settings_probe_pid" || power_settings_probe_status=$?
-		power_settings_probe_pid=
-		power_settings_probe_identity=
-		if [ "$power_settings_probe_status" -eq 0 ]; then
-			gsettings monitor apps.light-locker &
-			power_settings_watch_pid=$!
-			power_settings_watch_identity=$(power_watch_capture_identity "$power_settings_watch_pid") || {
-				kill -TERM "$power_settings_watch_pid" 2>/dev/null || :
-				wait "$power_settings_watch_pid" 2>/dev/null || :
-				power_settings_watch_pid=
-				return 1
-			}
-		fi
-	fi
+
 
 	while power_watch_identity_running "$power_dbus_watch_identity" &&
 		{ [ -z "$power_settings_watch_identity" ] ||

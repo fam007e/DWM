@@ -158,7 +158,7 @@ path_is_safe_regular() {
 
 desktop_risk() {
 	case $1 in
-	light-locker.desktop | picom.desktop | polkit-mate-authentication-agent-1.desktop)
+	picom.desktop | polkit-mate-authentication-agent-1.desktop)
 		printf 'session-critical\n'
 		;;
 	*) printf 'normal\n' ;;
