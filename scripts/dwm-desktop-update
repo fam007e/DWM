@@ -348,6 +348,24 @@ def installation():
     raise RuntimeError("Desktop update support is not installed. Run the documented source installer once, then reopen Settings.")
 
 
+def trusted_directory(path):
+    for directory in (path, *path.parents):
+        info = directory.lstat()
+        if stat.S_ISLNK(info.st_mode):
+            if info.st_uid != 0:
+                raise RuntimeError("Untrusted managed parent symlink: " + str(directory))
+        elif info.st_uid != 0 or info.st_mode & 0o022 or not stat.S_ISDIR(info.st_mode):
+            raise RuntimeError("Untrusted managed parent directory: " + str(directory))
+    resolved = path.resolve()
+    for directory in (resolved, *resolved.parents):
+        info = directory.lstat()
+        if stat.S_ISLNK(info.st_mode):
+            if info.st_uid != 0:
+                raise RuntimeError("Untrusted managed parent symlink: " + str(directory))
+        elif info.st_uid != 0 or info.st_mode & 0o022 or not stat.S_ISDIR(info.st_mode):
+            raise RuntimeError("Untrusted managed parent directory: " + str(directory))
+
+
 def trusted_file(path, executable=False):
     path = Path(path)
     if not path.is_absolute() or path.resolve() != path:
@@ -355,10 +373,7 @@ def trusted_file(path, executable=False):
     info = path.lstat()
     if info.st_uid != 0 or info.st_mode & 0o022 or not stat.S_ISREG(info.st_mode) or (executable and not info.st_mode & 0o111):
         raise RuntimeError("Desktop update support must be root-owned and non-writable")
-    for parent in path.parents:
-        info = parent.lstat()
-        if info.st_uid != 0 or info.st_mode & 0o022 or not stat.S_ISDIR(info.st_mode):
-            raise RuntimeError("Desktop installation has an untrusted parent directory")
+    trusted_directory(path.parent)
 
 
 def trusted_installation(manifest_path):
@@ -689,11 +704,6 @@ def root_owned(path):
     return path.lstat().st_uid == 0
 
 
-def trusted_directory(path):
-    for directory in (path, *path.parents):
-        info = directory.lstat()
-        if info.st_uid != 0 or info.st_mode & 0o022 or not stat.S_ISDIR(info.st_mode):
-            raise RuntimeError("Untrusted managed parent directory: " + str(directory))
 
 
 def unsupported_system_drift(manifest):
