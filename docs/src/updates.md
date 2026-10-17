@@ -65,10 +65,21 @@ python3 scripts/dwm-desktop-update record-user .
 
 ### Quickshell Update Center
 
-The desktop shell provides a graphical Update Center accessible via the Control Center or Command Menu:
+The desktop shell provides a graphical Update Center accessible via <kbd>SUPER</kbd> + <kbd>SHIFT</kbd> + <kbd>U</kbd>, the top panel indicator icon, or Control Center:
 - Checks remote Git repository status and release availability in the background (`dwm-quickshell-version-check`).
 - Displays available package updates, system health status, and changelogs.
 - Launches authenticated update procedures with progress feedback (`dwm-desktop-update-progress`).
+
+### Desktop Update Recovery
+
+If an update is interrupted (e.g. power loss or authorization cancellation), the transactional update framework guarantees full rollback capability:
+- In the Quickshell Update Center (<kbd>SUPER</kbd> + <kbd>SHIFT</kbd> + <kbd>U</kbd>), the DWM row will display **"Recovery required"** with an interactive **"Recover"** button.
+- Alternatively, run the recovery command directly from terminal:
+  ```bash
+  dwm-update-center recover dwm
+  # or directly via updater:
+  dwm-desktop-update recover <operation-id>
+  ```
 
 ---
 

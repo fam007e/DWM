@@ -105,6 +105,8 @@ The default modifier key is **SUPER** (Windows Key).
 | <kbd>SUPER</kbd> + <kbd>F1</kbd> | Command Menu (Quickshell) |
 | <kbd>SUPER</kbd> + <kbd>L</kbd> | **Lock Screen (Slock)** |
 | <kbd>SUPER</kbd> + <kbd>SHIFT</kbd> + <kbd>C</kbd> | **Control Center** |
+| <kbd>SUPER</kbd> + <kbd>SHIFT</kbd> + <kbd>U</kbd> | **Update Center** |
+| <kbd>SUPER</kbd> + <kbd>S</kbd> | Web Search (DuckDuckGo) |
 | <kbd>SUPER</kbd> + <kbd>ALT</kbd> + <kbd>B</kbd> | **Bluetooth Menu** |
 | <kbd>SUPER</kbd> + <kbd>W</kbd> | **WiFi / Network Menu** |
 | <kbd>SUPER</kbd> + <kbd>ALT</kbd> + <kbd>V</kbd> | **Audio & Media Controls** |

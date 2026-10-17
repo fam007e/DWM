@@ -40,6 +40,10 @@ All bar widget popups support full bidirectional interaction by both keyboard an
   - **Keyboard:** <kbd>←</kbd> / <kbd>→</kbd> days, <kbd>↑</kbd> / <kbd>↓</kbd> weeks, <kbd>PageUp</kbd> / <kbd>PageDown</kbd> months, <kbd>t</kbd> today, <kbd>Enter</kbd> open interactive khal.
 - **Power Menu:**
   - **Keyboard:** <kbd>↑</kbd> / <kbd>↓</kbd> navigate session options (Lock, Suspend, Restart, Shutdown, Logout), <kbd>Enter</kbd> / <kbd>Space</kbd> confirm.
+- **Update Center Widget:**
+  - **Indicator Pill:** Displays badge count of available system/desktop updates and recovery notifications.
+  - **Mouse:** Left-click toggles Update Center popup.
+  - **Keyboard:** Toggle via <kbd>SUPER</kbd> + <kbd>SHIFT</kbd> + <kbd>U</kbd>; <kbd>r</kbd> to refresh, <kbd>Esc</kbd> to dismiss.
 
 ---
 

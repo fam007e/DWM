@@ -14,26 +14,13 @@ Keybindings are declared in standard TOML. Saving the file sends `SIGUSR1` to DW
 [vars]
 terminal = "alacritty"
 
-[[hotkeys]]
-mod  = "SUPER"
-key  = "Return"
-desc = "Terminal"
-func = "spawn"
-exec = ["$terminal"]
-
-[[hotkeys]]
-mod  = "SUPER"
-key  = "r"
-desc = "App Launcher"
-func = "spawn"
-exec = ["quickshell", "ipc", "call", "launcher", "toggle"]
-
-[[hotkeys]]
-mod  = "SUPER_SHIFT"
-key  = "n"
-desc = "Toggle Warm Mode"
-func = "warmmode"
-exec = []
+keys = [
+  { mod="SUPER",       key="Return", desc="Terminal",          func="spawn", exec=["$terminal"] },
+  { mod="SUPER",       key="r",      desc="App Launcher",      func="spawn", cmd="quickshell ipc --path \"${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/shell.qml\" call launcher toggle" },
+  { mod="SUPER SHIFT", key="u",      desc="Update Center",     func="spawn", cmd="quickshell ipc --path \"${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/shell.qml\" call updatecenter toggle" },
+  { mod="SUPER",       key="l",      desc="Lock Screen",       func="spawn", cmd="dwm-lock" },
+  { mod="SUPER SHIFT", key="n",      desc="Toggle Warm Mode",  func="togglewarm" },
+]
 ```
 
 ### Supported Modifier Keys
