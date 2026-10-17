@@ -64,7 +64,7 @@ This build is optimized for Arch Linux. Install the core dependencies:
 sudo pacman -S --needed base-devel libx11 libxft libxinerama imlib2 libxcb xcb-util \
     xorg-server xorg-xinit xorg-xrandr xorg-xset xorg-xsetroot \
     alacritty picom feh flameshot python python-pillow jq bc curl playerctl \
-    brightnessctl xdotool wmctrl zenity libqalculate khal
+    brightnessctl xdotool wmctrl zenity libqalculate khal slock
 ```
 
 If you do not yet have Quickshell installed, install it from the AUR:

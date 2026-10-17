@@ -15,7 +15,7 @@ The deployment script `install.sh` manages package verification and directory in
 | **Build Core** | `base-devel`, `libx11`, `libxft`, `libxinerama`, `imlib2`, `libxcb`, `xcb-util`, `freetype2`, `pkgconf` | Compiling the DWM C binary with X11/XCB extensions |
 | **X11 Display** | `xorg-server`, `xorg-xinit`, `xorg-xrandr`, `xorg-xset`, `xorg-xsetroot`, `xdotool`, `wmctrl` | X Server, screen layout control, and client manipulation |
 | **Desktop Shell** | `quickshell` (AUR/prebuilt), `qt6-declarative`, `qt6-svg` | Next-gen desktop panel, workspaces, toolbars, and popups |
-| **System Utilities** | `brightnessctl`, `playerctl`, `feh`, `picom`, `flameshot`, `zenity`, `libqalculate` | Hardware controls, compositor, screenshots, dialogs, calculator |
+| **System Utilities** | `brightnessctl`, `playerctl`, `feh`, `picom`, `flameshot`, `zenity`, `libqalculate`, `slock` | Hardware controls, compositor, screenshots, dialogs, calculator, screen locker |
 | **Calendar & Agenda** | `khal` *(optional)* | Calendar event synchronization, agenda queries, and interactive management |
 | **Parsing & Scripts** | `python`, `python-pillow`, `jq`, `bc`, `curl` | Wallpaper color quantization, JSON parsing, weather fetching |
 | **Audio & Network** | `wireplumber` / `pipewire-pulse`, `networkmanager`, `bluez`, `bluez-utils` | Audio mixer and connectivity daemons |
@@ -26,7 +26,7 @@ To install the official repo packages on Arch Linux:
 sudo pacman -S --needed base-devel libx11 libxft libxinerama imlib2 libxcb xcb-util \
     xorg-server xorg-xinit xorg-xrandr xorg-xset xorg-xsetroot \
     picom feh flameshot python python-pillow jq bc curl playerctl \
-    brightnessctl xdotool wmctrl zenity libqalculate khal
+    brightnessctl xdotool wmctrl zenity libqalculate khal slock
 ```
 
 > [!NOTE]
