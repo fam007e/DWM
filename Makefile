@@ -58,7 +58,7 @@ install-system: install
 		--datadir "${DATADIR}" \
 		--commands dwm $$(for f in scripts/*; do case "$$(basename $$f)" in autostart*|.xinitrc|dwm-desktop-update-root|*.pyc|__pycache__) continue;; esac; basename "$$f"; done) \
 		--helpers dwm-desktop-update-root \
-		--packages base-devel libx11 libxft libxinerama imlib2 libxcb quickshell picom
+		--packages $$(scripts/dwm-packages.sh arch build; scripts/dwm-packages.sh arch source-update)
 
 uninstall:
 	rm -f ${DESTDIR}${PREFIX}/bin/dwm \

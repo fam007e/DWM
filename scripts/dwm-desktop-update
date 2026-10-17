@@ -407,8 +407,14 @@ def record_system(args):
         files += [Path(layout["datadir"]) / backend / "colors" / (theme.name + ".conf")
                   for backend in ("qt5ct", "qt6ct")]
     valid_files = [path for path in dict.fromkeys(files) if (stage / str(path).lstrip("/")).is_file()]
+    packages = list(args.packages) if args.packages else []
+    if not packages:
+        for profile in ("build", "source-update"):
+            pkg_script = source / "scripts/dwm-packages.sh"
+            if pkg_script.is_file():
+                packages.extend(subprocess.check_output([str(pkg_script), "arch", profile], text=True).splitlines())
     manifest = {"schema": 1, "source": SOURCE, "revision": source_revision(source),
-                "layout": layout, "packages": sorted(set(args.packages)),
+                "layout": layout, "packages": sorted(set(packages)),
                 "files": {str(path): fingerprint(stage / str(path).lstrip("/")) for path in sorted(valid_files)}}
     target = stage / str(prefix / "share/dwm/desktop-install.json").lstrip("/")
     target.parent.mkdir(parents=True, exist_ok=True, mode=0o755)
@@ -1431,8 +1437,9 @@ def main():
     system.add_argument("--destdir", default="")
     for name in ("prefix", "manprefix", "xsessions", "datadir"):
         system.add_argument("--" + name, required=True)
-    for name in ("commands", "helpers", "packages"):
+    for name in ("commands", "helpers"):
         system.add_argument("--" + name, nargs="+", required=True)
+    system.add_argument("--packages", nargs="*", default=None)
     user = commands.add_parser("record-user")
     user.add_argument("source_dir")
     checking = commands.add_parser("check")
