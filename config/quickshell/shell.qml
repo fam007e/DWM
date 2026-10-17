@@ -675,6 +675,30 @@ ShellRoot {
     }
 
     IpcHandler {
+        target: "updatecenter"
+
+        function close(): void {
+            updateCenterModel.close();
+        }
+
+        function open(): void {
+            root.requestPanelPopup(root.activePanelWindow, "updatecenter");
+        }
+
+        function refresh(): void {
+            updateCenterModel.refresh(true);
+        }
+
+        function status(): string {
+            return updateCenterModel.message || (updateCenterModel.totalUpdates + " updates available");
+        }
+
+        function toggle(): void {
+            root.requestPanelPopup(root.activePanelWindow, "updatecenter");
+        }
+    }
+
+    IpcHandler {
         target: "settings"
 
         function close(): void {

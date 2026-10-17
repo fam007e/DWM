@@ -32,6 +32,7 @@ keys = [
   # { mod="SUPER",          key="p",       desc="Secure Passwd",           func="spawn",       cmd="/usr/bin/securepasswd_gui" },
   { mod="SUPER",            key="slash",   desc="Keybindings help",        func="spawn",       cmd="quickshell ipc --path \"${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/shell.qml\" call controlcenter openKeybinds" },
   { mod="SUPER SHIFT",      key="c",       desc="Control Center",          func="spawn",       cmd="quickshell ipc --path \"${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/shell.qml\" call controlcenter toggle" },
+  { mod="SUPER SHIFT",      key="u",       desc="Update Center",           func="spawn",       cmd="quickshell ipc --path \"${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/shell.qml\" call updatecenter toggle" },
   { mod="SUPER SHIFT",      key="p",       desc="Screenshot area",         func="spawn",       cmd="flameshot gui -p ~/Pictures/Screenshots/" },
   { mod="SUPER CTRL",       key="p",       desc="Screenshot full",         func="spawn",       cmd="flameshot full -p ~/Pictures/Screenshots/" },
   { mod="ALT",              key="comma",   desc="Dismiss notification",    func="spawn",       cmd="dunstctl close" },
