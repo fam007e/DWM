@@ -36,6 +36,11 @@ def fail(message):
 def trusted(path, directory=False):
     path = Path(path)
     info = path.lstat()
+    if stat.S_ISLNK(info.st_mode):
+        if info.st_uid != 0:
+            fail("Untrusted installed path: " + str(path))
+        resolved = path.resolve()
+        info = resolved.lstat()
     if info.st_uid != 0 or info.st_mode & 0o022 or not (
             stat.S_ISDIR(info.st_mode) if directory else stat.S_ISREG(info.st_mode)):
         fail("Untrusted installed path: " + str(path))
