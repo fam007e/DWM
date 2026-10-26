@@ -14,13 +14,27 @@ if [ -d "$HOME/.config/rofi/themes" ]; then
 elif [ -d "$HOME/.local/share/dwm/config/rofi/themes" ]; then
     THEME_DIR="$HOME/.local/share/dwm/config/rofi/themes"
 else
-    THEME_DIR="$(cd "$(dirname "$0")/../config/rofi/themes" 2>/dev/null && pwd)" || THEME_DIR=""
+    THEME_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../config/rofi/themes" 2>/dev/null && pwd)" || THEME_DIR=""
 fi
 
 THEME_FILE="${THEME_DIR:+$THEME_DIR/controlcenter.rasi}"
 
+SELF="$(readlink -f "${BASH_SOURCE[0]}")"
+SELF_DIR="$(dirname "$SELF")"
 DWM_DIR="$HOME/.local/share/dwm"
-DWM_REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+
+# Directory holding install.sh / scripts/check-deps.sh: installed data dir first,
+# then the checkout this script lives in. Empty if neither has them.
+find_repo_dir() {
+    local candidate
+    for candidate in "$DWM_DIR" "$(dirname "$SELF_DIR")"; do
+        if [ -f "$candidate/install.sh" ]; then
+            printf '%s\n' "$candidate"
+            return 0
+        fi
+    done
+    return 1
+}
 QUICKSHELL_DIR="$HOME/.config/quickshell"
 ROFI_DIR="$HOME/.config/rofi"
 BG_DIR="$HOME/Pictures/Wallpapers"
@@ -44,6 +58,53 @@ spawn_terminal() {
         alacritty)  alacritty -e "$@" & ;;
         *)          "$TERM_CMD" -e "$@" & ;;
     esac
+}
+
+# Run a script from the repo/data dir in a terminal and keep it open afterwards.
+run_repo_script() {
+    local script="$1" dir
+    if ! dir="$(find_repo_dir)"; then
+        notify "Cannot find $script (no DWM checkout or ~/.local/share/dwm/install.sh)" --urgency=critical
+        return 0
+    fi
+    spawn_terminal bash -c 'cd "$1" && bash "$2"; echo; echo "Press Enter to close"; read -r' _ "$dir" "$script"
+}
+
+# Restart a background process and wait for the old one to exit before relaunching.
+restart_process() {
+    local name="$1"; shift
+    pkill -x "$name" 2>/dev/null || true
+    local i
+    for i in $(seq 1 30); do
+        pgrep -x "$name" &>/dev/null || break
+        sleep 0.1
+    done
+    setsid "$@" </dev/null >/dev/null 2>&1 &
+}
+
+# Pick a random wallpaper, apply it, and refresh the dynamic palette.
+set_random_wallpaper() {
+    if [ ! -d "$BG_DIR" ]; then
+        notify "No wallpaper directory: $BG_DIR" --urgency=critical
+        return 1
+    fi
+    local pick
+    pick="$(find -L "$BG_DIR" -maxdepth 2 -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' -o -iname '*.bmp' \) 2>/dev/null | shuf -n1)"
+    if [ -z "$pick" ]; then
+        notify "No images in $BG_DIR" --urgency=critical
+        return 1
+    fi
+    if ! feh --no-fehbg --bg-fill "$pick"; then
+        notify "Failed to set wallpaper" --urgency=critical
+        return 1
+    fi
+    # Keep ~/.fehbg in sync for System Info and session restore
+    printf "#!/bin/sh\nfeh --no-fehbg --bg-fill '%s'\n" "$pick" > "$HOME/.fehbg" && chmod +x "$HOME/.fehbg"
+    local palette
+    palette="$(command -v dwm-wallpaper-palette dwm-wallpaper-palette.py 2>/dev/null | head -1)"
+    [ -z "$palette" ] && [ -f "$DWM_DIR/scripts/dwm-wallpaper-palette.py" ] && palette="$DWM_DIR/scripts/dwm-wallpaper-palette.py"
+    [ -n "$palette" ] && python3 "$palette" "$pick" >/dev/null 2>&1 || true
+    notify "Wallpaper: ${pick##*/}"
 }
 
 # ── Rofi helpers ─────────────────────────────────────────
@@ -229,8 +290,8 @@ run_health_check() {
             action=$(printf '%s\n' "Run install.sh (auto-fix)" "Run check-deps.sh (details)" \
                 | rofi_menu "  Fix" "Selected: $chosen") || continue
             case "$action" in
-                "Run install.sh"*)  spawn_terminal bash -c "cd '$DWM_REPO_DIR' 2>/dev/null || cd '$(dirname "$0")/..'; bash install.sh; echo 'Press Enter to close'; read" ;;
-                "Run check-deps"*)  spawn_terminal bash -c "cd '$DWM_REPO_DIR' 2>/dev/null || cd '$(dirname "$0")/..'; bash scripts/check-deps.sh; echo 'Press Enter to close'; read" ;;
+                "Run install.sh"*)  run_repo_script install.sh ;;
+                "Run check-deps"*)  run_repo_script scripts/check-deps.sh ;;
             esac
         fi
     done
@@ -258,37 +319,26 @@ run_quick_actions() {
 
     case "$chosen" in
         *"Restart Picom"*)
-            pkill picom 2>/dev/null || true
-            sleep 0.3
-            picom -b &
+            restart_process picom picom -b
             notify "Picom restarted"
             ;;
         *"Restart Dunst"*)
-            pkill dunst 2>/dev/null || true
-            sleep 0.3
-            dunst &
+            restart_process dunst dunst
             notify "Dunst restarted"
             ;;
         *"Restart Quickshell"*)
-            pkill -f quickshell 2>/dev/null || true
-            sleep 0.3
-            quickshell --path "$QUICKSHELL_DIR/shell.qml" --no-duplicate &
+            restart_process quickshell quickshell --path "$QUICKSHELL_DIR/shell.qml" --no-duplicate
             notify "Quickshell restarted"
             ;;
         *"Reload Wallpaper"*)
-            if [ -d "$BG_DIR" ]; then
-                feh --randomize --bg-fill "$BG_DIR"/* || notify "Failed to set wallpaper" --urgency=critical
-                notify "Wallpaper randomized"
-            else
-                notify "No wallpapers in $BG_DIR" --urgency=critical
-            fi
+            set_random_wallpaper || true
             ;;
         *"Toggle Compositor"*)
             if pgrep -x picom &>/dev/null; then
-                pkill picom 2>/dev/null || true
+                pkill -x picom 2>/dev/null || true
                 notify "Compositor stopped"
             else
-                picom -b &
+                setsid picom -b </dev/null >/dev/null 2>&1 &
                 notify "Compositor started"
             fi
             ;;
@@ -296,11 +346,12 @@ run_quick_actions() {
             spawn_terminal bash -c "sudo systemctl restart NetworkManager && echo 'NetworkManager restarted'; sleep 2"
             ;;
         *"Run Dependency Check"*)
-            spawn_terminal bash -c "cd '$DWM_REPO_DIR' 2>/dev/null || cd '$(dirname "$0")/..'; bash scripts/check-deps.sh; echo; echo 'Press Enter to close'; read"
+            run_repo_script scripts/check-deps.sh
             ;;
         *"Install Missing Deps"*)
-            spawn_terminal bash -c "cd '$DWM_REPO_DIR' 2>/dev/null || cd '$(dirname "$0")/..'; bash install.sh; echo; echo 'Press Enter to close'; read"
+            run_repo_script install.sh
             ;;
+        *) ;;
     esac
     done
 }
@@ -310,8 +361,13 @@ run_quick_actions() {
 # ═════════════════════════════════════════════════════════
 
 run_theme_select() {
-    local themes_file="$HOME/.local/share/dwm/config/themes.toml"
-    [ ! -f "$themes_file" ] && themes_file="$HOME/.config/dwm/themes.toml"
+    local themes_file="$HOME/.config/dwm/themes.toml"
+    if [ ! -f "$themes_file" ]; then
+        if [ -f "$HOME/.local/share/dwm/config/themes.toml" ]; then
+            mkdir -p "$HOME/.config/dwm"
+            cp "$HOME/.local/share/dwm/config/themes.toml" "$themes_file"
+        fi
+    fi
 
     if [ ! -f "$themes_file" ]; then
         notify "themes.toml not found" --urgency=critical
@@ -333,7 +389,7 @@ run_theme_select() {
 
     # Get current active theme
     local current
-    current=$(awk '/^\[active\]/{found=1} found && /^theme[[:space:]]*=/{match($0,/"([^"]+)"/,a); print a[1]; exit}' "$themes_file")
+    current=$(awk '/^\[active\]/{found=1} found && /^theme[[:space:]]*=/{split($0,a,"\""); print a[2]; exit}' "$themes_file")
 
     # Build display list (mark active theme)
     local display=()
@@ -355,13 +411,22 @@ run_theme_select() {
     [ "$selected" = "$current" ] && return
 
     # Update theme = "..." under [active] in place
-    awk -v new="$selected" '
-        /^\[active\]/{found=1}
-        found && /^theme[[:space:]]*=/{sub(/"[^"]*"/, "\"" new "\""); found=0}
-        {print}
-    ' "$themes_file" > "${themes_file}.tmp" && mv "${themes_file}.tmp" "$themes_file"
+    local real_file tmp
+    real_file="$(readlink -f "$themes_file")"
+    tmp="$(mktemp "$(dirname "$real_file")/.themes.toml.XXXXXX")"
+    (
+        flock 9
+        awk -v new="$selected" '
+            /^\[active\]/{found=1}
+            found && /^theme[[:space:]]*=/{sub(/"[^"]*"/, "\"" new "\""); found=0}
+            {print}
+        ' "$real_file" > "$tmp"
+        chmod --reference="$real_file" "$tmp"
+        mv "$tmp" "$real_file"
+    ) 9>"$(dirname "$real_file")/.themes.toml.lock"
 
-    notify "Theme: $selected" "Applying…"
+    pkill -USR1 -x -u "$(id -u)" dwm 2>/dev/null || true
+    notify "Theme: $selected" "Applied"
 }
 
 # ═════════════════════════════════════════════════════════
@@ -385,12 +450,7 @@ run_appearance() {
             run_theme_select
             ;;
         *"Randomize Wallpaper"*)
-            if [ -d "$BG_DIR" ]; then
-                feh --randomize --bg-fill "$BG_DIR"/* || notify "Failed to set wallpaper" --urgency=critical
-                notify "Wallpaper randomized"
-            else
-                notify "No wallpapers in $BG_DIR" --urgency=critical
-            fi
+            set_random_wallpaper || true
             ;;
         *"Open Wallpaper Folder"*)
             xdg-open "$BG_DIR" 2>/dev/null &
@@ -416,7 +476,9 @@ run_system_info() {
 
     # DWM version
     local dwm_ver
-    dwm_ver=$(dwm -v 2>&1 | head -1) || dwm_ver="dwm (version unknown)"
+    # dwm -v exits non-zero by design; do not let pipefail discard its output
+    dwm_ver=$(dwm -v 2>&1 | head -1 || true)
+    [ -n "$dwm_ver" ] || dwm_ver="dwm (version unknown)"
     info_lines+=("DWM:  $dwm_ver")
 
     # Kernel
@@ -490,7 +552,7 @@ main_menu() {
                 else
                     # Try repo-local copy
                     local kb
-                    kb="$(dirname "$0")/dwm-keybinds"
+                    kb="$SELF_DIR/dwm-keybinds"
                     if [ -x "$kb" ]; then
                         "$kb"
                     else

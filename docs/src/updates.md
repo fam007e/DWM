@@ -67,6 +67,7 @@ python3 scripts/dwm-desktop-update record-user .
 
 The desktop shell provides a graphical Update Center accessible via <kbd>SUPER</kbd> + <kbd>SHIFT</kbd> + <kbd>U</kbd>, the top panel indicator icon, or Control Center:
 - Checks remote Git repository status and release availability in the background (`dwm-quickshell-version-check`).
+- **Developer vs. End-User Awareness:** Distinguishes between developer working checkouts (local modifications or development branches) and clean end-user installations. In developer checkouts, status reports `Developer checkout` without blocking or conflicting, preserving developer source modifications while providing clear context.
 - Displays available package updates, system health status, and changelogs.
 - Launches authenticated update procedures with progress feedback (`dwm-desktop-update-progress`).
 

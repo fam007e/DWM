@@ -33,6 +33,37 @@ PanelWindow {
         return "󰂎";
     }
 
+    function networkIcon(statusText, wifiNetworks) {
+        if (!statusText || statusText.indexOf("offline") >= 0 || statusText.indexOf("unavailable") >= 0) {
+            return "󰤭";
+        }
+        if (statusText.indexOf("NET ") === 0) {
+            const dev = statusText.substring(4).trim();
+            if (dev.indexOf("wl") === 0 || dev.indexOf("wifi") === 0) {
+                // Find signal strength if available
+                let activeSignal = -1;
+                if (wifiNetworks && wifiNetworks.length > 0) {
+                    for (let i = 0; i < wifiNetworks.length; i++) {
+                        if (wifiNetworks[i].active) {
+                            activeSignal = parseInt(wifiNetworks[i].signal, 10);
+                            break;
+                        }
+                    }
+                }
+                if (activeSignal >= 80) return "󰤨";
+                if (activeSignal >= 60) return "󰤥";
+                if (activeSignal >= 40) return "󰤢";
+                if (activeSignal >= 20) return "󰤟";
+                if (activeSignal >= 0) return "󰤯";
+                return "󰤨";
+            }
+            if (dev.indexOf("en") === 0 || dev.indexOf("eth") === 0) {
+                return "󰈀";
+            }
+        }
+        return "󰤨";
+    }
+
     required property var state
     required property var clock
     required property var updateCenterModel
@@ -344,7 +375,7 @@ PanelWindow {
                                 text: root.bluetoothModel.icon
                                 color: !root.bluetoothModel.powered ? Theme.menuMutedText
                                     : (root.bluetoothModel.connected ? Theme.accent : Theme.textStrong)
-                                font.pixelSize: Theme.scaledFontSize(14 * 1.35, 8)
+                                font.pixelSize: Theme.scaledFontSize(14 * 1.13, 8)
                             }
                         }
 
@@ -380,10 +411,10 @@ PanelWindow {
                             spacing: Theme.compactSpacing
 
                             IconText {
-                                text: root.networkModel.statusText.indexOf("offline") >= 0
-                                    || root.networkModel.statusText.indexOf("unavailable") >= 0 ? "󰤭" : "󰤨"
-                                color: Theme.textStrong
-                                font.pixelSize: Theme.scaledFontSize(14 * 1.2, 8)
+                                text: root.networkIcon(root.networkModel.statusText, root.networkModel.wifiNetworks)
+                                color: root.networkModel.statusText.indexOf("offline") >= 0
+                                    || root.networkModel.statusText.indexOf("unavailable") >= 0 ? Theme.menuMutedText : Theme.textStrong
+                                font.pixelSize: Theme.scaledFontSize(14 * 1.85, 8)
                             }
                         }
 

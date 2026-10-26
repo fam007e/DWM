@@ -2,234 +2,307 @@
 """
 dwm-wallpaper-palette.py
 ────────────────────────
-Extracts a dominant color palette from a wallpaper image using PIL/Pillow
-and updates ~/.config/dwm/themes.toml under the [theme.dynamic] section,
-then reloads DWM (kill -USR1) so all windows, borders, terminal, and
-Quickshell update live.
+Extracts a palette from a wallpaper with Pillow (median-cut, population
+weighted) and rewrites the [theme.dynamic] table of ~/.config/dwm/themes.toml,
+then sends SIGUSR1 to *this user's* dwm if the dynamic theme is active.
 
-Zero external dependencies beyond standard Python 3 + Pillow.
-If wallust or matugen are installed, it can delegate to them; otherwise
-it runs native k-means / median-cut quantization.
+Only the user's own config file is written. Files under the managed install
+tree (~/.local/share/dwm) are never modified: the desktop updater fingerprints
+them and would report drift.
+
+Requires Pillow. Without it the script prints a notice and exits 0.
 """
 
-import sys
+import colorsys
+import fcntl
 import os
 import re
+import shutil
 import signal
 import subprocess
-from pathlib import Path
+import sys
+import tempfile
 
 try:
     from PIL import Image
 except ImportError:
-    print("dwm-wallpaper-palette: PIL/Pillow not installed. Skipping dynamic palette extraction.", file=sys.stderr)
+    print("dwm-wallpaper-palette: Pillow not installed. Skipping dynamic palette extraction.",
+          file=sys.stderr)
     sys.exit(0)
 
+# Pillow < 9.1 compatibility
+_BILINEAR = getattr(getattr(Image, "Resampling", Image), "BILINEAR")
+_MEDIANCUT = getattr(getattr(Image, "Quantize", Image), "MEDIANCUT")
+
+
+# ── Colour maths ──────────────────────────────────────────────────────────────
+
 def hex_color(rgb):
-    return f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
+    return "#{:02x}{:02x}{:02x}".format(*(max(0, min(255, int(round(c)))) for c in rgb))
 
-def luminance(rgb):
-    return 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]
 
-def adjust_lightness(rgb, factor):
-    return tuple(max(0, min(255, int(c * factor))) for c in rgb)
+def _lin(channel):
+    c = channel / 255.0
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
 
-def extract_palette(image_path, num_colors=16):
-    img = Image.open(image_path).convert("RGB")
-    # Resize thumbnail for fast processing
-    img.thumbnail((200, 200), Image.Resampling.BILINEAR)
 
-    # Use median cut quantization
-    quantized = img.quantize(colors=num_colors, method=Image.Quantize.MEDIANCUT)
-    palette_raw = quantized.getpalette()[:num_colors * 3]
-    colors = [
-        (palette_raw[i * 3], palette_raw[i * 3 + 1], palette_raw[i * 3 + 2])
-        for i in range(num_colors)
-    ]
+def rel_luminance(rgb):
+    r, g, b = (_lin(c) for c in rgb)
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
-    # Sort colors by luminance
-    colors.sort(key=luminance)
 
-    # Background is darkest dominant color, clamped to be dark enough
-    darkest = colors[0]
-    if luminance(darkest) > 50:
-        bg = adjust_lightness(darkest, 0.3)
+def contrast(a, b):
+    la, lb = rel_luminance(a), rel_luminance(b)
+    hi, lo = max(la, lb), min(la, lb)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+def to_hls(rgb):
+    return colorsys.rgb_to_hls(*(c / 255.0 for c in rgb))
+
+
+def from_hls(h, l, s):
+    r, g, b = colorsys.hls_to_rgb(h % 1.0, max(0.0, min(1.0, l)), max(0.0, min(1.0, s)))
+    return (round(r * 255), round(g * 255), round(b * 255))
+
+
+def shift_lightness(rgb, delta):
+    h, l, s = to_hls(rgb)
+    return from_hls(h, l + delta, s)
+
+
+def ensure_contrast(rgb, bg, target):
+    """Raise lightness (hue/saturation kept) until contrast against bg >= target."""
+    h, l, s = to_hls(rgb)
+    candidate = rgb
+    while contrast(candidate, bg) < target and l < 0.98:
+        l += 0.02
+        candidate = from_hls(h, l, s)
+    return candidate
+
+
+def saturation(rgb):
+    return to_hls(rgb)[2]
+
+
+# ── Extraction ────────────────────────────────────────────────────────────────
+
+def dominant_colors(image_path, num_colors=16):
+    """Return [(rgb, share)] sorted by share descending, using real pixel counts."""
+    with Image.open(image_path) as source:
+        img = source.convert("RGB")
+    img.thumbnail((200, 200), _BILINEAR)
+    quantized = img.quantize(colors=num_colors, method=_MEDIANCUT)
+    palette = quantized.getpalette() or []
+    counted = quantized.getcolors(maxcolors=256) or []
+    total = sum(count for count, _ in counted) or 1
+    colors = []
+    for count, index in counted:
+        base = index * 3
+        if base + 2 >= len(palette):
+            continue
+        colors.append(((palette[base], palette[base + 1], palette[base + 2]), count / total))
+    colors.sort(key=lambda item: item[1], reverse=True)
+    return colors
+
+
+def extract_palette(image_path):
+    colors = dominant_colors(image_path)
+    if not colors:
+        raise ValueError("no colours extracted")
+
+    # Background: darkest colour that covers a meaningful share, forced dark but not pure black
+    meaningful = [c for c in colors if c[1] >= 0.02] or colors
+    darkest = min(meaningful, key=lambda item: rel_luminance(item[0]))[0]
+    h, l, s = to_hls(darkest)
+    bg = from_hls(h, min(max(l, 0.05), 0.10), min(s, 0.45))
+
+    # Accent: most saturated, well-represented colour; lightness raised to reach 4.5:1
+    pool = [c for c in colors if c[1] >= 0.01 and saturation(c[0]) >= 0.25 and 0.15 <= to_hls(c[0])[1] <= 0.9]
+    if pool:
+        base = max(pool, key=lambda item: saturation(item[0]) * (item[1] ** 0.5))[0]
+        ah, al, as_ = to_hls(base)
+        accent = from_hls(ah, max(al, 0.55), max(as_, 0.45))
     else:
-        bg = darkest
+        accent = from_hls(210 / 360.0, 0.60, 0.50)
+    accent = ensure_contrast(accent, bg, 4.5)
 
-    # Foreground is lightest dominant color, clamped to be bright enough
-    lightest = colors[-1]
-    if luminance(lightest) < 180:
-        fg = (230, 235, 240)
-    else:
-        fg = lightest
+    # Foreground: tinted near-white, >= 7:1
+    lightest = max(colors, key=lambda item: rel_luminance(item[0]))[0]
+    fh, _, fs = to_hls(lightest)
+    fg = ensure_contrast(from_hls(fh, 0.90, min(fs, 0.12)), bg, 7.0)
 
-    # Accent is the most saturated mid-tone color, ensuring minimum 4.5:1 contrast against bg
-    def saturation(c):
-        mx = max(c)
-        mn = min(c)
-        return (mx - mn) / mx if mx > 0 else 0
+    border_norm = shift_lightness(bg, 0.12)
+    selected_bg = shift_lightness(bg, 0.07)
 
-    # Ensure accent has adequate luminance against dark background (lum > 95)
-    candidates = [c for c in colors if 90 <= luminance(c) <= 210]
-    if candidates:
-        candidates.sort(key=saturation, reverse=True)
-        accent = candidates[0]
-    else:
-        # Boost saturation/lightness of the mid tone
-        mid = colors[len(colors) // 2]
-        factor = 120.0 / max(luminance(mid), 1)
-        accent = adjust_lightness(mid, min(factor, 2.5))
+    ansi_hues = [0, 120, 50, 215, 300, 180]  # R G Y B M C
+    normal = [ensure_contrast(from_hls(hue / 360.0, 0.62, 0.60), bg, 4.5) for hue in ansi_hues]
+    bright = [ensure_contrast(from_hls(hue / 360.0, 0.76, 0.65), bg, 7.0) for hue in ansi_hues]
 
-    # Inactive border: visible separation against bg
-    border_norm = adjust_lightness(bg, 2.2)
-    if luminance(border_norm) < 25:
-        border_norm = (max(border_norm[0], 50), max(border_norm[1], 50), max(border_norm[2], 65))
-    # Selected border: vibrant accent
-    border_sel = accent
-
-    # Generate a legible, contrast-guaranteed 16-color ANSI palette
-    # Colors 1-6 (standard): Red, Green, Yellow, Blue, Magenta, Cyan
-    # Colors 9-14 (bright): Bright versions with boosted lightness
-    import colorsys
-
-    ansi_hues = [0, 120, 50, 215, 300, 180]  # R, G, Y, B, M, C
-
-    ansi_normal = []
-    ansi_bright = []
-    for h in ansi_hues:
-        # Standard: Lightness ~0.62, Saturation ~0.60 -> guaranteed >= 5.0:1 contrast
-        r, g, b = colorsys.hls_to_rgb(h / 360.0, 0.62, 0.60)
-        ansi_normal.append(tuple(int(c * 255) for c in (r, g, b)))
-        # Bright: Lightness ~0.76, Saturation ~0.65 -> guaranteed >= 8.0:1 contrast
-        r, g, b = colorsys.hls_to_rgb(h / 360.0, 0.76, 0.65)
-        ansi_bright.append(tuple(int(c * 255) for c in (r, g, b)))
-
-    c0 = adjust_lightness(bg, 1.25)       # Black (surface/bg fill)
-    c7 = (216, 222, 233)                  # White (fg text, contrast > 10:1)
-    c8 = adjust_lightness(bg, 2.2)        # Bright Black (muted comments)
-    if luminance(c8) < 35:
-        c8 = (75, 85, 105)
-    c15 = (236, 239, 244)                 # Bright White (bold fg)
-
-    full_ansi = [
-        c0,
-        ansi_normal[0],  # 1: red
-        ansi_normal[1],  # 2: green
-        ansi_normal[2],  # 3: yellow
-        ansi_normal[3],  # 4: blue
-        ansi_normal[4],  # 5: magenta
-        ansi_normal[5],  # 6: cyan
-        c7,              # 7: white
-        c8,              # 8: bright black
-        ansi_bright[0],  # 9: bright red
-        ansi_bright[1],  # 10: bright green
-        ansi_bright[2],  # 11: bright yellow
-        ansi_bright[3],  # 12: bright blue
-        ansi_bright[4],  # 13: bright magenta
-        ansi_bright[5],  # 14: bright cyan
-        c15              # 15: bright white
-    ]
+    c0 = shift_lightness(bg, 0.04)
+    c7 = ensure_contrast((216, 222, 233), bg, 7.0)
+    c8 = ensure_contrast(shift_lightness(bg, 0.22), bg, 3.0)
+    c15 = ensure_contrast((236, 239, 244), bg, 10.0)
+    full_ansi = [c0, *normal, c7, c8, *bright, c15]
 
     return {
         "normbgcolor": hex_color(bg),
         "normfgcolor": hex_color(fg),
         "normbordercolor": hex_color(border_norm),
-        "selbgcolor": hex_color(adjust_lightness(bg, 1.45)),
-        "selfgcolor": "#eceff4",
-        "selbordercolor": hex_color(border_sel),
+        "selbgcolor": hex_color(selected_bg),
+        "selfgcolor": hex_color(ensure_contrast((236, 239, 244), selected_bg, 7.0)),
+        "selbordercolor": hex_color(accent),
         "term_bg": hex_color(bg),
         "term_fg": hex_color(fg),
         "term_cursor": hex_color(accent),
-        "colors": [hex_color(c) for c in full_ansi]
+        "colors": [hex_color(c) for c in full_ansi],
     }
 
+
+# ── themes.toml handling ──────────────────────────────────────────────────────
+
+_DYNAMIC_HEADER = re.compile(r"^\s*\[theme\.dynamic\]\s*(#.*)?$")
+_ANY_TABLE = re.compile(r"^\s*\[")
+_SECTION_COMMENT = "# ── Dynamic (Extracted from Wallpaper) ────────────────────────────────────────"
+
+
+def dynamic_block_lines(palette):
+    lines = [
+        _SECTION_COMMENT,
+        "[theme.dynamic]",
+        f'normfgcolor     = "{palette["normfgcolor"]}"',
+        f'normbgcolor     = "{palette["normbgcolor"]}"',
+        f'normbordercolor = "{palette["normbordercolor"]}"',
+        f'selfgcolor      = "{palette["selfgcolor"]}"',
+        f'selbgcolor      = "{palette["selbgcolor"]}"',
+        f'selbordercolor  = "{palette["selbordercolor"]}"',
+        "",
+        f'term_bg         = "{palette["term_bg"]}"',
+        f'term_fg         = "{palette["term_fg"]}"',
+        f'term_cursor     = "{palette["term_cursor"]}"',
+    ]
+    lines += [f'term_color{i:<4}= "{value}"' for i, value in enumerate(palette["colors"])]
+    lines += ["", "dark_mode       = true"]
+    return lines
+
+
+def replace_dynamic_section(content, palette):
+    """Replace only the [theme.dynamic] table; every other table is left untouched."""
+    lines = content.splitlines()
+    block = dynamic_block_lines(palette)
+    header = next((i for i, line in enumerate(lines) if _DYNAMIC_HEADER.match(line)), None)
+
+    if header is None:
+        while lines and not lines[-1].strip():
+            lines.pop()
+        return "\n".join(lines + ([""] if lines else []) + block) + "\n"
+
+    start = header
+    if start > 0 and lines[start - 1].lstrip().startswith("# ── Dynamic"):
+        start -= 1
+    end = next((i for i in range(header + 1, len(lines)) if _ANY_TABLE.match(lines[i])), len(lines))
+    # Comments/blank lines directly before the next table belong to that table
+    while end > header + 1 and (not lines[end - 1].strip() or lines[end - 1].lstrip().startswith("#")):
+        end -= 1
+    rest = lines[end:]
+    if rest and rest[0].strip():
+        block = block + [""]
+    return "\n".join(lines[:start] + block + rest).rstrip("\n") + "\n"
+
+
 def update_themes_toml(palette, toml_path):
-    if not os.path.exists(toml_path):
-        return False
-
-    with open(toml_path, "r", encoding="utf-8") as f:
-        content = f.read()
-
-    # Generate dynamic section
-    colors_lines = "\n".join([f"term_color{i}    = \"{palette['colors'][i]}\"" for i in range(len(palette['colors']))])
-    dynamic_block = f"""
-# ── Dynamic (Extracted from Wallpaper) ────────────────────────────────────────
-[theme.dynamic]
-normfgcolor     = "{palette['normfgcolor']}"
-normbgcolor     = "{palette['normbgcolor']}"
-normbordercolor = "{palette['normbordercolor']}"
-selfgcolor      = "{palette['selfgcolor']}"
-selbgcolor      = "{palette['selbgcolor']}"
-selbordercolor  = "{palette['selbordercolor']}"
-
-term_bg         = "{palette['term_bg']}"
-term_fg         = "{palette['term_fg']}"
-term_cursor     = "{palette['term_cursor']}"
-{colors_lines}
-
-dark_mode       = true
-"""
-
-    if "[theme.dynamic]" in content:
-        new_content = re.sub(r'# ── Dynamic.*?\n\[theme\.dynamic\].*?(?=\n\[theme|\Z)', dynamic_block.strip() + "\n\n", content, flags=re.DOTALL)
-    else:
-        new_content = content.rstrip() + "\n" + dynamic_block
-
-    if new_content == content:
-        return False
-
-    with open(toml_path, "w", encoding="utf-8") as f:
-        f.write(new_content)
-
+    target = os.path.realpath(toml_path)  # keep dotfile-manager symlinks intact
+    directory = os.path.dirname(target)
+    lock_path = os.path.join(directory, ".themes.toml.lock")
+    with open(lock_path, "a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        with open(target, "r", encoding="utf-8") as stream:
+            content = stream.read()
+        new_content = replace_dynamic_section(content, palette)
+        if new_content == content:
+            return False
+        mode = os.stat(target).st_mode & 0o7777
+        descriptor, temporary = tempfile.mkstemp(prefix=".themes.toml.", dir=directory)
+        try:
+            with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+                stream.write(new_content)
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.chmod(temporary, mode)
+            os.replace(temporary, target)
+        except BaseException:
+            try:
+                os.unlink(temporary)
+            except OSError:
+                pass
+            raise
     return True
 
+
 def is_dynamic_active(toml_path):
-    if not os.path.exists(toml_path):
-        return False
     try:
-        with open(toml_path, "r", encoding="utf-8") as f:
-            content = f.read()
-        m = re.search(r'\[active\][^\[]*?theme\s*=\s*["\']([^"\']+)["\']', content)
-        return bool(m and m.group(1).strip() == "dynamic")
-    except Exception:
+        with open(toml_path, "r", encoding="utf-8") as stream:
+            content = stream.read()
+    except OSError:
         return False
+    match = re.search(r'^\s*\[active\]\s*$(.*?)(?=^\s*\[|\Z)', content, re.M | re.S)
+    if not match:
+        return False
+    value = re.search(r'^\s*theme\s*=\s*["\']([^"\']+)["\']', match.group(1), re.M)
+    return bool(value and value.group(1).strip() == "dynamic")
+
 
 def reload_dwm():
-    # Find dwm pid and send SIGUSR1 to reload themes.toml
+    """SIGUSR1 to the current user's dwm only."""
     try:
-        pid = subprocess.check_output(["pidof", "dwm"]).decode().strip().split()[0]
-        os.kill(int(pid), signal.SIGUSR1)
-    except Exception:
-        pass
+        output = subprocess.check_output(["pgrep", "-x", "-u", str(os.getuid()), "dwm"], text=True)
+        for pid in output.split():
+            os.kill(int(pid), signal.SIGUSR1)
+    except subprocess.CalledProcessError:
+        pass  # dwm not running for this user
+    except (OSError, subprocess.SubprocessError, ValueError) as error:
+        print(f"dwm-wallpaper-palette: could not signal dwm: {error}", file=sys.stderr)
+
+
+def seed_user_config(toml_path):
+    """Create the user's themes.toml from the installed default if it does not exist."""
+    if os.path.exists(toml_path):
+        return True
+    data_home = os.environ.get("XDG_DATA_HOME", os.path.expanduser("~/.local/share"))
+    default = os.path.join(data_home, "dwm", "config", "themes.toml")
+    if not os.path.isfile(default):
+        return False
+    os.makedirs(os.path.dirname(toml_path), exist_ok=True)
+    shutil.copyfile(default, toml_path)  # read-only access to the managed tree
+    return True
+
 
 def main():
     if len(sys.argv) < 2:
         print(f"Usage: {sys.argv[0]} <path_to_wallpaper_image>", file=sys.stderr)
-        sys.exit(1)
-
+        return 1
     wallpaper = sys.argv[1]
     if not os.path.isfile(wallpaper):
-        sys.exit(1)
+        print(f"dwm-wallpaper-palette: not a file: {wallpaper}", file=sys.stderr)
+        return 1
 
     config_home = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
     toml_path = os.path.join(config_home, "dwm", "themes.toml")
+    if not seed_user_config(toml_path):
+        print("dwm-wallpaper-palette: no themes.toml found", file=sys.stderr)
+        return 1
 
-    # If local repo themes.toml exists, also update it
-    repo_toml = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "themes.toml")
+    try:
+        palette = extract_palette(wallpaper)
+    except (OSError, ValueError, Image.DecompressionBombError) as error:
+        print(f"dwm-wallpaper-palette: cannot read image: {error}", file=sys.stderr)
+        return 1
 
-    palette = extract_palette(wallpaper)
-
-    updated = False
-    if os.path.exists(toml_path):
-        updated = update_themes_toml(palette, toml_path) or updated
-    if os.path.exists(repo_toml):
-        update_themes_toml(palette, repo_toml)
-
-    # Note: Only switch active theme to dynamic if the user explicitly configured theme = "dynamic"
-    # or if requested. We notify DWM if dynamic is active and palette changed.
+    updated = update_themes_toml(palette, toml_path)
     if updated and is_dynamic_active(toml_path):
         reload_dwm()
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

@@ -189,7 +189,7 @@ Scope {
     }
 
     Process {
-        command: ["sh", "-c", "command -v busctl >/dev/null 2>&1 && exec busctl --system monitor org.bluez"]
+        command: ["sh", "-c", "if command -v gdbus >/dev/null 2>&1; then exec gdbus monitor --system --dest org.bluez; elif command -v busctl >/dev/null 2>&1; then exec busctl --system monitor org.bluez; fi"]
         running: true
         stdout: SplitParser { onRead: monitorSettleTimer.restart() }
     }

@@ -36,11 +36,15 @@ def fail(message):
 def trusted(path, directory=False):
     path = Path(path)
     info = path.lstat()
+    resolved = None
     if stat.S_ISLNK(info.st_mode):
         if info.st_uid != 0:
             fail("Untrusted installed path: " + str(path))
         resolved = path.resolve()
         info = resolved.lstat()
+        # The target's own ancestors must be root-controlled too
+        if resolved.parent != path.parent:
+            trusted(resolved.parent, True)
     if info.st_uid != 0 or info.st_mode & 0o022 or not (
             stat.S_ISDIR(info.st_mode) if directory else stat.S_ISREG(info.st_mode)):
         fail("Untrusted installed path: " + str(path))
@@ -193,6 +197,11 @@ def install_packages(packages):
         ["/usr/bin/pacman", "-Q", "--", package], stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL, timeout=10).returncode != 0]
     if missing:
+        pending = subprocess.run(["/usr/bin/pacman", "-Qu"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                                 stdin=subprocess.DEVNULL, timeout=30, text=True)
+        if pending.stdout.strip():
+            # Installing new packages against a database with pending upgrades risks a partial upgrade
+            fail("System upgrades are pending. Run 'sudo pacman -Syu' first, then retry the desktop update.")
         print("Installing required desktop packages: " + ", ".join(missing), flush=True)
         subprocess.run(["/usr/bin/pacman", "-S", "--noconfirm", "--needed", "--", *missing], check=True,
                        env={"PATH": "/usr/bin:/bin", "HOME": "/root", "LANG": "C.UTF-8"},
@@ -369,13 +378,12 @@ def main():
     os.umask(0o022)
     uid = caller_uid()
     if (os.geteuid() != 0 or uid is None
-            or (Path(__file__).absolute() != PREFIX / "libexec/dwm/dwm-desktop-update-root" and
-                Path(__file__).absolute() != PREFIX / "libexec/dwm/dwm-desktop-update-root")):
+            or Path(__file__).absolute() != PREFIX / "libexec/dwm/dwm-desktop-update-root"):
         fail("Use the installed desktop updater through polkit or sudo")
     trusted(Path(__file__).absolute())
     if not os.access(__file__, os.X_OK):
         fail("Installed helper is not executable")
-    if not re.search(r'^ID(?:_LIKE)?=.*(?:arch|artix|endeavouros|manjaro)', Path("/etc/os-release").read_text(), re.M):
+    if not re.search(r'^ID(?:_LIKE)?=.*\b(?:arch|artix|endeavouros|manjaro)\b', Path("/etc/os-release").read_text(), re.M):
         fail("Desktop updates support Arch Linux only")
     if uid == 0:
         fail("A desktop user must request this operation")
@@ -421,7 +429,13 @@ def perform(args, uid):
                     continue
                 if journal.get("state") not in ("complete", "rolled-back"):
                     fail("Interrupted system installation requires rollback: " + journal_path.parent.name)
-            apply_archive(args[1], args[2], args[3], uid, args[4], args[5])
+            try:
+                apply_archive(args[1], args[2], args[3], uid, args[4], args[5])
+            except BaseException:
+                orphan = STATE / args[3]
+                if orphan.is_dir() and not (orphan / "journal.json").exists():
+                    shutil.rmtree(orphan, ignore_errors=True)  # failed before any journal; nothing to recover
+                raise
         elif args[0] == "rollback" and len(args) == 2 and re.fullmatch(r"[0-9a-f]{32}", args[1]):
             backup = STATE / args[1]
             if not (backup / "journal.json").exists():

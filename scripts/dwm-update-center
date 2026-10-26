@@ -193,7 +193,21 @@ def reserve_operation(provider, action, now=None):
         recoverable = {"interrupted", "system-failed", "system-complete/user-failed"}
         if action == "recover" and (existing is None or existing["provider"] != provider
                                     or existing["phase"] not in recoverable):
-            raise ValueError("provider has no matching recoverable operation state")
+            if provider == "dwm":
+                try:
+                    dstatus = json.loads((Path.home() / ".local/state/dwm/desktop-update/status.json").read_text())
+                    if dstatus.get("state") == "interrupted":
+                        existing = {"schema": 1, "operation": f"op-{dstatus.get('operation', '0'*32)}",
+                                    "provider": "dwm", "action": "update", "phase": "interrupted",
+                                    "outcome": "failed", "provider_phase": "interrupted",
+                                    "created": int(dstatus.get("startedAt", now)), "updated": now,
+                                    "terminal_pid": 0, "terminal_identity": "", "launcher_pid": 0,
+                                    "launcher_identity": "", "recovery_of": "", "recovery_phase": "",
+                                    "recovery_provider_phase": "", "detail": dstatus.get("detail", "Interrupted")}
+                except Exception:
+                    pass
+            if existing is None or existing["provider"] != provider or existing["phase"] not in recoverable:
+                raise ValueError("provider has no matching recoverable operation state")
         if action == "update" and existing is not None and existing["phase"] != "closed":
             raise BlockingIOError("another provider terminal owns the active slot")
         if existing is not None and existing["phase"] not in {"closed"}:
@@ -1056,7 +1070,7 @@ def desktop_status(payload):
             or type(value.get("statusInvalid", False)) is not bool
             or value.get("restart") not in {"none", "session", "system"}
             or value.get("state") not in DESKTOP_ACTIVE | {"unknown", "checking", "available", "current",
-                "drift", "blocked", "failed", "interrupted", "complete", "restart-required", "canceled"}):
+                "drift", "blocked", "developer", "failed", "interrupted", "complete", "restart-required", "canceled"}):
         raise ValueError("invalid desktop status")
     for field in ("installed", "available"):
         if not isinstance(value.get(field), str) or not re.fullmatch(r"unknown|[0-9a-f]{40}", value[field]):
@@ -1069,25 +1083,74 @@ def scan_desktop():
     helper = trusted_desktop_helper()
     if not helper:
         helper = shutil.which("dwm-desktop-update")
-    if helper:
-        try:
-            out = subprocess.check_output([helper, "check"], stderr=subprocess.DEVNULL, text=True, timeout=15)
-            status = desktop_status(out)
-            can_update = status.get("canUpdate", False)
-            detail = status.get("detail", "DWM is up to date")
-            restart = status.get("restart", "none")
-            item = ItemResult("update", "dwm", status.get("installed", "unknown"),
-                              status.get("available", "unknown"), "dwm", "desktop") if can_update else None
-            items = (item,) if item else ()
-            return ProviderResult("dwm", "available", pending=len(items), managed=1,
-                                  freshness="fresh", last_success=int(time.time()),
-                                  update_available=can_update, detail=detail,
-                                  restart=restart, items=items)
-        except Exception:
-            pass
-    return ProviderResult("dwm", "available", 0, 1,
-                          freshness="fresh", last_success=int(time.time()),
-                          update_available=False, detail="DWM is up to date")
+    if not helper:
+        return ProviderResult("dwm", "unavailable", 0, 0,
+                              freshness="error", last_success=0,
+                              update_available=False, error_code="missing-provider",
+                              detail="DWM update helper is not installed")
+    now = int(time.time())
+    try:
+        out = subprocess.check_output([helper, "check"], stderr=subprocess.DEVNULL, text=True, timeout=75)
+        status = desktop_status(out)
+        restart = status.get("restart", "none")
+        state = status.get("state", "unknown")
+        installed = status.get("installed", "unknown")
+        available = status.get("available", "unknown")
+        detail = status.get("detail", "DWM is up to date")
+
+        if restart != "none" or state == "restart-required":
+            return ProviderResult("dwm", "available", pending=0, managed=1,
+                                  freshness="fresh", last_success=now,
+                                  update_available=False, detail=detail,
+                                  restart=restart, items=())
+
+        if state == "interrupted":
+            return ProviderResult("dwm", "restricted", pending=0, managed=1,
+                                  freshness="fresh", last_success=now,
+                                  update_available=False, error_code="interrupted",
+                                  detail=detail, restart=restart, items=())
+
+        if state == "developer":
+            return ProviderResult("dwm", "available", pending=0, managed=1,
+                                  freshness="fresh", last_success=now,
+                                  update_available=False,
+                                  detail=detail, restart=restart, items=())
+
+        if state == "blocked":
+            return ProviderResult("dwm", "restricted", pending=0, managed=1,
+                                  freshness="fresh", last_success=now,
+                                  update_available=False, error_code="conflict",
+                                  detail=detail, restart=restart, items=())
+
+        if state == "failed":
+            error_code = "network" if any(w in detail.lower() for w in ("connect", "git", "network", "timeout")) else "scan-failed"
+            return ProviderResult("dwm", "unavailable", pending=0, managed=1,
+                                  freshness="error", last_success=now,
+                                  update_available=False, error_code=error_code,
+                                  detail=detail, restart=restart, items=())
+
+        can_update = status.get("canUpdate", False)
+        items = ()
+        if can_update and installed != available and available != "unknown":
+            items = (ItemResult("update", "dwm", installed, available, "dwm", "desktop"),)
+        elif can_update and state == "drift":
+            items = (ItemResult("reinstall", "dwm", installed, available, "dwm", "desktop"),)
+
+        return ProviderResult("dwm", "available", pending=len(items), managed=1,
+                              freshness="fresh", last_success=now,
+                              update_available=can_update and len(items) > 0, detail=detail,
+                              restart=restart, items=items)
+
+    except subprocess.TimeoutExpired:
+        return ProviderResult("dwm", "available", pending=0, managed=1,
+                              freshness="stale", last_success=0,
+                              update_available=False, error_code="timeout",
+                              detail="DWM update check timed out")
+    except Exception as error:
+        return ProviderResult("dwm", "available", pending=0, managed=1,
+                              freshness="error", last_success=0,
+                              update_available=False, error_code="scan-failed",
+                              detail=str(error)[:200])
 
 
 def optional_executable(name):

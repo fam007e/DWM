@@ -437,6 +437,38 @@ def record_user(source):
     write_json(state / "installed.json", manifest)
 
 
+def prune_recovery_artifacts():
+    config, data, state = paths()
+    active_op = ""
+    try:
+        active_op = status_read(state).get("operation", "")
+    except Exception:
+        pass
+    for parent in dict.fromkeys([config, data.parent, config / "quickshell", data]):
+        if not parent.is_dir():
+            continue
+        try:
+            for item in parent.iterdir():
+                if item.name.startswith(".dwm-update-") and item.is_dir():
+                    if active_op and active_op in item.name:
+                        continue
+                    shutil.rmtree(item, ignore_errors=True)
+        except OSError:
+            pass
+
+    ops_dir = state / "operations"
+    if ops_dir.is_dir():
+        try:
+            entries = [p for p in ops_dir.iterdir() if p.is_dir() and re.fullmatch(r"[0-9a-f]{32}", p.name)]
+            entries.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+            for old in entries[3:]:
+                if active_op and old.name == active_op:
+                    continue
+                shutil.rmtree(old, ignore_errors=True)
+        except OSError:
+            pass
+
+
 def verify_receipts(source, manifest_path):
     manifest = read_json(Path(manifest_path))
     user = read_json(paths()[2] / "installed.json")
@@ -695,11 +727,20 @@ def checkout_reason(path, runner=None):
 def checkout_ancestry_reason(path, revision):
     if not (path / ".git").exists():
         return ""
+    try:
+        if run(["git", "-C", str(path), "cat-file", "-t", revision]).strip() == "commit":
+            res = subprocess.run(["git", "-C", str(path), "merge-base", "--is-ancestor", "HEAD", revision])
+            if res.returncode == 0:
+                return ""
+            elif res.returncode == 1:
+                return "Local source has divergent history. Use the source installer."
+    except Exception:
+        pass
     with tempfile.TemporaryDirectory(prefix="desktop-ancestry-") as temporary:
         repository = Path(temporary)
         run(["git", "init", "--bare", repository])
         run(["git", "-C", repository, "fetch", "--no-tags", path, "HEAD:refs/heads/local"])
-        run(["git", "-C", repository, "fetch", "--no-tags", SOURCE, revision + ":refs/heads/upstream"], timeout=30)
+        run(["git", "-C", repository, "fetch", "--depth=100", "--no-tags", SOURCE, revision + ":refs/heads/upstream"], timeout=30)
         try:
             run(["git", "-C", repository, "merge-base", "--is-ancestor", "refs/heads/local", "refs/heads/upstream"])
         except CommandFailure as error:
@@ -749,12 +790,30 @@ def drift(manifest, user, check_ownership=True):
             changes.append(name)
     for name, expected in user.get("trees", {}).items():
         try:
-            matches = tree_manifest(Path(name)) == expected and Path(name).is_dir()
-        except OSError:
-            matches = False
-        if not matches:
+            current = tree_manifest(Path(name)) if Path(name).is_dir() else None
+        except (OSError, RuntimeError):
+            current = None
+        if current == expected:
+            continue
+        if current is None:
             changes.append(name)
+            continue
+        differing = sorted(key for key in set(current) | set(expected) if current.get(key) != expected.get(key))
+        changes.extend(str(Path(name) / key) for key in differing[:5])
+        if len(differing) > 5:
+            changes.append(name + " (+" + str(len(differing) - 5) + " more files)")
     return changes
+
+
+def describe_drift(changes, packages):
+    """Short, human-readable reason for a drift state (shown in the Update Center)."""
+    home = str(Path.home())
+    parts = [("~" + item[len(home):] if item.startswith(home + "/") else item) for item in changes[:3]]
+    if len(changes) > 3:
+        parts.append("+" + str(len(changes) - 3) + " more")
+    if packages:
+        parts.append("missing packages: " + ", ".join(packages[:3]))
+    return "Managed desktop files need syncing: " + "; ".join(parts) if parts else "Managed desktop files need syncing"
 
 
 def missing_packages(packages):
@@ -786,9 +845,10 @@ def check_bounded(force=False):
         value.pop("statusInvalid", None)
         save_status(state, value, state="checking", detail="Checking desktop files and upstream main...", canUpdate=False, percent=-1)
         try:
+            prune_recovery_artifacts()
             validate_update_paths()
             validate_user_trees()
-            if not re.search(r'^ID(?:_LIKE)?=.*(?:arch|artix|endeavouros|manjaro)', Path("/etc/os-release").read_text(), re.M):
+            if not re.search(r'^ID(?:_LIKE)?=.*\b(?:arch|artix|endeavouros|manjaro)\b', Path("/etc/os-release").read_text(), re.M):
                 raise RuntimeError("Desktop updates support Arch Linux only")
             manifest_path, manifest = installation()
             user = read_json(state / "installed.json") if (state / "installed.json").exists() else {}
@@ -823,12 +883,27 @@ def check_bounded(force=False):
                 if session_ready:
                     value["restart"] = "none"
                     value.pop("activationShells", None)
+                else:
+                    return save_status(state, value, state="restart-required", percent=100, checkedAt=int(time.time()),
+                                       canUpdate=False,
+                                       detail="Installed and verified. Log out and back in to activate the updated desktop.")
             upstream = run(["git", "ls-remote", "--exit-code", SOURCE, "refs/heads/main"], timeout=30).split()
             if len(upstream) != 2 or not re.fullmatch(r"[0-9a-f]{40}", upstream[0]):
                 raise RuntimeError("Upstream returned an invalid desktop revision")
             value["available"] = upstream[0]
-            reason = checkout_reason(data)
             checkout = Path(user.get("checkout") or str(data))
+            dev_mode = False
+            for path in dict.fromkeys((data, checkout)):
+                if path.exists() and (path / ".git").is_dir():
+                    try:
+                        branch = run(["git", "-C", path, "branch", "--show-current"]).strip()
+                        status = run(["git", "-C", path, "status", "--porcelain", "--untracked-files=all"]).strip()
+                        if branch != "main" or len(status) > 0:
+                            dev_mode = True
+                            break
+                    except Exception:
+                        pass
+            reason = checkout_reason(data)
             if not reason and checkout != data and checkout.exists():
                 reason = checkout_reason(checkout)
             if not reason:
@@ -836,15 +911,15 @@ def check_bounded(force=False):
                     reason = checkout_ancestry_reason(path, value["available"])
                     if reason:
                         break
-            if reason:
-                return save_status(state, value, state="blocked", detail=reason, checkedAt=int(time.time()))
             available = upstream[0] != value["installed"]
             repair = bool(value["changes"] or value["packages"])
-            if value.get("restart") == "session" and not available and not repair:
-                return save_status(state, value, state="restart-required", percent=100, checkedAt=int(time.time()),
-                                   detail="Installed and verified. Log out and back in to activate the updated desktop.")
+            if reason:
+                dev_detail = f"Developer checkout ({reason})"
+                return save_status(state, value, state="developer" if dev_mode else "blocked",
+                                   detail=dev_detail if dev_mode else reason,
+                                   canUpdate=False, checkedAt=int(time.time()))
             return save_status(state, value, state="available" if available else "drift" if repair else "current",
-                               detail="A desktop update is available" if available else "Managed desktop files need syncing" if repair else "Your desktop is up to date",
+                               detail="A desktop update is available" if available else describe_drift(value["changes"], value["packages"]) if repair else "Your desktop is up to date",
                                canUpdate=available or repair, checkedAt=int(time.time()))
         except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
             return save_status(state, value, state="failed", detail=str(error), canUpdate=False, percent=-1)
@@ -1282,6 +1357,7 @@ def worker(operation):
                 write_json(directory / "completion.json", {"verified": True})
                 authorize(state, value, privileged, "complete", operation)
                 save_status(state, value, **completion)
+                prune_recovery_artifacts()
             except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as error:
                 print(str(error), flush=True)
                 denied = isinstance(error, CommandFailure) and error.returncode in (126, 127)
@@ -1516,6 +1592,8 @@ if __name__ == "__main__":
         sys.exit(main())
     except BlockingIOError:
         print(json.dumps(status_read(paths()[2])), flush=True)
+        if len(sys.argv) > 1 and sys.argv[1] in ("start", "recover"):
+            sys.exit(75)
     except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as error:
         print("Desktop update: " + str(error), file=sys.stderr)
         sys.exit(1)

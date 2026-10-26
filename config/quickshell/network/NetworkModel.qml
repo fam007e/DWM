@@ -497,13 +497,20 @@ Scope {
         }
     }
 
+    Timer {
+        id: networkSettleTimer
+        interval: 800
+        repeat: false
+        onTriggered: root.refresh(false)
+    }
+
     Process {
         id: networkMonitorProcess
         command: Commands.networkHelperCommand("monitor")
         running: true
 
         stdout: SplitParser {
-            onRead: root.refresh(false)
+            onRead: networkSettleTimer.restart()
         }
         onRunningChanged: {
             if (!running) networkMonitorRestartTimer.restart();

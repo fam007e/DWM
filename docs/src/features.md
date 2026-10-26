@@ -20,10 +20,11 @@ All bar widget popups support full bidirectional interaction by both keyboard an
 - **Automatic X11 Input Focus:** When any popup is opened (via hotkey or clicking a panel pill), DWM automatically grants X11 input focus to the popup. Keystrokes, navigation arrows, Enter/Space, and <kbd>Esc</kbd> are routed directly to the popup.
 - **Escape to Close:** Pressing <kbd>Esc</kbd> on any popup dismisses it and cleanly returns focus to the active client.
 - **Bluetooth Widget:**
-  - **Status Glyphs:** Displays `󰂱` (`nf-md-bluetooth_connect`) when connected, `󰂲` (`nf-md-bluetooth_off`) when disabled/off, and `󰂯` (`nf-md-bluetooth`) when idle.
+  - **Status Glyphs:** Displays `󰂱` (`nf-md-bluetooth_connect`) when connected, `󰂲` (`nf-md-bluetooth_off`) when disabled/off, and `󰂯` (`nf-md-bluetooth`) when idle. Real-time BlueZ event monitoring runs through user-accessible D-Bus signal subscription (`gdbus monitor`) for instant status synchronization.
   - **Mouse:** Left-click toggles popup; Right-click immediately toggles adapter power on/off.
   - **Keyboard:** <kbd>↓</kbd> / <kbd>↑</kbd> to select devices, <kbd>Enter</kbd> / <kbd>Space</kbd> to Connect / Disconnect / Pair, <kbd>s</kbd> to scan, <kbd>p</kbd> to toggle power.
 - **Network / WiFi Widget:**
+  - **Status Glyphs:** Dynamic Wi-Fi signal level indicators (`󰤨`, `󰤥`, `󰤢`, `󰤟`, `󰤯`) scaled for optical parity with panel icons, wired Ethernet connection icon (`󰈀`), and muted offline icon (`󰤭`). Network state transitions are event-monitored with settle debouncing to prevent UI blocking.
   - **Mouse:** Left-click toggles popup; Right-click triggers an immediate network scan.
   - **Keyboard:** <kbd>↓</kbd> / <kbd>↑</kbd> to select network, <kbd>Enter</kbd> to connect, <kbd>w</kbd> to toggle WiFi, <kbd>r</kbd> to rescan.
 - **Audio & Media Controls:**
