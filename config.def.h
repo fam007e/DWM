@@ -12,34 +12,24 @@ static const int swallowfloating              = 1;   /* 1 means swallow floating
 
 static const int showbar                      = 1;   /* 1 means show bar - needed for Quickshell space calculation */
 static const int topbar                       = 1;   /* 0 means bottom bar */
-#define ICONSIZE                              17     /* icon size */
-#define ICONSPACING                           5      /* space between icon and title */
-#define SHOWWINICON                           1      /* 0 means no winicon */
-static const char *fonts[]                    = { "MesloLGS Nerd Font Mono:size=13:antialias=true:autohint=true:hintstyle=hintfull", "NotoColorEmoji:pixelsize=13:antialias=true:autohint=true" };
 
 
 
 /* tagging */
 static const char *tags[] = { "", "󸀀 ", "", "", "󰕼", "", "", "", "" };
-static const char ptagf[] = "[%s %s]";  /* format of a tag label */
-static const char etagf[] = "[%s]";     /* format of an empty tag */
-static const int lcaselbl = 0;          /* 1 means make tag label lowercase */
-
 
 
 /* layout(s) */
 static const float mfact     = 0.55; /* factor of master area size [0.05..0.95] */
 static const int nmaster     = 1;    /* number of clients in master area */
 static const int resizehints = 0;    /* 1 means respect size hints in tiled resizals */
-static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
 
 static const Layout layouts[] = {
-    /* symbol     arrange function */
-    { "",      tile },    /* first entry is default */
-    { "",      NULL },    /* no layout function means floating behavior */
-    { "",      monocle },
+    /* arrange function */
+    { tile },    /* first entry is default */
+    { NULL },    /* no layout function means floating behavior */
+    { monocle },
 };
 
 /* key definitions */
 #define MODKEY Mod4Mask
-#define STATUSBAR "dwmblocks"
