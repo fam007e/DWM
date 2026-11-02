@@ -110,6 +110,7 @@ struct Client {
 	unsigned int tags;
 	int isfixed, isfloating, isurgent, neverfocus, oldstate, isfullscreen, isterminal, noswallow;
 	int alwaysontop;          /* from window-rules.toml: kept above tiled and floating clients */
+	int fillworkarea;         /* from window-rules.toml: resize to the monitor work area */
 	int ewmhabove;            /* _NET_WM_STATE_ABOVE / _STAYS_ON_TOP set by the client */
 	int issteam;
 	int rulefullscreenapplied; /* a fullscreen rule was consumed for this client */
@@ -174,6 +175,7 @@ typedef struct {
 	const char *title;
 	unsigned int tags;
 	int isfloating;
+	int fillworkarea;
 	int alwaysontop;
 	int isterminal;
 	int noswallow;
@@ -490,6 +492,7 @@ applyrules(Client *c)
 
 	/* rule matching */
 	c->isfloating = 0;
+	c->fillworkarea = 0;
 	c->alwaysontop = 0;
 	c->tags = 0;
 	XGetClassHint(dpy, c->win, &ch);
@@ -511,6 +514,9 @@ applyrules(Client *c)
 			c->isterminal = r->isterminal;
 			c->noswallow  = r->noswallow;
 			c->isfloating = r->isfloating;
+			c->fillworkarea = r->fillworkarea;
+			if (c->fillworkarea)
+				c->isfloating = 1;
 			c->alwaysontop = r->alwaysontop;
 			if (c->alwaysontop)
 				c->isfloating = 1;
@@ -549,6 +555,7 @@ applytitlerules(Client *c)
 	unsigned int i;
 	const Rule *r;
 	int changed = 0, titlefullscreen = RuleFullscreenNone, ignoresizehints = 0;
+	int fillworkarea = c->fillworkarea;
 	XClassHint ch = { NULL, NULL };
 
 	XGetClassHint(dpy, c->win, &ch);
@@ -567,6 +574,7 @@ applytitlerules(Client *c)
 				: (r->fullscreen ? RuleFullscreenReal : RuleFullscreenNone));
 			if (!r->title)
 				continue;
+			fillworkarea = r->fillworkarea;
 			c->isterminal = r->isterminal;
 			c->noswallow = r->noswallow;
 			if (r->isfloating && !c->isfloating) {
@@ -585,6 +593,12 @@ applytitlerules(Client *c)
 	if (ch.res_name)
 		XFree(ch.res_name);
 
+	if (c->fillworkarea != fillworkarea) {
+		c->fillworkarea = fillworkarea;
+		if (fillworkarea)
+			c->isfloating = 1;
+		changed = 1;
+	}
 	if (c->ignoresizehints != ignoresizehints) {
 		c->ignoresizehints = ignoresizehints;
 		updatesizehints(c);
@@ -697,8 +711,14 @@ arrange(Monitor *m)
 void
 arrangemon(Monitor *m)
 {
+	Client *c;
+
 	if (m->lt[m->sellt]->arrange)
 		m->lt[m->sellt]->arrange(m);
+	for (c = m->clients; c; c = c->next)
+		if (c->fillworkarea && ISVISIBLE(c))
+			resize(c, m->wx, m->wy, MAX(1, m->ww - 2 * c->bw),
+				MAX(1, m->wh - 2 * c->bw), 0);
 }
 
 void
@@ -3520,6 +3540,7 @@ load_rules_toml(const char *user_path, const char *default_path)
 	for (i = 0; i < n; i++) {
 		const TomlValue *vtag  = toml_table_get(doc, "rules", i, "tags");
 		const TomlValue *vfl   = toml_table_get(doc, "rules", i, "isfloating");
+		const TomlValue *vwork = toml_table_get(doc, "rules", i, "fillworkarea");
 		const TomlValue *vaot  = toml_table_get(doc, "rules", i, "alwaysontop");
 		const TomlValue *vfull = toml_table_get(doc, "rules", i, "fullscreen");
 		const TomlValue *vfake = toml_table_get(doc, "rules", i, "fakefullscreen");
@@ -3548,6 +3569,7 @@ load_rules_toml(const char *user_path, const char *default_path)
 		r->tags       = (vtag && vtag->type == TOML_INT && vtag->i >= 1 && vtag->i <= NTAGS)
 						? 1u << (vtag->i - 1) : 0;
 		r->isfloating = (vfl   && vfl->type   == TOML_INT) ? (int)vfl->i   : 0;
+		r->fillworkarea = (vwork && vwork->type == TOML_INT && vwork->i != 0);
 		r->alwaysontop = (vaot && vaot->type  == TOML_INT) ? (int)vaot->i  : 0;
 		r->fullscreen = (vfull && vfull->type == TOML_INT && vfull->i != 0);
 		r->fakefullscreen = (vfake && vfake->type == TOML_INT && vfake->i != 0);

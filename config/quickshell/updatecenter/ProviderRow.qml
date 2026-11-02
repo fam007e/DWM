@@ -17,7 +17,8 @@ Rectangle {
     property real nowSeconds: Math.floor(Date.now() / 1000)
     property int instantiatedItemDelegates: 0
     readonly property bool providerBusy: root.globalBusy && !root.providerRecoverable
-    readonly property var providerItems: Array.isArray(root.provider.items) ? root.provider.items : []
+    readonly property var providerItems: (root.provider && root.provider.items && typeof root.provider.items.length === "number")
+        ? root.provider.items : []
     readonly property string providerDetail: root.text(root.provider.detail)
     readonly property string providerError: root.text(root.provider.errorCode)
     readonly property bool providerMissing: root.provider.status === "unavailable" && root.providerError === "missing-provider"
@@ -166,6 +167,12 @@ Rectangle {
     Keys.onPressed: function(event) {
         if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
             root.toggleExpanded();
+            if (root.expanded && root.providerItems.length > 0) {
+                Qt.callLater(function() { itemViewport.forceActiveFocus(); });
+            }
+            event.accepted = true;
+        } else if (event.key === Qt.Key_Down && root.expanded && root.providerItems.length > 0) {
+            itemViewport.forceActiveFocus();
             event.accepted = true;
         }
     }
@@ -198,36 +205,48 @@ Rectangle {
                 }
             }
 
-            ColumnLayout {
+            Item {
                 Layout.fillWidth: true
-                spacing: Theme.compactSpacing
+                Layout.preferredHeight: titleCol.implicitHeight
 
-                UiText {
-                    Layout.fillWidth: true
-                    text: root.provider.name
-                    color: Theme.menuText
-                    font.bold: true
-                    elide: Text.ElideRight
-                }
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 0
-
-                    UiText {
-                        text: root.statusLabel()
-                        color: root.statusLabelColor()
-                        font.pixelSize: Theme.fontBodySmallSize
-                    }
+                ColumnLayout {
+                    id: titleCol
+                    anchors.fill: parent
+                    spacing: Theme.compactSpacing
 
                     UiText {
                         Layout.fillWidth: true
-                        visible: root.packageSummary().length > 0
-                        text: "  |  " + root.packageSummary()
-                        color: Theme.menuMutedText
-                        font.pixelSize: Theme.fontBodySmallSize
+                        text: root.provider.name
+                        color: Theme.menuText
+                        font.bold: true
                         elide: Text.ElideRight
                     }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 0
+
+                        UiText {
+                            text: root.statusLabel()
+                            color: root.statusLabelColor()
+                            font.pixelSize: Theme.fontBodySmallSize
+                        }
+
+                        UiText {
+                            Layout.fillWidth: true
+                            visible: root.packageSummary().length > 0
+                            text: "  |  " + root.packageSummary()
+                            color: Theme.menuMutedText
+                            font.pixelSize: Theme.fontBodySmallSize
+                            elide: Text.ElideRight
+                        }
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: root.hasDetails ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    onClicked: root.toggleExpanded()
                 }
             }
 
@@ -266,6 +285,7 @@ Rectangle {
                                                           : root.providerItems.length * Theme.scaledSize(56),
                            Theme.scaledSize(180))
                 : 0
+            implicitHeight: Layout.preferredHeight
             visible: root.expanded && root.providerItems.length > 0
             model: root.expanded ? root.providerItems : []
             spacing: Theme.spacingSm
@@ -274,8 +294,22 @@ Rectangle {
             reuseItems: true
             cacheBuffer: 0
             activeFocusOnTab: visible
+            keyNavigationEnabled: true
+            highlightFollowsCurrentItem: true
             Accessible.role: Accessible.List
             Accessible.name: root.provider.name + " update items"
+
+            Keys.onPressed: function(event) {
+                if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+                    if (itemViewport.currentIndex >= 0 && itemViewport.currentIndex < root.providerItems.length) {
+                        root.requestOpen(root.providerItems[itemViewport.currentIndex]);
+                        event.accepted = true;
+                    }
+                } else if (event.key === Qt.Key_Up && itemViewport.currentIndex <= 0) {
+                    root.forceActiveFocus();
+                    event.accepted = true;
+                }
+            }
 
             Behavior on Layout.preferredHeight {
                 NumberAnimation { duration: Theme.animationFast }
@@ -285,13 +319,15 @@ Rectangle {
                 id: itemRow
 
                 required property var modelData
+                required property int index
                 readonly property var item: modelData
+                readonly property bool isCurrent: itemViewport.activeFocus && itemViewport.currentIndex === index
 
                 width: ListView.view.width
                 height: Math.max(Theme.scaledSize(52), itemText.implicitHeight + Theme.spacingLg * 2)
-                color: Theme.menuBackground
-                border.color: Theme.controlNormalBorder
-                border.width: Theme.controlBorderWidth
+                color: isCurrent ? Theme.controlHoverFill : (itemMouse.containsMouse ? Theme.controlHoverFill : Theme.menuBackground)
+                border.color: isCurrent ? Theme.accent : (itemMouse.containsMouse ? Theme.controlHoverBorder : Theme.controlNormalBorder)
+                border.width: isCurrent ? 2 : Theme.controlBorderWidth
                 radius: Theme.controlRadius
                 Accessible.role: Accessible.ListItem
                 Accessible.name: root.text(modelData.name) + ", " + root.text(modelData.current) + " to " + root.text(modelData.available)
@@ -300,6 +336,17 @@ Rectangle {
                 // reuseItems pools delegates instead of destroying them
                 ListView.onPooled: root.instantiatedItemDelegates--
                 ListView.onReused: root.instantiatedItemDelegates++
+
+                MouseArea {
+                    id: itemMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: root.text(itemRow.item.url).length > 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    onClicked: {
+                        itemViewport.currentIndex = itemRow.index;
+                        root.requestOpen(itemRow.item);
+                    }
+                }
 
                 RowLayout {
                     anchors.fill: parent
@@ -317,6 +364,7 @@ Rectangle {
                     }
 
                     ShellButton {
+                        z: 2
                         visible: root.text(itemRow.item.url).length > 0
                         label: "Open"
                         accessibleDescription: "Open project link for " + root.text(itemRow.item.name)

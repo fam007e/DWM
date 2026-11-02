@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import qs.core
+import qs.syspill
 
 pragma ComponentBehavior: Bound
 
@@ -31,6 +32,13 @@ PanelWindow {
         if (percent >= 20) return "󰁼";
         if (percent >= 10) return "󰁻";
         return "󰂎";
+    }
+
+    function batteryColor(percent, status) {
+        if (status.toLowerCase() === "charging") return Theme.success;
+        if (percent <= 10) return Theme.danger;
+        if (percent <= 20) return Theme.warning;
+        return Theme.textStrong;
     }
 
     function networkIcon(statusText, wifiNetworks) {
@@ -75,6 +83,7 @@ PanelWindow {
     required property var powerModel
     required property var powerMenuModel
     required property var weatherModel
+    required property var sysPillModel
     required property bool primaryPanel
 
     implicitHeight: Theme.panelHeight
@@ -327,35 +336,47 @@ PanelWindow {
                         sourceComponent: TrayArea {}
                     }
 
+                    SysPillBar {
+                        id: sysPillBar
+                        sysPillModel: root.sysPillModel
+                        onPopupRequested: root.popupRequested(root, "syspill")
+                    }
+
                     PanelPill {
-                        id: batteryPill
-                        visible: root.powerModel.batteryAvailable
-                        Layout.preferredWidth: batteryRow.implicitWidth + Theme.compactWidgetHorizontalPadding * 2
+                        visible: root.panelSettingsModel.widgetEnabled("network")
+                        Layout.preferredWidth: networkRow.implicitWidth + Theme.networkWidgetHorizontalPadding * 2
                         Layout.preferredHeight: Theme.compactWidgetSize
-                        hovered: batteryMouse.containsMouse
+                        active: root.networkModel.visible
+                        hovered: networkMouse.containsMouse
 
                         RowLayout {
-                            id: batteryRow
+                            id: networkRow
                             anchors.centerIn: parent
                             spacing: Theme.compactSpacing
 
                             IconText {
-                                text: root.batteryIcon(root.powerModel.batteryPercent, root.powerModel.batteryStatus)
-                                color: Theme.textStrong
-                                font.pixelSize: Theme.scaledFontSize(14 * 1.1, 8)
-                            }
-
-                            UiText {
-                                text: root.powerModel.batteryPercent.toString() + "%"
-                                color: Theme.textStrong
-                                font.pixelSize: Theme.panelFontSize
+                                text: root.networkIcon(root.networkModel.statusText, root.networkModel.wifiNetworks)
+                                color: root.networkModel.statusText.indexOf("offline") >= 0
+                                    || root.networkModel.statusText.indexOf("unavailable") >= 0
+                                    ? Theme.menuMutedText : Theme.accent
+                                font.pixelSize: Theme.scaledFontSize(14 * 1.85, 8)
                             }
                         }
 
                         MouseArea {
-                            id: batteryMouse
+                            id: networkMouse
                             anchors.fill: parent
                             hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+                            onClicked: (mouse) => {
+                                if (mouse.button === Qt.RightButton) {
+                                    root.networkModel.refresh(true);
+                                } else {
+                                    root.popupRequested(root, "network");
+                                    root.networkModel.toggle();
+                                }
+                            }
                         }
                     }
 
@@ -399,43 +420,6 @@ PanelWindow {
                     }
 
                     PanelPill {
-                        visible: root.panelSettingsModel.widgetEnabled("network")
-                        Layout.preferredWidth: networkRow.implicitWidth + Theme.networkWidgetHorizontalPadding * 2
-                        Layout.preferredHeight: Theme.compactWidgetSize
-                        active: root.networkModel.visible
-                        hovered: networkMouse.containsMouse
-
-                        RowLayout {
-                            id: networkRow
-                            anchors.centerIn: parent
-                            spacing: Theme.compactSpacing
-
-                            IconText {
-                                text: root.networkIcon(root.networkModel.statusText, root.networkModel.wifiNetworks)
-                                color: root.networkModel.statusText.indexOf("offline") >= 0
-                                    || root.networkModel.statusText.indexOf("unavailable") >= 0 ? Theme.menuMutedText : Theme.textStrong
-                                font.pixelSize: Theme.scaledFontSize(14 * 1.85, 8)
-                            }
-                        }
-
-                        MouseArea {
-                            id: networkMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            acceptedButtons: Qt.LeftButton | Qt.RightButton
-                            onClicked: (mouse) => {
-                                if (mouse.button === Qt.RightButton) {
-                                    root.networkModel.refresh(true);
-                                } else {
-                                    root.popupRequested(root, "network");
-                                    root.networkModel.toggle();
-                                }
-                            }
-                        }
-                    }
-
-                    PanelPill {
                         visible: root.panelSettingsModel.widgetEnabled("volume")
                         Layout.preferredWidth: volumeRow.implicitWidth + Theme.compactWidgetHorizontalPadding * 2
                         Layout.preferredHeight: Theme.compactWidgetSize
@@ -449,14 +433,14 @@ PanelWindow {
 
                             IconText {
                                 text: root.controlsModel.volumeMuted ? "󰝟" : "󰕾"
-                                color: Theme.textStrong
+                                color: root.controlsModel.volumeMuted ? Theme.menuMutedText : Theme.textStrong
                                 font.pixelSize: Theme.scaledFontSize(14 * 1.5, 8)
                             }
 
                             UiText {
                                 visible: root.controlsModel.volumeText !== "VOL unavailable"
                                 text: root.controlsModel.volumePercent.toString() + "%"
-                                color: Theme.textStrong
+                                color: root.controlsModel.volumeMuted ? Theme.menuMutedText : Theme.textStrong
                                 font.pixelSize: Theme.panelFontSize
                             }
                         }
@@ -483,6 +467,115 @@ PanelWindow {
                                 }
                                 wheel.accepted = true;
                             }
+                        }
+                    }
+
+                    PanelPill {
+                        visible: root.panelSettingsModel.widgetEnabled("volume")
+                            && root.controlsModel.micText !== "MIC unavailable"
+                        Layout.preferredWidth: micRow.implicitWidth + Theme.compactWidgetHorizontalPadding * 2
+                        Layout.preferredHeight: Theme.compactWidgetSize
+                        hovered: micMouse.containsMouse
+
+                        RowLayout {
+                            id: micRow
+                            anchors.centerIn: parent
+                            spacing: Theme.compactSpacing
+
+                            IconText {
+                                text: root.controlsModel.micText === "MIC muted" ? "\uefc6" : "\ued03"
+                                color: root.controlsModel.micText === "MIC muted" ? Theme.menuMutedText : Theme.textStrong
+                                font.pixelSize: Theme.scaledFontSize(
+                                    root.controlsModel.micText === "MIC muted" ? 14 * 1.5 : 14 * 1.15, 8)
+                            }
+                        }
+
+                        MouseArea {
+                            id: micMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+                            onClicked: (mouse) => {
+                                if (mouse.button === Qt.RightButton) {
+                                    root.controlsModel.micToggleMute("panel");
+                                } else {
+                                    root.popupRequested(root, "controls");
+                                    root.controlsModel.toggle();
+                                }
+                            }
+                        }
+                    }
+
+                    PanelPill {
+                        visible: root.controlsModel.brightnessAvailable
+                        Layout.preferredWidth: brightnessRow.implicitWidth + Theme.compactWidgetHorizontalPadding * 2
+                        Layout.preferredHeight: Theme.compactWidgetSize
+                        hovered: brightnessMouse.containsMouse
+
+                        RowLayout {
+                            id: brightnessRow
+                            anchors.centerIn: parent
+                            spacing: Theme.compactSpacing
+
+                            IconText {
+                                text: "\udb81\udda8"
+                                color: Theme.textStrong
+                                font.pixelSize: Theme.scaledFontSize(14 * 1.5, 8)
+                            }
+
+                            UiText {
+                                text: root.controlsModel.brightnessPercent + "%"
+                                color: Theme.textStrong
+                                font.pixelSize: Theme.panelFontSize
+                            }
+                        }
+
+                        MouseArea {
+                            id: brightnessMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+                            onClicked: (mouse) =>
+                                root.controlsModel.adjustBrightness(mouse.button === Qt.LeftButton)
+                            onWheel: function(wheel) {
+                                if (wheel.angleDelta.y > 0) root.controlsModel.adjustBrightness(true);
+                                else if (wheel.angleDelta.y < 0) root.controlsModel.adjustBrightness(false);
+                                wheel.accepted = true;
+                            }
+                        }
+                    }
+
+                    PanelPill {
+                        id: batteryPill
+                        visible: root.powerModel.batteryAvailable
+                        Layout.preferredWidth: batteryRow.implicitWidth + Theme.compactWidgetHorizontalPadding * 2
+                        Layout.preferredHeight: Theme.compactWidgetSize
+                        hovered: batteryMouse.containsMouse
+
+                        RowLayout {
+                            id: batteryRow
+                            anchors.centerIn: parent
+                            spacing: Theme.compactSpacing
+
+                            IconText {
+                                text: root.batteryIcon(root.powerModel.batteryPercent, root.powerModel.batteryStatus)
+                                color: root.batteryColor(root.powerModel.batteryPercent, root.powerModel.batteryStatus)
+                                font.pixelSize: Theme.scaledFontSize(14 * 1.1, 8)
+                            }
+
+                            UiText {
+                                text: root.powerModel.batteryPercent.toString() + "%"
+                                color: root.batteryColor(root.powerModel.batteryPercent, root.powerModel.batteryStatus)
+                                font.pixelSize: Theme.panelFontSize
+                            }
+                        }
+
+                        MouseArea {
+                            id: batteryMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
                         }
                     }
 
@@ -525,6 +618,15 @@ PanelWindow {
     }
 
     PanelTooltip {
+        visible: sysPillBar.hovered
+        anchorWindow: root
+        anchorItem: sysPillBar
+        label: root.sysPillModel.tooltipText
+        anchorY: Theme.panelHeight
+        rightAligned: true
+    }
+
+    PanelTooltip {
         visible: root.powerModel.batteryAvailable && batteryMouse.containsMouse
         anchorWindow: root
         anchorItem: batteryPill
@@ -556,6 +658,25 @@ PanelWindow {
         anchorWindow: root
         anchorItem: controlsMouse
         label: root.controlsModel.volumeDisplayText
+        anchorY: Theme.panelHeight
+    }
+
+    PanelTooltip {
+        visible: micMouse.containsMouse
+        anchorWindow: root
+        anchorItem: micMouse
+        label: root.controlsModel.micText
+        anchorY: Theme.panelHeight
+        rightAligned: true
+    }
+
+    PanelTooltip {
+        visible: brightnessMouse.containsMouse
+        anchorWindow: root
+        anchorItem: brightnessMouse
+        label: root.controlsModel.brightnessError.length > 0
+            ? root.controlsModel.brightnessError
+            : "Brightness " + root.controlsModel.brightnessPercent + "% · scroll/click to adjust"
         anchorY: Theme.panelHeight
         rightAligned: true
     }

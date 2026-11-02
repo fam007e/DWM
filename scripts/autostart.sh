@@ -42,9 +42,6 @@ export DWM_DATA_DIR="$(dirname "$SCRIPT_DIR")"
 # Compositor
 picom -b 2>/dev/null &
 
-# Notification daemon
-dunst 2>/dev/null &
-
 # Polkit authentication agent (try common agents)
 for agent in \
     /usr/lib/mate-polkit/polkit-mate-authentication-agent-1 \

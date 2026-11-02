@@ -23,6 +23,9 @@ Scope {
     property string outputDeviceName: ""
     property string outputDeviceDescription: ""
     property string micText: "MIC unavailable"
+    property bool brightnessAvailable: false
+    property int brightnessPercent: 0
+    property string brightnessError: ""
     property string mediaText: "MEDIA none"
     property string mediaPlayer: ""
     property string mediaState: ""
@@ -356,6 +359,43 @@ Scope {
         root.runAction("input-volume-set", [name, root.clampPercent(percent).toString() + "%"], origin);
     }
     function inputToggleMute(name, origin) { root.runAction("input-toggle-mute", [name], origin); }
+    function micToggleMute(origin) {
+        const source = root.audioSource;
+        const defaultInput = root.inputDevices.find(item => item.isDefault);
+        const name = source !== null && source.ready && source.audio !== null
+            ? source.name : (defaultInput ? defaultInput.name : "");
+        if (name.length === 0) {
+            root.message = "Microphone source is unavailable";
+            return;
+        }
+        root.inputToggleMute(name, origin || "panel");
+    }
+    function refreshBrightness() {
+        if (brightnessStatusProcess.running) return;
+        root.brightnessError = "";
+        brightnessStatusProcess.running = true;
+    }
+
+    function adjustBrightness(increase) {
+        if (brightnessActionProcess.running) return;
+        brightnessActionProcess.command = ["brightnessctl", "set", increase ? "5%+" : "5%-"];
+        brightnessActionProcess.running = true;
+    }
+
+    function parseBrightness(text) {
+        const fields = text.trim().split("\n")[0].split(",");
+        const match = fields.length >= 4 ? /^(\d+)%$/.exec(fields[3]) : null;
+        const percent = match ? Number(match[1]) : NaN;
+        if (!isFinite(percent) || percent < 0 || percent > 100) {
+            root.brightnessAvailable = false;
+            root.brightnessError = "Backlight status is unavailable";
+            return;
+        }
+        root.brightnessPercent = percent;
+        root.brightnessAvailable = true;
+        root.brightnessError = "";
+    }
+
     function streamVolumeSet(index, percent, origin) {
         root.runAction("stream-volume-set", [index, root.clampPercent(percent).toString() + "%"], origin);
     }
@@ -533,6 +573,47 @@ Scope {
     }
 
     Process {
+        id: brightnessStatusProcess
+        command: ["brightnessctl", "-m"]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: root.parseBrightness(this.text)
+        }
+        stderr: StdioCollector {
+            onStreamFinished: {
+                const error = this.text.trim();
+                if (error.length > 0) root.brightnessError = error;
+            }
+        }
+        onExited: (exitCode, exitStatus) => { // qmllint disable signal-handler-parameters
+            if (exitCode !== 0 || exitStatus !== 0) {
+                root.brightnessAvailable = false;
+                if (root.brightnessError.length === 0)
+                    root.brightnessError = "Could not read backlight status";
+            }
+        }
+    }
+
+    Process {
+        id: brightnessActionProcess
+        command: ["brightnessctl", "set", "5%+"]
+        running: false
+        stderr: StdioCollector {
+            onStreamFinished: {
+                const error = this.text.trim();
+                if (error.length > 0) root.brightnessError = error;
+            }
+        }
+        onExited: (exitCode, exitStatus) => { // qmllint disable signal-handler-parameters
+            if (exitCode !== 0 || exitStatus !== 0) {
+                if (root.brightnessError.length === 0)
+                    root.brightnessError = "Could not change backlight brightness";
+            }
+            root.refreshBrightness();
+        }
+    }
+
+    Process {
         id: mediaStatusProcess
 
         command: Commands.controlsHelperCommand("media-status")
@@ -605,6 +686,14 @@ Scope {
                 }
             }
         }
+    }
+
+    Timer {
+        interval: 5000
+        running: true
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: root.refreshBrightness()
     }
 
     Component.onCompleted: root.refreshAudioStatus()

@@ -266,6 +266,14 @@ Scope {
         root.closeItem(root.notifications.find(n => n.key === key), false);
     }
 
+    function dismissLatest() {
+        if (root.notifications.length > 0) root.dismiss(root.notifications[0].key);
+    }
+
+    function toggleDoNotDisturb() {
+        root.setDoNotDisturb(!root.doNotDisturb);
+    }
+
     function expire(key) {
         root.closeItem(root.notifications.find(n => n.key === key), true);
     }

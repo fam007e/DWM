@@ -27,9 +27,8 @@ FloatingWindow {
     title: "dwm settings"
     visible: settingsModel.visible
     screen: settingsModel.targetScreen
-    fullscreen: true
-    implicitWidth: root.screen ? root.screen.width : 1180
-    implicitHeight: root.screen ? root.screen.height : 760
+    implicitWidth: root.screen ? root.screen.width : 1
+    implicitHeight: root.screen ? root.screen.height : 1
     color: Theme.transparent
 
     function statusColor(status) {

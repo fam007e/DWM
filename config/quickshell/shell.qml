@@ -23,6 +23,7 @@ import qs.systemmanagement
 import qs.updatecenter
 import qs.weather
 import qs.calendar
+import qs.syspill
 
 ShellRoot {
     id: root
@@ -54,6 +55,7 @@ ShellRoot {
         if (popupId !== "updatecenter") updateCenterModel.close();
         if (popupId !== "weather") weatherModel.close();
         if (popupId !== "calendar") clock.closeCalendar();
+        if (popupId !== "syspill") sysPillModel.close();
         root.selectedPanelWindow = panel;
     }
 
@@ -211,6 +213,11 @@ ShellRoot {
 
     WeatherModel {
         id: weatherModel
+        onVisibleChanged: if (visible) { updateCenterModel.close(); clock.closeCalendar(); }
+    }
+
+    SysPillModel {
+        id: sysPillModel
         onVisibleChanged: if (visible) { updateCenterModel.close(); clock.closeCalendar(); }
     }
 
@@ -457,6 +464,40 @@ ShellRoot {
     }
 
     IpcHandler {
+        target: "syspill"
+
+        function close(): void {
+            sysPillModel.close();
+        }
+
+        function open(): void {
+            root.selectPanelPopup(root.activePanelWindow, "syspill");
+            sysPillModel.open();
+        }
+
+        function toggle(): void {
+            if (sysPillModel.visible) {
+                sysPillModel.close();
+            } else {
+                root.selectPanelPopup(root.activePanelWindow, "syspill");
+                sysPillModel.open();
+            }
+        }
+
+        function cycle(): void {
+            sysPillModel.cycleMode();
+        }
+
+        function mode(): string {
+            return sysPillModel.mode;
+        }
+
+        function status(): string {
+            return sysPillModel.tooltipText;
+        }
+    }
+
+    IpcHandler {
         target: "network"
 
         function close(): void {
@@ -563,6 +604,10 @@ ShellRoot {
             notificationModel.clear();
         }
 
+        function dismissLatest(): void {
+            notificationModel.dismissLatest();
+        }
+
         function count(): int {
             return notificationModel.notifications.length;
         }
@@ -617,6 +662,10 @@ ShellRoot {
 
         function toggleHistory(): void {
             notificationModel.toggleHistory();
+        }
+
+        function toggleDoNotDisturb(): void {
+            notificationModel.toggleDoNotDisturb();
         }
     }
 
@@ -1323,6 +1372,7 @@ ShellRoot {
             powerMenuModel: powerMenuModel
             updateCenterModel: updateCenterModel
             weatherModel: weatherModel
+            sysPillModel: sysPillModel
             primaryPanel: modelData === Quickshell.screens[0]
             onPopupRequested: (panel, popupId) => root.requestPanelPopup(panel, popupId)
         }
@@ -1330,6 +1380,11 @@ ShellRoot {
 
     WeatherWindow {
         weatherModel: weatherModel
+        panelWindow: root.activePanelWindow
+    }
+
+    SysPillWindow {
+        sysPillModel: sysPillModel
         panelWindow: root.activePanelWindow
     }
 

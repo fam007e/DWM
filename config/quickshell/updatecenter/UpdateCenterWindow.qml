@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls as Controls
 import QtQuick.Layouts
+import Quickshell.Io
 import qs.core
 
 ClickAwayPopup {
@@ -21,6 +22,18 @@ ClickAwayPopup {
         : 260
 
     signal exclusiveOpenRequested
+
+    Process {
+        id: openUrlProc
+    }
+
+    function openUrl(url) {
+        if (!url || typeof url !== "string") return;
+        if (!Qt.openUrlExternally(url)) {
+            openUrlProc.command = ["xdg-open", url];
+            openUrlProc.running = true;
+        }
+    }
 
     function providerRecoverable(providerId) {
         const operation = root.updateCenterModel.activeOperation;
@@ -217,7 +230,7 @@ ClickAwayPopup {
                             nowSeconds: root.nowSeconds
                             onUpdateRequested: providerId => root.updateCenterModel.launch(providerId)
                             onRecoverRequested: providerId => root.updateCenterModel.recover(providerId)
-                            onOpenUrlRequested: url => Qt.openUrlExternally(url)
+                            onOpenUrlRequested: url => root.openUrl(url)
                         }
                     }
                 }

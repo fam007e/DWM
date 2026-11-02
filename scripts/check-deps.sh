@@ -78,7 +78,6 @@ else
     printf "  ${RED}✗${NC} picom ${YELLOW}(fam007e fork missing - run ./install.sh)${NC}\n"
     MISSING=$((MISSING + 1))
 fi
-check_cmd "dunst"
 check_cmd "feh"
 check_cmd "flameshot"
 check_cmd "dex"

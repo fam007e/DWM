@@ -16,6 +16,7 @@
 #   tags        tag number 1–9  (0 or omit = follow current tag)
 #   isfloating  1=float  0=tile             isterminal  1=terminal (swallowing)
 #   noswallow   1=never swallow this window
+#   fillworkarea 1=fill the monitor's available area below/around bars
 #
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -35,8 +36,8 @@ rules = [
   { title="dwm menu",                 isfloating=1, noswallow=1 },
   { title="dwm network password",     isfloating=1, noswallow=1 },
   { title="dwm control center utility", isfloating=1, noswallow=1 },
-  { title="dwm system health",        isfloating=1, noswallow=1 },
-  { title="dwm settings",             isfloating=1, noswallow=1 },
+  { title="dwm system health",        isfloating=1, fillworkarea=1, noswallow=1 },
+  { title="dwm settings",             isfloating=1, fillworkarea=1, noswallow=1 },
   { title="dwm notification history", isfloating=1, noswallow=1 },
   { class="dwm-calc",                isfloating=1, noswallow=1 },
   { class="Zenity",                  isfloating=1, noswallow=1 },

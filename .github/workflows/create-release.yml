@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag or version name to release (e.g. v0.4.1)'
+        description: 'Release tag in vYYYY.MM.DD format (e.g. v2026.11.02)'
         required: false
         default: ''
 

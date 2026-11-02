@@ -3,7 +3,7 @@ authors = ["fam007e"]
 language = "en"
 src = "src"
 title = "DWM - Modern & Hardened Edition"
-description = "Comprehensive documentation for DWM Modern & Hardened Edition with Quickshell integration and dynamic theming."
+description = "Installation, configuration, and feature documentation for DWM with Quickshell on X11."
 
 [output.html]
 git-repository-url = "https://github.com/fam007e/DWM"

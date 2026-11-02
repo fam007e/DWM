@@ -12,7 +12,9 @@ FloatingWindow {
 
     title: "dwm system health"
     visible: healthModel.visible
-    fullscreen: true
+    screen: healthModel.targetScreen
+    implicitWidth: root.screen ? root.screen.width : 1
+    implicitHeight: root.screen ? root.screen.height : 1
     color: Theme.transparent
 
     function stateColor(status) {

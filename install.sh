@@ -43,7 +43,7 @@ echo ""
 info "Installing core and custom dependencies..."
 install_packages base-devel libx11 libxft libxinerama imlib2 libxcb xcb-util freetype2 fontconfig \
     xorg-server xorg-xinit xorg-xrandr xorg-xset xorg-xsetroot \
-    dunst feh flameshot dex mate-polkit alsa-utils git unzip xclip zenity \
+    feh flameshot dex mate-polkit alsa-utils git unzip xclip zenity \
     xorg-xprop thunar gvfs tumbler thunar-archive-plugin nwg-look xdg-user-dirs \
     xdg-desktop-portal-gtk pipewire pavucontrol gnome-keyring networkmanager network-manager-applet \
     libnotify rsync python jq bc curl playerctl blueman ttf-meslo-nerd noto-fonts-emoji \
