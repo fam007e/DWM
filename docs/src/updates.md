@@ -20,4 +20,4 @@ The Quickshell Update Center can show update information and invoke supported up
 
 ## Release builds
 
-Release tags in this repository use `vYYYY.MM.DD` (for example, `v2026.10.27`). Pushing a `v*` tag triggers the binary release workflow; updates to `docs/` on `main` trigger documentation publishing. Check `.github/workflows/` and published assets for current artifacts.
+Release tags in this repository use `vYYYY.MM.DD` (for example, `v2026.11.02`). Pushing a `v*` tag triggers the binary release workflow; updates to `docs/` on `main` trigger documentation publishing. Check `.github/workflows/` and published assets for current artifacts.

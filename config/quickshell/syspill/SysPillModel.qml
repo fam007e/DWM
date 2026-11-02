@@ -28,6 +28,8 @@ Scope {
     property real memPercent: 0
     property real cpuPercent: 0
     property var  prevCpu: null   // [idle, total]
+    property var  processes: []
+    property string processError: ""
 
     readonly property string homeDir: Quickshell.env("HOME") || ""
     readonly property string modeFile: homeDir + "/.config/dwm/syspill-mode"
@@ -106,6 +108,32 @@ Scope {
         prevCpu = [idle, total];
     }
 
+    function refreshProcesses() {
+        if (processProc.running) return;
+        const sortKey = root.mode === "mem" ? "--sort=-rss" : "--sort=-pcpu";
+        processProc.command = ["env", "LC_ALL=C", "ps", "-eo", "pid=,comm=,pcpu=,rss=", sortKey];
+        processProc.running = true;
+    }
+
+    function parseProcesses(raw) {
+        const rows = [];
+        const lines = raw.trim().split("\n");
+        for (const line of lines) {
+            const fields = line.trim().split(/\s+/);
+            if (fields.length < 4) continue;
+            const pid = Number(fields[0]);
+            const cpuPercent = Number(fields[fields.length - 2]);
+            const rssKb = Number(fields[fields.length - 1]);
+            const name = fields.slice(1, -2).join(" ");
+            if (!Number.isInteger(pid) || !isFinite(cpuPercent) || !isFinite(rssKb) || name.length === 0)
+                continue;
+            rows.push({ pid: pid, name: name, cpuPercent: cpuPercent, rssKb: rssKb });
+            if (rows.length === 12) break;
+        }
+        root.processes = rows;
+        root.processError = "";
+    }
+
     // ---- data sources ----
     Process {
         id: memProc
@@ -118,6 +146,28 @@ Scope {
         id: cpuProc
         command: ["head", "-n", "1", "/proc/stat"]
         stdout: StdioCollector { waitForEnd: true; onStreamFinished: root.applyCpu(text) }
+    }
+    Process {
+        id: processProc
+        running: false
+        stdout: StdioCollector {
+            waitForEnd: true
+            onStreamFinished: root.parseProcesses(text)
+        }
+        stderr: StdioCollector {
+            waitForEnd: true
+            onStreamFinished: {
+                const error = text.trim();
+                if (error.length > 0) root.processError = error;
+            }
+        }
+        onExited: (exitCode, exitStatus) => { // qmllint disable signal-handler-parameters
+            if (exitCode !== 0 || exitStatus !== 0) {
+                root.processes = [];
+                if (root.processError.length === 0)
+                    root.processError = "Could not read process usage";
+            }
+        }
     }
     Process { id: saveProc }
     Process {
@@ -143,10 +193,14 @@ Scope {
                 memProc.running = true;
             if ((root.mode === "cpu" || root.mode === "both") && !cpuProc.running)
                 cpuProc.running = true;
+            root.refreshProcesses();
         }
     }
 
     Component.onCompleted: loadProc.running = true
 
-    onModeChanged: prevCpu = null
+    onModeChanged: {
+        prevCpu = null;
+        refreshProcesses();
+    }
 }

@@ -142,6 +142,7 @@ ClickAwayPopup {
 
             // ---- RAM Card Section ----
             Rectangle {
+                visible: root.sysPillModel.mode === "mem" || root.sysPillModel.mode === "both"
                 Layout.fillWidth: true
                 Layout.preferredHeight: memContent.implicitHeight + Theme.spacingMd * 2
                 color: Theme.controlNormalFill
@@ -226,6 +227,7 @@ ClickAwayPopup {
 
             // ---- CPU Card Section ----
             Rectangle {
+                visible: root.sysPillModel.mode === "cpu" || root.sysPillModel.mode === "both"
                 Layout.fillWidth: true
                 Layout.preferredHeight: cpuContent.implicitHeight + Theme.spacingMd * 2
                 color: Theme.controlNormalFill
@@ -306,6 +308,123 @@ ClickAwayPopup {
                                 ColorAnimation { duration: Theme.animationNormal }
                             }
                         }
+                    }
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: processContent.implicitHeight + Theme.spacingMd * 2
+                color: Theme.controlNormalFill
+                radius: Theme.radius
+                border.color: Theme.controlNormalBorder
+                border.width: Theme.controlBorderWidth
+
+                ColumnLayout {
+                    id: processContent
+                    anchors.fill: parent
+                    anchors.margins: Theme.spacingMd
+                    spacing: Theme.spacingSm
+
+                    RowLayout {
+                        Layout.fillWidth: true
+
+                        UiText {
+                            text: "Top processes"
+                            color: Theme.textStrong
+                            font.bold: true
+                            font.pixelSize: Theme.panelFontSize
+                        }
+
+                        Item { Layout.fillWidth: true }
+
+                        UiText {
+                            text: "by " + (root.sysPillModel.mode === "mem" ? "memory" : "CPU")
+                            color: Theme.textMuted
+                            font.pixelSize: Theme.smallFontSize
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: Theme.spacingXs
+
+                        UiText {
+                            Layout.fillWidth: true
+                            text: "PROCESS (PID)"
+                            color: Theme.textMuted
+                            font.pixelSize: Theme.tinyFontSize
+                        }
+
+                        UiText {
+                            visible: root.sysPillModel.mode !== "mem"
+                            Layout.preferredWidth: Theme.scaledSize(44)
+                            horizontalAlignment: Text.AlignRight
+                            text: "CPU"
+                            color: Theme.textMuted
+                            font.pixelSize: Theme.tinyFontSize
+                        }
+
+                        UiText {
+                            visible: root.sysPillModel.mode !== "cpu"
+                            Layout.preferredWidth: Theme.scaledSize(68)
+                            horizontalAlignment: Text.AlignRight
+                            text: "MEM"
+                            color: Theme.textMuted
+                            font.pixelSize: Theme.tinyFontSize
+                        }
+                    }
+
+                    Repeater {
+                        model: root.sysPillModel.processes
+
+                        delegate: RowLayout {
+                            required property var modelData
+                            Layout.fillWidth: true
+                            spacing: Theme.spacingXs
+
+                            UiText {
+                                Layout.fillWidth: true
+                                text: modelData.name + " (" + modelData.pid + ")"
+                                color: Theme.menuText
+                                font.pixelSize: Theme.smallFontSize
+                                elide: Text.ElideRight
+                            }
+
+                            UiText {
+                                visible: root.sysPillModel.mode !== "mem"
+                                Layout.preferredWidth: Theme.scaledSize(44)
+                                horizontalAlignment: Text.AlignRight
+                                text: modelData.cpuPercent.toFixed(1) + "%"
+                                color: Theme.textMuted
+                                font.pixelSize: Theme.smallFontSize
+                            }
+
+                            UiText {
+                                visible: root.sysPillModel.mode !== "cpu"
+                                Layout.preferredWidth: Theme.scaledSize(68)
+                                horizontalAlignment: Text.AlignRight
+                                text: (modelData.rssKb / 1024).toFixed(1) + " MiB"
+                                color: Theme.textMuted
+                                font.pixelSize: Theme.smallFontSize
+                            }
+                        }
+                    }
+
+                    UiText {
+                        visible: root.sysPillModel.processError.length > 0
+                        text: root.sysPillModel.processError
+                        color: Theme.danger
+                        font.pixelSize: Theme.smallFontSize
+                        wrapMode: Text.Wrap
+                    }
+
+                    UiText {
+                        visible: root.sysPillModel.processes.length === 0
+                            && root.sysPillModel.processError.length === 0
+                        text: "No process data"
+                        color: Theme.textMuted
+                        font.pixelSize: Theme.smallFontSize
                     }
                 }
             }

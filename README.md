@@ -12,6 +12,7 @@ This repository contains the DWM fork, Quickshell UI, runtime configuration, and
 
 - DWM window management with runtime-reloadable TOML hotkeys, themes, and window rules.
 - Quickshell panel, workspaces, tray, launcher, Control Center, Settings, System Health, and notifications.
+- SysPill resource monitor with RAM/CPU modes and a top-12 process list.
 - Hardware controls for audio, microphone mute, and brightness.
 - X11 multi-monitor support; the Settings and System Health windows use DWM's per-monitor work area, including reserved panel space.
 - Wallpaper-based theme generation, weather, calendar, and desktop update tools.

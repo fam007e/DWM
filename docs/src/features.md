@@ -8,7 +8,7 @@ DWM provides tiling and floating windows, keyboard-driven focus and tags, client
 
 The Quickshell panel shows workspaces, the focused window, running applications, a system tray, clock/calendar, and system status. Controls include audio output, microphone mute, brightness, battery, network, Bluetooth, and power. Hardware brightness shortcuts use `brightnessctl`; microphone/audio shortcuts use PipeWire tools with PulseAudio-compatible fallbacks where configured.
 
-The shell also includes an application launcher, command menu, Control Center, Settings, System Health, weather, update center, and system-resource view. Some actions depend on optional system tools or services.
+The shell also includes an application launcher, command menu, Control Center, Settings, System Health, weather, update center, and SysPill system-resource view. SysPill's popup follows its selected RAM, CPU, or combined mode and lists up to 12 processes ranked by memory in RAM mode and CPU otherwise; the list shows only the selected metric or both in combined mode. Some actions depend on optional system tools or services.
 
 ## Notifications
 
