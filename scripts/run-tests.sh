@@ -37,6 +37,11 @@ fi
 # ── 3. Python Validation ─────────────────────────────────
 info "Testing Python script syntax..."
 if python3 -m py_compile scripts/*.py >/dev/null 2>&1; then
+    if python3 scripts/test-update-version.py >/dev/null 2>&1; then
+        pass "Source update build versions follow release tags."
+    else
+        fail "Source update build version test failed."
+    fi
     pass "Python scripts are syntactically correct."
 else
     fail "Python syntax error found."

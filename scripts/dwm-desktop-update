@@ -1177,6 +1177,19 @@ def running_dwm_matches(binary):
         return None
 
 
+def source_build_version(source, revision):
+    description = run(["git", "-C", source, "describe", "--tags", "--match", "v????.??.??",
+                       "--always", revision])
+    match = re.fullmatch(r"v(\d{4}\.\d{2}\.\d{2})(?:-(\d+)-g([0-9a-f]+))?", description)
+    if match:
+        if match.group(2) is None:
+            return match.group(1)
+        return f"{match.group(1)}-{match.group(2)}-g{match.group(3)}"
+    if re.fullmatch(r"[0-9a-f]{7,40}", description):
+        return "git-" + description
+    raise RuntimeError("Could not derive a safe build version from the source revision")
+
+
 def worker(operation):
     if not re.fullmatch(r"[0-9a-f]{32}", operation):
         raise RuntimeError("Invalid desktop operation")
@@ -1229,6 +1242,12 @@ def worker(operation):
                 sandbox_run(["git", "-C", source, "checkout", "--detach", "FETCH_HEAD"], writable=(source,), cwd=source, capture=False)
                 if source_revision(source) != preview["available"]:
                     raise RuntimeError("Downloaded revision differs from the confirmed update")
+                try:
+                    run(["git", "-C", source, "fetch", "--no-tags", installed.get("source", SOURCE),
+                         "+refs/tags/v*:refs/tags/v*"], timeout=180, capture=False)
+                except CommandFailure as error:
+                    print("Release tags unavailable; using commit ID for the build version: " + str(error), flush=True)
+                build_version = source_build_version(source, preview["available"])
                 required = []
                 for profile in ("build", "source-update"):
                     required.extend(sandbox_run([source / "scripts/dwm-packages.sh", "arch", profile], readonly=(source,), cwd=source).splitlines())
@@ -1246,11 +1265,13 @@ def worker(operation):
                     shutil.copyfile(config_source, source / "config.h")
                 build_overrides = [key + "=" + os.environ[key] for key in ("CC", "CFLAGS", "CPPFLAGS", "LDFLAGS") if key in os.environ]
                 save_status(state, value, state="building", detail="Building [ 30%]", percent=30)
-                sandbox_run(["make", "clean", "all", *build_overrides], writable=(source, stage), cwd=source, timeout=300, capture=False)
+                sandbox_run(["make", "clean", "all", "VERSION=" + build_version, *build_overrides],
+                            writable=(source, stage), cwd=source, timeout=300, capture=False)
                 save_status(state, value, state="building", detail="Building [ 80%]", percent=80)
                 layout = installed["layout"]
                 sandbox_run(["make", "install-system", "DESTDIR=" + str(stage), "PREFIX=" + layout["prefix"],
-                     "MANPREFIX=" + layout["manprefix"], "XSESSIONSDIR=" + layout["xsessions"], "DATADIR=" + layout["datadir"]],
+                     "MANPREFIX=" + layout["manprefix"], "XSESSIONSDIR=" + layout["xsessions"],
+                     "DATADIR=" + layout["datadir"], "VERSION=" + build_version],
                     writable=(source, stage), cwd=source, timeout=180, capture=False)
                 save_status(state, value, state="building", detail="Building [100%]", percent=100)
                 candidate = read_json(stage / str(prefix / "share/dwm/desktop-install.json").lstrip("/"))
