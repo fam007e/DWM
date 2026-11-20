@@ -42,11 +42,13 @@ install: all
 	test -f ${DESTDIR}${XSESSIONSDIR}/dwm.desktop || install -Dm644 dwm.desktop ${DESTDIR}${XSESSIONSDIR}/dwm.desktop
 	# Scripts to PATH
 	for f in scripts/*; do \
-		case "$$(basename $$f)" in autostart*|.xinitrc|*.pyc|__pycache__) continue;; esac; \
+		case "$$(basename $$f)" in autostart*|.xinitrc|dwm-desktop-update-root|dwm-settings-display-root|*.pyc|__pycache__) continue;; esac; \
 		install -Dm755 "$$f" ${DESTDIR}${PREFIX}/bin/$$(basename $$f); \
 	done
+	# Privileged helpers: only installed to libexec/dwm with @PREFIX@ substituted
 	mkdir -p ${DESTDIR}${PREFIX}/libexec/dwm
 	sed "s|@PREFIX@|${PREFIX}|g" scripts/dwm-desktop-update-root | install -Dm755 /dev/stdin ${DESTDIR}${PREFIX}/libexec/dwm/dwm-desktop-update-root
+	sed "s|@PREFIX@|${PREFIX}|g" scripts/dwm-settings-display-root | install -Dm755 /dev/stdin ${DESTDIR}${PREFIX}/libexec/dwm/dwm-settings-display-root
 
 install-system: install
 	python3 scripts/dwm-desktop-update record-system \
@@ -56,8 +58,8 @@ install-system: install
 		--manprefix "${MANPREFIX}" \
 		--xsessions "${XSESSIONSDIR}" \
 		--datadir "${DATADIR}" \
-		--commands dwm $$(for f in scripts/*; do case "$$(basename $$f)" in autostart*|.xinitrc|dwm-desktop-update-root|*.pyc|__pycache__) continue;; esac; basename "$$f"; done) \
-		--helpers dwm-desktop-update-root \
+		--commands dwm $$(for f in scripts/*; do case "$$(basename $$f)" in autostart*|.xinitrc|dwm-desktop-update-root|dwm-settings-display-root|*.pyc|__pycache__) continue;; esac; basename "$$f"; done) \
+		--helpers dwm-desktop-update-root dwm-settings-display-root \
 		--packages $$(scripts/dwm-packages.sh arch build; scripts/dwm-packages.sh arch source-update)
 
 uninstall:
@@ -65,9 +67,10 @@ uninstall:
 		${DESTDIR}${MANPREFIX}/man1/dwm.1 \
 		${DESTDIR}${XSESSIONSDIR}/dwm.desktop \
 		${DESTDIR}${PREFIX}/libexec/dwm/dwm-desktop-update-root \
+		${DESTDIR}${PREFIX}/libexec/dwm/dwm-settings-display-root \
 		${DESTDIR}${PREFIX}/share/dwm/desktop-install.json
 	for f in scripts/*; do \
-		case "$$(basename $$f)" in autostart*|.xinitrc|*.pyc|__pycache__) continue;; esac; \
+		case "$$(basename $$f)" in autostart*|.xinitrc|dwm-desktop-update-root|dwm-settings-display-root|*.pyc|__pycache__) continue;; esac; \
 		rm -f ${DESTDIR}${PREFIX}/bin/$$(basename $$f); \
 	done
 

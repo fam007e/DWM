@@ -117,10 +117,18 @@ for toml in hotkeys.toml themes.toml window-rules.toml; do
     fi
 done
 
-# Managed default theme config (used as baseline/recovery source by dwm-settings-theme)
+# Managed default config baselines (recovery sources when ~/.config/dwm is lost;
+# dwm falls back to $DWM_DATA_DIR/config before the baked-in build path)
 mkdir -p "$DWM_DATA_DIR/config"
-cp "$REPO_DIR/config/themes.toml" "$DWM_DATA_DIR/config/themes.toml"
-ok "Deployed managed themes.toml baseline to $DWM_DATA_DIR/config/themes.toml"
+for toml in themes.toml hotkeys.toml window-rules.toml; do
+    cp "$REPO_DIR/config/$toml" "$DWM_DATA_DIR/config/$toml"
+done
+ok "Deployed config baselines (themes/hotkeys/window-rules) to $DWM_DATA_DIR/config"
+
+# The control centers probe $DWM_DATA_DIR/install.sh as the fix-up entry point
+# ("Install Missing Deps" / "Run install.sh (auto-fix)") — keep a copy there.
+cp "$REPO_DIR/install.sh" "$DWM_DATA_DIR/install.sh"
+ok "Deployed install.sh to $DWM_DATA_DIR"
 
 # .xinitrc (seed with explicit warning on skip)
 if [ ! -f "$HOME/.xinitrc" ]; then
