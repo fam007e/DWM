@@ -9,7 +9,12 @@
 set -euo pipefail
 
 # ── Concurrency Lock ───────────────────────────────────────────────────────────
-LOCK_FILE="${XDG_RUNTIME_DIR:-/tmp}/theme-apply.lock"
+# Same lock file dwm-settings-theme and dwm-session-launch guard:
+# $runtime_base/dwm-theme-apply.lock, with runtime_base = XDG_RUNTIME_DIR
+# (or /tmp/dwm-$UID when unset) so every writer serializes against the others.
+RUNTIME_BASE="${XDG_RUNTIME_DIR:-/tmp/dwm-$UID}"
+LOCK_FILE="$RUNTIME_BASE/dwm-theme-apply.lock"
+[ -d "$RUNTIME_BASE" ] || { umask 077; mkdir -p -- "$RUNTIME_BASE"; }
 exec 200>"$LOCK_FILE"
 if ! flock -n 200; then
     flock -w 3 200 || exit 0
