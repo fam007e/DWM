@@ -29,6 +29,9 @@ static const Layout layouts[] = {
     { tile },    /* first entry is default */
     { NULL },    /* no layout function means floating behavior */
     { monocle },
+    /* NOTE: layouts[1] is also the per-tag "toggle layout" target
+     * (Super+space / setlayout with layout_idx=-1), so keep the floating
+     * layout at index 1 or the toggle will switch to whatever sits there. */
 };
 
 /* key definitions */

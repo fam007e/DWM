@@ -7,7 +7,7 @@
 # ║  SYNTAX:                                                             ║
 # ║  exec=["bin", "arg"]  — faster, avoids shell injection.              ║
 # ║  cmd="bin | grep arg" — uses shell, needed for pipes and variables.  ║
-# ║  Note: Brightness math uses GNU bc extensions (if/else).             ║
+# ║  Note: Brightness keys use brightnessctl.                            ║
 # ╚══════════════════════════════════════════════════════════════════════╝
 
 [vars]
@@ -110,16 +110,10 @@ tag_keys = [
   { key="9", tag=8 },
 ]
 
+# Mouse buttons. Only ClkClientWin and ClkRootWin are dispatchable by dwm;
+# the panel (quickshell) owns the bar and handles its own clicks.
 buttons = [
-  { click="ClkLtSymbol",   mod="",       button=1,  func="setlayout",      layout_idx=0 },
-  { click="ClkLtSymbol",   mod="",       button=3,  func="setlayout",      layout_idx=2 },
-  { click="ClkWinTitle",   mod="",       button=2,  func="zoom" },
-  { click="ClkStatusText", mod="",       button=2,  func="spawn",          exec=["$terminal"] },
-  { click="ClkClientWin",  mod="SUPER",  button=1,  func="movemouse" },
+  { click="ClkClientWin",  mod="SUPER",  button=1,  func="moveorplace" },
   { click="ClkClientWin",  mod="SUPER",  button=2,  func="togglefloating" },
   { click="ClkClientWin",  mod="SUPER",  button=3,  func="resizemouse" },
-  { click="ClkTagBar",     mod="",       button=1,  func="view" },
-  { click="ClkTagBar",     mod="",       button=3,  func="toggleview" },
-  { click="ClkTagBar",     mod="SUPER",  button=1,  func="tag" },
-  { click="ClkTagBar",     mod="SUPER",  button=3,  func="toggletag" },
 ]

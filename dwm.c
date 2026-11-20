@@ -2077,7 +2077,7 @@ placemouse(const Arg *arg)
 {
 	int x, y, px, py, ocx, ocy, nx = -9999, ny = -9999, freemove = 0;
 	Client *c, *r = NULL, *at, *prevr;
-	Monitor *m;
+	Monitor *m, *om;
 	XEvent ev;
 	XWindowAttributes wa;
 	Time lasttime = 0;
@@ -2088,6 +2088,7 @@ placemouse(const Arg *arg)
 		return;
 	if (c->isfullscreen) /* no support placing fullscreen windows by mouse */
 		return;
+	om = c->mon;
 	restack(selmon);
 	prevr = c;
 	if (XGrabPointer(dpy, root, False, MOUSEMASK, GrabModeAsync, GrabModeAsync,
@@ -2192,6 +2193,9 @@ placemouse(const Arg *arg)
 		attachstack(c);
 		selmon = m;
 	}
+
+	if (om != c->mon)
+		updateclientlist();
 
 	focus(c);
 
@@ -2408,6 +2412,7 @@ resizemouse(const Arg *arg)
 	while (XCheckMaskEvent(dpy, EnterWindowMask, &ev));
 	if ((m = recttomon(c->x, c->y, c->w, c->h)) != selmon) {
 		sendmon(c, m);
+		updateclientlist();
 		selmon = m;
 		focus(NULL);
 	}
@@ -3157,6 +3162,7 @@ lookup_func(const char *name)
 		{ "focusmon",             focusmon },
 		{ "tagmon",               tagmon },
 		{ "moveorplace",          moveorplace },
+		{ "movemouse",            movemouse }, /* alias for existing hotkeys.toml entries */
 		{ "resizemouse",          resizemouse },
 		{ "togglewarm",           togglewarm },
 		{ "adjustbrightness",     adjustbrightness },
