@@ -220,9 +220,10 @@ run_health_check() {
     done
 
     # ── Core Runtime ─────────────────────────────────────
+    # Note: dunst is intentionally not required — quickshell owns
+    # org.freedesktop.Notifications and dunst is masked/activation-overridden.
     _cmd rofi
     _cmd picom
-    _cmd dunst
     _cmd feh
     _cmd flameshot
     _cmd dex
@@ -247,8 +248,8 @@ run_health_check() {
     _font "Noto Color Emoji"
 
     # ── Running Services ─────────────────────────────────
+    # quickshell doubles as the notification daemon, so dunst running is not expected.
     _proc picom
-    _proc dunst
     _proc quickshell
     if systemctl is-active --quiet NetworkManager 2>/dev/null; then
         passed_lines+=("✓  NetworkManager  (active)")
@@ -304,7 +305,6 @@ run_health_check() {
 run_quick_actions() {
     local items=(
         "  Restart Picom"
-        "  Restart Dunst"
         "  Restart Quickshell"
         "  Reload Wallpaper"
         "  Toggle Compositor"
@@ -322,12 +322,20 @@ run_quick_actions() {
             restart_process picom picom -b
             notify "Picom restarted"
             ;;
-        *"Restart Dunst"*)
-            restart_process dunst dunst
-            notify "Dunst restarted"
-            ;;
         *"Restart Quickshell"*)
+            # Quickshell owns org.freedesktop.Notifications. While the name is
+            # unowned during the restart, a notify-send (or any other
+            # notification) makes dbus-daemon auto-activate dunst via
+            # org.knopwob.dunst.service, which then keeps the name.
+            pkill -x dunst 2>/dev/null || true
             restart_process quickshell quickshell --path "$QUICKSHELL_DIR/shell.qml" --no-duplicate
+            local wait_i
+            for wait_i in $(seq 1 50); do
+                if busctl --user status org.freedesktop.Notifications 2>/dev/null | grep -q '^PID='; then
+                    break
+                fi
+                sleep 0.1
+            done
             notify "Quickshell restarted"
             ;;
         *"Reload Wallpaper"*)

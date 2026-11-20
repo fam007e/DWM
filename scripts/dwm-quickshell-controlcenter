@@ -1458,9 +1458,23 @@ restart_quickshell() {
 		return 1
 	fi
 
+	pkill -x dunst 2>/dev/null || true
 	pkill -x quickshell 2>/dev/null || true
 	if command -v quickshell >/dev/null 2>&1; then
 		launch_background quickshell --no-duplicate
+		# Wait until quickshell owns org.freedesktop.Notifications again: a
+		# notification sent while the name is unowned makes dbus-daemon
+		# auto-activate dunst, which would keep the name away from quickshell.
+		if command -v busctl >/dev/null 2>&1; then
+			notif_wait_i=0
+			while [ "$notif_wait_i" -lt 50 ]; do
+				if busctl --user status org.freedesktop.Notifications >/dev/null 2>&1; then
+					break
+				fi
+				sleep 0.1
+				notif_wait_i=$((notif_wait_i + 1))
+			done
+		fi
 		notify "Quickshell restarted"
 	else
 		printf 'quickshell is not installed\n' >&2
