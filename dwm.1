@@ -20,24 +20,19 @@ layout applied.
 Windows are grouped by tags. Each window can be tagged with one or multiple
 tags. Selecting certain tags displays all windows with these tags.
 .P
-Each screen contains a small status bar which displays all available tags, the
-layout, the title of the focused window, and the text read from the root window
-name property, if the screen is focused. A floating window is indicated with an
-empty square and a maximised floating window is indicated with a filled square
-before the windows title.  The selected tags are indicated with a different
-color. The tags of the focused window are indicated with a filled square in the
-top left corner.  The tags which are applied to one or more windows are
-indicated with an empty square in the top left corner.
+The status bar is drawn by the external panel (quickshell), which reports its
+geometry and struts to dwm; dwm only reserves the workarea for it and can
+toggle it.
 .P
 dwm draws a small border around windows to indicate the focus state.
 .P
-On start, dwm can start additional programs that may be specified in two special
-shell scripts (see the FILES section below), autostart_blocking.sh and
-autostart.sh.  The former is executed first and dwm will wait for its
-termination before starting.  The latter is executed in the background before
-dwm enters its handler loop.
-.P
-Either of these files may be omitted.
+On start, dwm runs
+.I scripts/autostart.sh
+as a background process and never waits for it. On exit it runs
+.I scripts/autostop.sh
+if one exists, waiting up to 5 seconds so helpers started at login can shut
+down cleanly. Both are searched for in the directories listed under FILES;
+either may be omitted.
 .SH OPTIONS
 .TP
 .B \-v
@@ -45,142 +40,152 @@ prints version information to stderr, then exits.
 .SH USAGE
 .SS Status bar
 .TP
-.B X root window name
-is read and displayed in the status text area. It can be set with the
-.BR xsetroot (1)
-command.
-.TP
-.B Button1
-click on a tag label to display all windows with that tag, click on the layout
-label toggles between tiled and floating layout.
-.TP
-.B Button3
-click on a tag label adds/removes all windows with that tag to/from the view.
-.TP
-.B Mod1\-Button1
-click on a tag label applies that tag to the focused window.
-.TP
-.B Mod1\-Button3
-click on a tag label adds/removes that tag to/from the focused window.
+.B Super\-Control\-b
+Toggle the panel (status bar) on and off.
+.P
+The panel is owned by quickshell: it sets its own geometry, struts and mouse
+handling. dwm only reserves the workarea for it.
 .SS Keyboard commands
+All keybindings are defined in
+.I hotkeys.toml
+(see CUSTOMIZATION) and are reloaded live when that file changes. The shipped
+defaults are:
 .TP
-.B Mod1\-Shift\-Return
-Start
-.BR st(1).
+.B Super\-Return
+Start the configured terminal (alacritty by default).
 .TP
-.B Mod1\-p
-Spawn
-.BR dmenu(1)
-for launching other programs.
+.B Super\-r / Super\-F1
+Open the Quickshell app launcher / command menu.
 .TP
-.B Mod1\-,
-Focus previous screen, if any.
+.B Super\-Shift\-r
+Restart Quickshell.
 .TP
-.B Mod1\-.
-Focus next screen, if any.
+.B Super\-Shift\-c / Super\-Shift\-u
+Toggle the control center / update center.
 .TP
-.B Mod1\-Shift\-,
-Send focused window to previous screen, if any.
-.TP
-.B Mod1\-Shift\-.
-Send focused window to next screen, if any.
-.TP
-.B Mod1\-b
-Toggles bar on and off.
-.TP
-.B Mod1\-t
-Sets tiled layout.
-.TP
-.B Mod1\-f
-Sets floating layout.
-.TP
-.B Mod1\-m
-Sets monocle layout.
-.TP
-.B Mod1\-space
-Toggles between current and previous layout.
-.TP
-.B Mod1\-j
-Focus next window.
-.TP
-.B Mod1\-k
-Focus previous window.
-.TP
-.B Mod1\-i
-Increase number of windows in master area.
-.TP
-.B Mod1\-d
-Decrease number of windows in master area.
-.TP
-.B Mod1\-l
-Increase master area size.
-.TP
-.B Mod1\-h
-Decrease master area size.
-.TP
-.B Mod1\-Return
-Zooms/cycles focused window to/from master area (tiled layouts only).
-.TP
-.B Mod1\-Shift\-c
+.B Super\-q
 Close focused window.
 .TP
-.B Mod1\-Shift\-space
+.B Super\-j
+Focus next window.
+.TP
+.B Super\-k
+Focus previous window.
+.TP
+.B Super\-Shift\-j / Super\-Shift\-k
+Move focused window down / up in the stack.
+.TP
+.B Super\-i
+Increase number of windows in master area.
+.TP
+.B Super\-d
+Decrease number of windows in master area.
+.TP
+.B Super\-Control\-h / Super\-Control\-l
+Decrease / increase master area size.
+.TP
+.B Super\-Shift\-h / Super\-Shift\-l
+Increase / decrease column factor (cfact).
+.TP
+.B Super\-Shift\-o
+Reset column factor.
+.TP
+.B Super\-t
+Sets tiled layout.
+.TP
+.B Super\-f
+Sets floating layout.
+.TP
+.B Super\-m
+Sets monocle layout.
+.TP
+.B Super\-space
+Toggle between current and previous layout.
+.TP
+.B Super\-Shift\-space
 Toggle focused window between tiled and floating state.
 .TP
-.B Mod1\-Tab
+.B Super\-Tab
 Toggles to the previously selected tags.
 .TP
-.B Mod1\-Shift\-[1..n]
-Apply nth tag to focused window.
-.TP
-.B Mod1\-Shift\-0
-Apply all tags to focused window.
-.TP
-.B Mod1\-Control\-Shift\-[1..n]
-Add/remove nth tag to/from focused window.
-.TP
-.B Mod1\-[1..n]
+.B Super\-[1..n]
 View all windows with nth tag.
 .TP
-.B Mod1\-0
-View all windows with any tag.
-.TP
-.B Mod1\-Control\-[1..n]
+.B Super\-Control\-[1..n]
 Add/remove all windows with nth tag to/from the view.
 .TP
-.B Mod1\-Shift\-q
+.B Super\-Shift\-[1..n]
+Apply nth tag to focused window.
+.TP
+.B Super\-Control\-Shift\-[1..n]
+Add/remove nth tag to/from focused window.
+.TP
+.B Super\-0
+View all windows with any tag.
+.TP
+.B Super\-Shift\-0
+Apply all tags to focused window.
+.TP
+.B Super\-comma / Super\-period
+Focus previous / next screen, if any.
+.TP
+.B Super\-Shift\-comma / Super\-Shift\-period
+Send focused window to previous / next screen, if any.
+.TP
+.B Super\-l
+Lock the screen.
+.TP
+.B Super\-Shift\-e
 Quit dwm.
+.P
+Media keys (volume, brightness, playback) and further launcher shortcuts
+(wifi, bluetooth, weather, screenshots, wallpaper, ...) are also defined in
+hotkeys.toml.
 .SS Mouse commands
 .TP
-.B Mod1\-Button1
-Move focused window while dragging. Tiled windows will be toggled to the floating state.
+.B Super\-Button1
+Move the focused window while dragging. Floating windows are moved freely;
+tiled windows are placed interactively into the tiling layout.
 .TP
-.B Mod1\-Button2
+.B Super\-Button2
 Toggles focused window between floating and tiled state.
 .TP
-.B Mod1\-Button3
-Resize focused window while dragging. Tiled windows will be toggled to the floating state.
+.B Super\-Button3
+Resize focused window while dragging. Tiled windows are toggled to the
+floating state.
 .SH FILES
-The files containing programs to be started along with dwm are searched for in
-the following directories:
+The scripts to be run along with dwm are searched for in the following
+directories:
 .IP "1. $XDG_DATA_HOME/dwm"
-.IP "2. $HOME/.local/share/dwm"
-.IP "3. $HOME/.dwm"
+($HOME/.local/share/dwm by default)
+.IP "2. $HOME/.dwm"
+.IP "3. $DWM_PATH"
+(the build directory baked in at compile time)
 .P
-The first existing directory is scanned for any of the autostart files below.
+Each directory is tried in order for
+.IR scripts/autostart.sh ;
+the first executable match is used.
 .TP 15
-autostart.sh
-This file is started as a shell background process before dwm enters its handler
-loop.
+scripts/autostart.sh
+This file is started as a shell background process before dwm enters its
+handler loop; dwm never waits for it.
 .TP 15
-autostart_blocking.sh
-This file is started before any autostart.sh; dwm waits for its termination.
+scripts/autostop.sh
+Optional and not shipped with dwm: if a user provides it, it is started after
+the X connection is closed and dwm waits up to 5 seconds for it, so helpers
+started by autostart.sh can be stopped cleanly.
 .SH CUSTOMIZATION
-dwm is customized by creating a custom config.h and (re)compiling the source
-code. This keeps it fast, secure and simple.
+Runtime configuration lives in $XDG_CONFIG_HOME/dwm (~/.config/dwm by
+default): hotkeys.toml defines key and mouse bindings, window-rules.toml
+per-window rules, themes.toml colors and border width. dwm watches these
+files and reloads them live on change; a manual reload can be requested with
+.B kill \-USR1 $(pidof dwm).
+If a file is missing there, dwm falls back to the installed copy in
+$XDG_DATA_HOME/dwm/config and then to the copy shipped in the build tree.
+Compile-time behavior (layouts, defaults, feature toggles) is customized by
+editing config.h and recompiling.
 .SH SEE ALSO
-.BR dmenu (1),
-.BR st (1)
+.BR xsetroot (1)
 .SH ISSUES
 Java applications which use the XToolkit/XAWT backend may draw grey windows
 only. The XToolkit/XAWT backend breaks ICCCM-compliance in recent JDK 1.5 and early
@@ -196,4 +201,4 @@ or
 XToolkit/XAWT backend can recognize) or when using OpenJDK setting the environment variable
 .BR _JAVA_AWT_WM_NONREPARENTING=1 .
 .SH BUGS
-Send all bug reports with a patch to hackers@suckless.org.
+Report bugs at the project repository's issue tracker.
