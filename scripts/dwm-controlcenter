@@ -319,7 +319,9 @@ run_quick_actions() {
 
     case "$chosen" in
         *"Restart Picom"*)
-            restart_process picom picom -b
+            # delegate to the managed settings backend so the user's picom
+            # config (and backend/opacity overrides) are preserved
+            dwm-settings-picom restart
             notify "Picom restarted"
             ;;
         *"Restart Quickshell"*)
@@ -342,12 +344,12 @@ run_quick_actions() {
             set_random_wallpaper || true
             ;;
         *"Toggle Compositor"*)
+            # same managed backend as Restart Picom — never bare-launch picom
+            dwm-settings-picom toggle
             if pgrep -x picom &>/dev/null; then
-                pkill -x picom 2>/dev/null || true
-                notify "Compositor stopped"
-            else
-                setsid picom -b </dev/null >/dev/null 2>&1 &
                 notify "Compositor started"
+            else
+                notify "Compositor stopped"
             fi
             ;;
         *"Restart NetworkManager"*)
