@@ -12,12 +12,35 @@ Scope {
     property var events: []
     property bool eventsBusy: false
 
-    // Calendar grid: array of { day: int, inMonth: bool, isToday: bool, isSelected: bool, hasEvent: bool }
-    readonly property var calendarGrid: {
-        const _ = root.events;
-        const sel = root.selectedDay;
-        return root.buildGrid(root.viewYear, root.viewMonth, sel);
+    // Days since epoch for a local calendar date (month is 0-indexed).
+    // Matches the helper's startDay/endDay numbering.
+    function epochDayOf(year, month, day) {
+        return Math.floor(Date.UTC(year, month, day) / 86400000);
     }
+
+    // Index over every date an event occupies: epochDay -> [events].
+    // Covers multi-day events (startDay..endDay inclusive) so mid-month
+    // lookups are O(1) instead of rescanning the event list per cell.
+    readonly property var eventIndex: {
+        const list = root.events;
+        const index = ({});
+        for (let i = 0; i < list.length; i++) {
+            const ev = list[i];
+            const start = ev.startDay;
+            if (start === null || start === undefined) continue;
+            // Guard against pathological feed ranges (cap at ~1 year).
+            const end = (ev.endDay !== null && ev.endDay !== undefined)
+                ? Math.min(ev.endDay, start + 366) : start;
+            for (let d = start; d <= end; d++) {
+                if (!index[d]) index[d] = [];
+                index[d].push(ev);
+            }
+        }
+        return index;
+    }
+
+    // Grid: array of { day: int, inMonth: bool, isToday: bool, isSelected: bool, hasEvent: bool }
+    readonly property var calendarGrid: root.buildGrid(root.viewYear, root.viewMonth, root.selectedDay)
 
     readonly property string monthLabel: {
         const months = ["January", "February", "March", "April", "May", "June",
@@ -31,17 +54,29 @@ Scope {
         return pad(root.selectedDay) + "/" + pad(root.viewMonth + 1) + "/" + root.viewYear;
     }
 
-    // Events filtered for the currently selected day, or all events if none on that day
+    // All events occupying the selected day (including multi-day events that
+    // started earlier), or empty if none.
     readonly property var eventsForSelectedDay: {
-        const pad = (n) => n < 10 ? "0" + n : "" + n;
-        const dateStr = pad(root.selectedDay) + "/" + pad(root.viewMonth + 1) + "/" + root.viewYear;
-        const matched = [];
-        for (let i = 0; i < root.events.length; i++) {
-            if (root.events[i].startDate === dateStr) {
-                matched.push(root.events[i]);
-            }
+        return root.eventIndex[root.epochDayOf(root.viewYear, root.viewMonth, root.selectedDay)] || [];
+    }
+
+    // Next five not-yet-finished events, used when the selected day is empty.
+    readonly property var upcomingEvents: {
+        const list = root.events;
+        const now = new Date();
+        const today = root.epochDayOf(now.getFullYear(), now.getMonth(), now.getDate());
+        const seen = new Set();
+        const out = [];
+        for (let i = 0; i < list.length && out.length < 5; i++) {
+            const ev = list[i];
+            const endDay = (ev.endDay !== null && ev.endDay !== undefined) ? ev.endDay : ev.startDay;
+            if (endDay !== null && endDay !== undefined && endDay < today) continue;
+            const key = ev.uid + "|" + ev.startDate + "|" + ev.startTime;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            out.push(ev);
         }
-        return matched;
+        return out;
     }
 
     function buildGrid(year, month, selectedD) {
@@ -74,7 +109,7 @@ Scope {
                 inMonth: true,
                 isToday: isCurrentMonth && d === todayDate,
                 isSelected: d === selectedD,
-                hasEvent: root.dayHasEvent(d)
+                hasEvent: root.eventIndex[root.epochDayOf(year, month, d)] !== undefined
             });
         }
 
@@ -91,15 +126,6 @@ Scope {
         }
 
         return grid;
-    }
-
-    function dayHasEvent(day) {
-        const pad = (n) => n < 10 ? "0" + n : "" + n;
-        const dateStr = pad(day) + "/" + pad(root.viewMonth + 1) + "/" + root.viewYear;
-        for (let i = 0; i < root.events.length; i++) {
-            if (root.events[i].startDate === dateStr) return true;
-        }
-        return false;
     }
 
     function selectDay(day) {
@@ -170,6 +196,12 @@ Scope {
 
         stdout: StdioCollector {
             onStreamFinished: root.parseEvents(this.text)
+        }
+
+        // Reset the busy state even when khal fails, so the popup can never
+        // stay stuck on "Loading khal events...".
+        onExited: (exitCode, exitStatus) => { // qmllint disable signal-handler-parameters
+            root.eventsBusy = false;
         }
     }
 

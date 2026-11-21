@@ -8,7 +8,7 @@ Rectangle {
     property url leadingIcon: ""
     property real leadingIconSize: Theme.fontBodySmallSize
     property string leadingLabel: ""
-    property real labelSpacing: 0
+    property real labelSpacing: Theme.spacingLg
     property string accessibleDescription: ""
     property bool danger: false
     property bool primary: false

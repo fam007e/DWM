@@ -28,8 +28,7 @@ ClickAwayPopup {
     readonly property var displayEvents: {
         const forDay = root.calendarModel.eventsForSelectedDay;
         if (forDay && forDay.length > 0) return forDay;
-        const all = root.calendarModel.events;
-        return all ? all.slice(0, 5) : [];
+        return root.calendarModel.upcomingEvents || [];
     }
 
     readonly property bool showingSelectedDayOnly: {
