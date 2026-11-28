@@ -26,6 +26,8 @@ Scope {
     property bool brightnessAvailable: false
     property int brightnessPercent: 0
     property string brightnessError: ""
+    property string brightnessWatchPath: ""
+    property bool brightnessDdcOnly: false
     property string mediaText: "MEDIA none"
     property string mediaPlayer: ""
     property string mediaState: ""
@@ -383,17 +385,33 @@ Scope {
     }
 
     function parseBrightness(text) {
-        const fields = text.trim().split("\n")[0].split(",");
+        const lines = text.trim().split("\n").filter(entry => entry.length > 0);
+        // Prefer a sysfs backlight over a DDC/CI monitor: sysfs brightness files
+        // emit inotify events, so external changes (dwm hotkeys) update instantly.
+        const line = lines.find(entry => !entry.split(",")[0].startsWith("ddc")) || lines[0];
+        const fields = line.split(",");
         const match = fields.length >= 4 ? /^(\d+)%$/.exec(fields[3]) : null;
         const percent = match ? Number(match[1]) : NaN;
         if (!isFinite(percent) || percent < 0 || percent > 100) {
             root.brightnessAvailable = false;
+            root.brightnessWatchPath = "";
+            root.brightnessDdcOnly = false;
             root.brightnessError = "Backlight status is unavailable";
             return;
         }
         root.brightnessPercent = percent;
         root.brightnessAvailable = true;
         root.brightnessError = "";
+        // sysfs backlights are named after their /sys/class/backlight entry and can
+        // be watched; DDC/CI devices have no file to watch and rely on polling.
+        const device = fields[0];
+        if (device.length > 0 && !device.startsWith("ddc")) {
+            root.brightnessWatchPath = "/sys/class/backlight/" + device + "/brightness";
+            root.brightnessDdcOnly = false;
+        } else {
+            root.brightnessWatchPath = "";
+            root.brightnessDdcOnly = true;
+        }
     }
 
     function streamVolumeSet(index, percent, origin) {
@@ -613,6 +631,15 @@ Scope {
         }
     }
 
+    // brightnessctl writes the sysfs brightness attribute, which emits inotify
+    // events; the watcher syncs the label without waiting for the poll timer.
+    FileView {
+        path: root.brightnessWatchPath
+        watchChanges: true
+        onFileChanged: root.refreshBrightness()
+        onLoadFailed: root.brightnessWatchPath = ""
+    }
+
     Process {
         id: mediaStatusProcess
 
@@ -689,7 +716,9 @@ Scope {
     }
 
     Timer {
-        interval: 5000
+        // sysfs changes arrive via the inotify watcher; DDC/CI monitors have no
+        // file event, so poll faster there to keep the label reasonably fresh.
+        interval: root.brightnessDdcOnly ? 2000 : 5000
         running: true
         repeat: true
         triggeredOnStart: true
