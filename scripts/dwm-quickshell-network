@@ -326,7 +326,34 @@ snapshot() {
 	fi
 	awk -F '\t' -v OFS='\t' 'NF >= 3 { connection = $4 != "" ? $4 : "-"; print "network-device", $1, $2, $3, connection }' "$work/devices"
 	awk -F '\t' -v OFS='\t' 'NF >= 4 { device = $5 != "" ? $5 : "-"; print "network-profile", $1, $2, $3, $4, device }' "$work/connections"
-	awk -F '\t' -v OFS='\t' 'NF >= 7 && $3 != "" { active = $1 != "" ? $1 : "-"; print "wifi-network", active, $2, $3, $4, $5, $6, $7 }' "$work/wifi"
+	# nmcli emits one row per BSSID, so one SSID broadcast by several APs
+	# (dual-radio router, mesh node, repeater) would appear repeatedly.
+	# Collapse to one row per SSID: prefer the active AP, else the strongest
+	# signal; first-seen order is preserved.
+	awk -F '\t' -v OFS='\t' '
+		NF >= 7 && $3 != "" {
+			active = $1 != ""
+			ssid = $3
+			if (!(ssid in seen)) {
+				seen[ssid] = 1
+				order[++n] = ssid
+				best[ssid] = $0
+				best_active[ssid] = active
+				best_signal[ssid] = $4 + 0
+			} else if ((active && !best_active[ssid]) ||
+				(!active && !best_active[ssid] && $4 + 0 > best_signal[ssid])) {
+				best[ssid] = $0
+				best_active[ssid] = active
+				best_signal[ssid] = $4 + 0
+			}
+		}
+		END {
+			for (i = 1; i <= n; i++) {
+				split(best[order[i]], f, "\t")
+				print "wifi-network", (f[1] != "" ? f[1] : "-"), f[2], f[3], f[4], f[5], f[6], f[7]
+			}
+		}
+	' "$work/wifi"
 }
 
 monitor() {

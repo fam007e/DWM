@@ -648,7 +648,7 @@ PanelWindow {
         visible: networkMouse.containsMouse
         anchorWindow: root
         anchorItem: networkMouse
-        label: root.networkModel.statusText
+        label: root.networkModel.statusSsid.length > 0 ? root.networkModel.statusSsid : root.networkModel.statusText
         anchorY: Theme.panelHeight
         rightAligned: true
     }

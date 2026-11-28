@@ -20,7 +20,8 @@ ColumnLayout {
         UiText {
             Layout.fillWidth: true
             text: root.networkModel.providerState === "available"
-                ? root.networkModel.statusText + " / NetworkManager"
+                ? (root.networkModel.statusSsid.length > 0
+                    ? root.networkModel.statusSsid : root.networkModel.statusText) + " / NetworkManager"
                 : root.networkModel.providerDetail
             color: root.networkModel.providerState === "available" ? Theme.menuText : Theme.warning
             font.bold: true

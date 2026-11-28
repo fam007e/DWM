@@ -61,6 +61,10 @@ Rectangle {
 
         Text {
             Layout.preferredWidth: 54
+            // With the Connect chip hidden on the active row this becomes the
+            // last element; inset it like a chip label so its edge lines up
+            // with the Connect labels on the other rows instead of the margin.
+            Layout.rightMargin: root.network.active ? Theme.controlPaddingX * 2 : 0
             text: root.network.active ? "Active" : ""
             color: Theme.readableText(Theme.controlSelectedText, String(root.color))
             font.family: Theme.fontFamily
@@ -70,6 +74,7 @@ Rectangle {
         }
 
         ShellButton {
+            visible: !root.network.active
             Layout.preferredHeight: Theme.chipHeight
             label: root.delegated ? "Advanced" : root.busy ? "Connecting..." : "Connect"
             enabled: root.actionsEnabled && !root.busy

@@ -95,7 +95,8 @@ ClickAwayPopup {
                 iconColor: root.networkModel.statusText.indexOf("unavailable") >= 0
                     ? Theme.menuMutedText : Theme.popupText
                 title: "Network"
-                subtitle: root.networkModel.statusText
+                subtitle: root.networkModel.statusSsid.length > 0
+                    ? root.networkModel.statusSsid : root.networkModel.statusText
 
                 ShellButton {
                     label: "Scan"

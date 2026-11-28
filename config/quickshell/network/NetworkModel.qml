@@ -18,6 +18,7 @@ Scope {
     property int selectedIndex: 0
     property int selectedWifiIndex: -1
     property string statusText: "NET offline"
+    property string statusSsid: ""
     property string message: ""
     property string providerState: "idle"
     property string providerDetail: ""
@@ -49,6 +50,25 @@ Scope {
         const value = (security || "").toUpperCase();
         return value.indexOf("802.1X") < 0 && value.indexOf("EAP") < 0
             && value.indexOf("ENTERPRISE") < 0;
+    }
+
+    // Display label for the active Wi-Fi connection. The scan row's active
+    // flag is preferred (exact SSID even for renamed profiles), but a rescan
+    // without scanning can drop the marker from the cached AP list, so the
+    // active Wi-Fi profile name is the reliable fallback.
+    function connectedSsid(wifiNetworks, connections) {
+        for (let i = 0; i < wifiNetworks.length; i++) {
+            if (wifiNetworks[i].active && wifiNetworks[i].ssid.length > 0) {
+                return wifiNetworks[i].ssid;
+            }
+        }
+        for (let i = 0; i < connections.length; i++) {
+            if (connections[i].active
+                && (connections[i].type === "802-11-wireless" || connections[i].type === "wifi")) {
+                return connections[i].name;
+            }
+        }
+        return "";
     }
 
     function open() {
@@ -149,6 +169,7 @@ Scope {
             root.providerState = "failure";
             root.providerDetail = !protocolValid ? "Unsupported connectivity protocol" : "Malformed network provider record";
             root.statusText = "NET unavailable";
+            root.statusSsid = "";
             root.devices = [];
             root.connections = [];
             root.wifiNetworks = [];
@@ -156,11 +177,31 @@ Scope {
             return;
         }
 
+        // The cached AP list can drop the IN-USE marker between scans, so the
+        // scan row's active flag alone flaps on --rescan-no refreshes. Mark
+        // rows active when the connected Wi-Fi profile's name matches their
+        // SSID; profile state comes from NM's active-connection list.
+        const activeWifiProfileNames = {};
+        for (let i = 0; i < connections.length; i++) {
+            if (connections[i].active
+                && (connections[i].type === "802-11-wireless" || connections[i].type === "wifi")) {
+                activeWifiProfileNames[connections[i].name] = true;
+            }
+        }
+        if (Object.keys(activeWifiProfileNames).length > 0) {
+            for (let i = 0; i < wifiNetworks.length; i++) {
+                if (!wifiNetworks[i].active && activeWifiProfileNames[wifiNetworks[i].ssid]) {
+                    wifiNetworks[i].active = true;
+                }
+            }
+        }
+
         root.devices = devices;
         root.connections = connections;
         root.wifiNetworks = wifiNetworks;
         const stateReadable = root.providerState === "available" || root.providerState === "restricted";
         root.statusText = stateReadable ? (connectedDevice.length > 0 ? "NET " + connectedDevice : "NET offline") : "NET unavailable";
+        root.statusSsid = connectedSsid(wifiNetworks, connections);
         if (root.providerState !== "available") root.message = root.providerDetail;
         else if (!root.actionFailed && !root.busy) root.message = "";
         if (root.selectedIndex >= connections.length) root.selectedIndex = Math.max(0, connections.length - 1);
